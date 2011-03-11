@@ -1,2 +1,13 @@
-SpaceConquest
-=============
+SpaceConquest, das GPN 2011 Programmierspiel
+============================================
+
+(dessen Namen irgendwie noch nicht festgelegt ist).
+
+Beachten sie auch das Design-Brainstorming unter
+https://brotkasten.quaddamage.de/WeltraumProgrammierNacht
+
+Read-Only Zugriff auf dieses Repository:
+git clone http://code.nerd2nerd.org/git/spaceconquest.git
+
+Read-Write Zugriff:
+git clone ssh://git@code.nerd2nerd.org:42023/spaceconquest.git
