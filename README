@@ -6,8 +6,28 @@ SpaceConquest, das GPN 2011 Programmierspiel
 Beachten sie auch das Design-Brainstorming unter
 https://brotkasten.quaddamage.de/WeltraumProgrammierNacht
 
+
+============================================
+Zugriff auf die Repositories:
+============================================
+
 Read-Only Zugriff auf dieses Repository:
+--------------------------------------------
 git clone http://code.nerd2nerd.org/git/spaceconquest.git
 
+oder:
+
+git clone git://code.nerd2nerd.org/spaceconquest.git
+
+oder:
+
+http://code.nerd2nerd.org/?p=spaceconquest.git;a=summary
+
+
 Read-Write Zugriff:
+--------------------------------------------
+Write Zugriff geht nur über SSH-Keys. 
+Bitte id_rsa.pub an watz@nerd2nerd.org per email schicken.
+
 git clone ssh://git@code.nerd2nerd.org:42023/spaceconquest.git
+
