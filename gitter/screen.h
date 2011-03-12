@@ -8,6 +8,8 @@ typedef struct {
 	float y;
 } pixel_t;
 
+extern int safety_radius;
+
 void sdl_init();
 int main_loop();
 

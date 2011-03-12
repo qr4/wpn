@@ -3,8 +3,8 @@
 #include "route.h"
 
 int main(int argc, char *argv[]) {
-	GLOBALS.WIDTH  = 1024;
-	GLOBALS.HEIGHT = 1024;
+	GLOBALS.WIDTH  = 768;
+	GLOBALS.HEIGHT = 768;
 
 	sdl_init();
 	main_loop();

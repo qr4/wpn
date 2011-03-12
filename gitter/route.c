@@ -46,17 +46,17 @@ waypoint_t* go_around(pixel_t* A, pixel_t* B, pixel_t* C) {
 	double r = dividing_ratio(A, B, C);
 	pixel_t X = { A->x + r*(B->x - A->x), A->y + r*(B->y - A->y) };
 	double d = dist(&X, C);
-	pixel_t W = {C->x + 15*sqrt(2)*(X.x - C->x) / d, C->y + 15*sqrt(2)*(X.y - C->y) / d};
+	pixel_t W = {C->x + safety_radius*sqrt(2)*(X.x - C->x) / d, C->y + safety_radius*sqrt(2)*(X.y - C->y) / d};
 	waypoint_t* wp = malloc(sizeof(waypoint_t));
 	wp->next = NULL;
 	wp->point.x = W.x;
 	wp->point.y = W.y;
-	printf("Suggest you go via (%f,%f) to avoid (%f,%f)\n", W.x, W.y, C->x, C->y);
+	//printf("Suggest you go via (%f,%f) to avoid (%f,%f)\n", W.x, W.y, C->x, C->y);
 	return wp;
 }
 
 waypoint_t* route(pixel_t* start, pixel_t* stop, pixel_t* points, int n_points) {
-	printf("Running route\n");
+	//printf("Running route\n");
 
 	/*
 	pixel_t A = {0, 0};
@@ -85,7 +85,7 @@ waypoint_t* route(pixel_t* start, pixel_t* stop, pixel_t* points, int n_points) 
 		double r = dividing_ratio(start, stop, &(points[i]));
 		if (r > 0 && r < 1) {
 			double d = dist_to_line(start, stop, &(points[i]));
-			if (fabs(d) < 15) {
+			if (fabs(d) < safety_radius) {
 				//printf("Point #%d at (%f,%f) is an obstacle %f pixel away from the course\n", i, points[i].x, points[i].y, d);
 				if(r < r_min) {
 					i_min = i;
@@ -132,6 +132,7 @@ waypoint_t* plotCourse(pixel_t* start, pixel_t* stop, pixel_t* points, int n) {
 	wp_stop->point.x = stop->x;
 	wp_stop->point.y = stop->y;
 	wp_start->next = route(start, stop, points, n_points);
+	wp_stop->next = NULL;
 	waypoint_t* t = wp_start;
 
 	while (t->next != NULL) {
@@ -192,6 +193,7 @@ void find_face(pixel_t *p, pixel_t *points, int n, int *x, int *y) {
 
 				printf("edge: %d, r %f, x %d, y %d\n", edge, r, face_x, face_y);
 				retry = 1;
+				count++;
 
 				switch (edge) {
 					case 0 :

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <sys/time.h>
 #include <SDL/SDL.h>
 #include <SDL/SDL_gfxPrimitives.h>
 #include <errno.h>
@@ -14,6 +15,7 @@
  */
 
 SDL_Surface *screen;
+int safety_radius;
 
 void sdl_setup() {
 	const SDL_VideoInfo *info;
@@ -53,7 +55,7 @@ void draw_line(pixel_t *p1, pixel_t *p2) {
 
 void draw_blob(pixel_t *p1) {
 	aacircleRGBA(screen, p1->x, p1->y, 2, 255, 255, 255, 255);
-	//aacircleRGBA(screen, p1->x, p1->y, 10, 64, 64, 64, 255);
+	aacircleRGBA(screen, p1->x, p1->y, safety_radius, 64, 64, 64, 255);
 }
 
 void draw_points(pixel_t *points, int n) {
@@ -81,6 +83,16 @@ void draw_grid(pixel_t *points, int n) {
 	}
 }
 
+void draw_route(waypoint_t* route, int r, int g, int b) {
+	waypoint_t* t = route;
+	while (t->next != NULL) {
+		aacircleRGBA(screen, t->point.x, t->point.y, 2, r, g, b, 255);
+		aalineRGBA(screen, t->point.x, t->point.y, t->next->point.x, t->next->point.y, r, g, b, 64);
+		t = t->next;
+	}
+	aacircleRGBA(screen, t->point.x, t->point.y, 2, r, g, g, 255);
+}
+
 void randomize(pixel_t *points, int n, float fac) {
 	int i;
 
@@ -104,7 +116,7 @@ void set(pixel_t *points, int n) {
 
 int main_loop() {
 	int quit = 0;
-	int n = 5;
+	int n = 16;
 	int view_grid = 0;
 	int view_points  = 1;
 	float fac = GLOBALS.WIDTH / (n + 1) * 0.3;
@@ -112,13 +124,20 @@ int main_loop() {
 	pixel_t *points;
 	pixel_t start = {0, 0};
 	pixel_t stop = {0, 0};
-	waypoint_t* route = NULL;
+	waypoint_t* route1 = NULL;
+	waypoint_t* route1s = NULL;
+	waypoint_t* route2 = NULL;
+	waypoint_t* route2s = NULL;
+
+	struct timeval t1, t2;
+	double elapsedTime;
 
 	points = (pixel_t *) malloc (sizeof(pixel_t) * n * n);
 
 	set(points, n);
 
 	while (!quit) {
+		safety_radius = GLOBALS.HEIGHT / (n + 1) / 5 ;
 		SDL_FillRect( SDL_GetVideoSurface(), NULL, 0 );
 		if (view_grid) {
 			draw_grid(points, n);
@@ -128,21 +147,11 @@ int main_loop() {
 			draw_points(points, n);
 		}
 
-		if (route != NULL) {
-			waypoint_t* r = route;
-			while (r->next != NULL) {
-				aacircleRGBA(screen, r->point.x, r->point.y, 2, 0, 0, 255, 255);
-				aalineRGBA(screen, r->point.x, r->point.y, r->next->point.x, r->next->point.y, 0, 0, 255, 64);
-				r = r->next;
-			}
-			aacircleRGBA(screen, r->point.x, r->point.y, 2, 0, 0, 255, 255);
-			r = smooth(route, 5);
-			while (r->next != NULL) {
-				aacircleRGBA(screen, r->point.x, r->point.y, 2, 0, 255, 255, 255);
-				aalineRGBA(screen, r->point.x, r->point.y, r->next->point.x, r->next->point.y, 0, 255, 255, 64);
-				r = r->next;
-			}
-			aacircleRGBA(screen, r->point.x, r->point.y, 2, 0, 0, 255, 255);
+		if (route1s != NULL) {
+			draw_route(route1s, 0, 0, 255);
+		}
+		if (route2s != NULL) {
+			draw_route(route2s, 255, 255, 0);
 		}
 
 		if (start.x != 0 && start.y != 0) {
@@ -171,13 +180,42 @@ int main_loop() {
 						break;
 				}
 				if (start.x != 0 && start.y != 0 && stop.x != 0 && stop.y != 0) {
-					printf("Route from (%f,%f) to (%f,%f)\n", start.x, start.y, stop.x, stop.y);
-					route = plotCourse_gridbased(&start, &stop, points, n);
+					printf("\n\nRoute from (%f,%f) to (%f,%f)\n", start.x, start.y, stop.x, stop.y);
+
+					gettimeofday(&t1, NULL);
+					route1 = plotCourse(&start, &stop, points, n);
+					gettimeofday(&t2, NULL);
+					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
+					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+					printf("plotCourse scanline based took %f ms\n", elapsedTime);
+
+					gettimeofday(&t1, NULL);
+					route1s = smooth(route1, 5);
+					gettimeofday(&t2, NULL);
+					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
+					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+					printf("smoth scanline based route took %f ms\n", elapsedTime);
+
+					gettimeofday(&t1, NULL);
+					route2 = plotCourse_gridbased(&start, &stop, points, n);
+					gettimeofday(&t2, NULL);
+					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
+					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+					printf("plotCourse gridline based took %f ms\n", elapsedTime);
+
+					gettimeofday(&t1, NULL);
+					route2s = smooth(route2, 5);
+					gettimeofday(&t2, NULL);
+					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
+					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+					printf("smooth gridline based route took %f ms\n", elapsedTime);
+					/*
 					waypoint_t* r = route;
 					while (r != NULL) {
 						printf("Waypoint (%f,%f)\n", r->point.x, r->point.y);
 						r = r->next;
 					}
+					*/
 				}
 				break;
 			case SDL_KEYDOWN :
