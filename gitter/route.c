@@ -42,8 +42,7 @@ double dist_to_seg(pixel_t* A, pixel_t* B, pixel_t* C) {
 	}
 }
 
-waypoint_t* go_around(pixel_t* A, pixel_t* B, pixel_t* C) {
-	double r = dividing_ratio(A, B, C);
+waypoint_t* go_around(pixel_t* A, pixel_t* B, pixel_t* C, double r) {
 	pixel_t X = { A->x + r*(B->x - A->x), A->y + r*(B->y - A->y) };
 	double d = dist(&X, C);
 	pixel_t W = {C->x + safety_radius*sqrt(2)*(X.x - C->x) / d, C->y + safety_radius*sqrt(2)*(X.y - C->y) / d};
@@ -82,6 +81,18 @@ waypoint_t* route(pixel_t* start, pixel_t* stop, pixel_t* points, int n_points) 
 	double r_min = 1;
 
 	for(i = 0; i < n_points; i++) {
+		if((points[i].x < start->x - safety_radius) && (points[i].x < stop->x - safety_radius)) {
+			continue;
+		}
+		if((points[i].x > start->x + safety_radius) && (points[i].x > stop->x + safety_radius)) {
+			continue;
+		}
+		if((points[i].y < start->y - safety_radius) && (points[i].y < stop->y - safety_radius)) {
+			continue;
+		}
+		if((points[i].y > start->y + safety_radius) && (points[i].y > stop->y + safety_radius)) {
+			continue;
+		}
 		double r = dividing_ratio(start, stop, &(points[i]));
 		if (r > 0 && r < 1) {
 			double d = dist_to_line(start, stop, &(points[i]));
@@ -97,7 +108,7 @@ waypoint_t* route(pixel_t* start, pixel_t* stop, pixel_t* points, int n_points) 
 
 	if(i_min >= 0) {
 		printf("Point #%d at (%f,%f) is the first obstacle %f pixel down the course\n", i_min, points[i_min].x, points[i_min].y, r_min * dist(start, stop));
-		waypoint_t* wp = go_around(start, stop, &(points[i_min]));
+		waypoint_t* wp = go_around(start, stop, &(points[i_min]), r_min);
 
 		waypoint_t* part1 = route(start, &(wp->point), points, n_points);
 		if(part1 == NULL) {
