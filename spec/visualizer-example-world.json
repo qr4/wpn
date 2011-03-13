@@ -1,0 +1,30 @@
+{ "world": 
+  { "bounding-box": { "xmin": -10.0, "xmax": 10, "ymin": -10, "ymax": 10},
+    "planets": [
+       {"id": 12345, "x": -3, "y": 5, "owner": null},
+       {"id": 1337, "x":2, "y": -3, "owner": 3}
+    ],
+    "ships": [
+       {"id": 42023, "x": -3.1, "y": 5.2, "owner": 3, "size": 6, "contents": "LLRRTT", "docked_to": null},
+       {"id": 123, "x": 0., "y": 0., "owner": 3, "size": 3, "contents": "TTL", "docked_to": null}
+    ],
+    "asteroids": [
+       {"id": 42, "x": -8, "y": -5, "contents": "RRR   "}
+    ],
+    "players": [
+       {"id": 1, "name": "Bernd"},
+       {"id": 2, "name": "Heinz"},
+       {"id": 3, "name": "Penis."}
+    ],
+    "shots": [
+       {"id": 874123, "owner": 3, "source": 42023, "target": 123}
+    ],
+    "hits": [
+       {"hit_entity": 123, "xpos": -3, "ypos": 5}
+    ],
+    "explosions": [
+       {"exploding_entity": 123, "xpos": -3, "ypos": 5}
+    ]
+   }
+}
+
