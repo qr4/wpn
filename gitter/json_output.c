@@ -10,9 +10,10 @@ void json_output(pixel_t* planets, int n_planets) {
 	printf("{ \"world\":\n");
 	printf("  { \"bounding-box\": { \"xmin\": 0, \"xmax\": %d, \"ymin\": 0, \"ymax\": %d},\n", GLOBALS.WIDTH, GLOBALS.HEIGHT);
 	printf("    \"planets\": [\n");
-	for(i = 0; i < n_planets; i++) {
+	for(i = 0; i < n_planets-1; i++) {
 		printf("      {\"id\":%d, \"x\": %f, \"y\": %f, \"owner\": null},\n", i, planets[i].x, planets[i].y);
 	}
+	printf("      {\"id\":%d, \"x\": %f, \"y\": %f, \"owner\": null}\n", i, planets[n_planets-1].x, planets[n_planets-1].y);
 	printf("    ],\n");
 	printf("    \"ships\": [ ],\n");
 	printf("    \"asteroids\": [ ],\n");
@@ -22,7 +23,7 @@ void json_output(pixel_t* planets, int n_planets) {
 	printf("    ],\n");
 	printf("    \"shots\": [ ],\n");
 	printf("    \"hits\": [ ],\n");
-	printf("    \"explosions\": [ ],\n");
+	printf("    \"explosions\": [ ]\n");
 	printf("  }\n");
 	printf("}\n");
 }
@@ -36,14 +37,14 @@ void json_update(waypoint_t* route1, waypoint_t* route2, int n_planets) {
 		printf("  { \"bounding-box\": { \"xmin\": 0, \"xmax\": %d, \"ymin\": 0, \"ymax\": %d},\n", GLOBALS.WIDTH, GLOBALS.HEIGHT);
 		printf("    \"ships\": [ \n");
 		if(t1) {
-			printf("      {\"id\": %d, \"x\": %f, \"y\": %f, \"owner\": 1, \"size\": 3, \"contents\": \"T  \", \"docked_to\": null},\n", n_planets+1, t1->point.x, t1->point.y);
+			printf("      {\"id\": %d, \"x\": %f, \"y\": %f, \"owner\": 1, \"size\": 3, \"contents\": \"T  \", \"docked_to\": null}%s\n", n_planets+1, t1->point.x, t1->point.y, t2 ? ",": "");
 			t1 = t1->next;
 		}
 		if(t2) {
-			printf("      {\"id\": %d, \"x\": %f, \"y\": %f, \"owner\": 2, \"size\": 6, \"contents\": \"TTLRR \", \"docked_to\": null},\n", n_planets+2, t2->point.x, t2->point.y);
+			printf("      {\"id\": %d, \"x\": %f, \"y\": %f, \"owner\": 2, \"size\": 6, \"contents\": \"TTLRR \", \"docked_to\": null}\n", n_planets+2, t2->point.x, t2->point.y);
 			t2 = t2->next;
 		}
-		printf("    \"], \n");
+		printf("    \"] \n");
 		printf("  }\n");
 		printf("}\n");
 	}
