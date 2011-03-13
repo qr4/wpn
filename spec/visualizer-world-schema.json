@@ -52,15 +52,82 @@
 					},
 					"ships" : {
 						"description" : "Liste der Schiffe innerhalb der Bounding-Box, mit ihren Eigenschaften",
-						"type" : "array"
+						"type" : "array",
+						"items" : {
+							"type" : "object",
+							"properties" : {
+								"id" : {
+									"description" : "Unique-ID dieses Schiffs, die sich im Laufe der Zeit NICHT veraendert.",
+									"type" : "number"
+								},
+								"x" : {
+									"description" : "Aktuelle x-Koordinate dieses Schiffs",
+									"type" : "number"
+								},
+								"y" : {
+									"description" : "Aktuelle y-Koordinate dieses Schiffs",
+									"type" : "number"
+								},
+								"owner" : {
+									"description" : "Id des Spielers, der dieses Schiff gerade kontrolliert, oder null (fuer ein zombieschiff).",
+									"type" : [ "number", "null" ]
+								},
+								"size" : {
+									"description" : "Groesse des Schiffs, in Slot-Zahl.",
+									"type" : "number"
+								},
+								"contents" : {
+									"description" : "Inhalt der Slots des Schiffes. Dies ist ein String von <size> laenge. Je ein Byte gibt den Inhalt des jeweiligen Slots an.",
+									"type" : "string"
+								},
+								"docked_to" : {
+									"description" : "ID der Entity, mit dem dieses Schiff aktuell gedockt ist, oder null.",
+									"type" : [ "number", "null" ]
+								}
+							}
+						}
 					},
 					"asteroids" : {
 						"description" : "Liste der Asteroiden innerhalb der Bounding-Box, mit ihren Eigenschaften",
-						"type" : "array"
+						"type" : "array",
+						"items" : {
+							"type" : "object",
+							"properties" : {
+								"id" : {
+									"description" : "Unique-ID dieses Asteroiden, die sich im Laufe der Zeit NICHT veraendert.",
+									"type" : "number"
+								},
+								"x" : {
+									"description" : "Aktuelle x-Koordinate dieses Asteroiden",
+									"type" : "number"
+								},
+								"y" : {
+									"description" : "Aktuelle y-Koordinate dieses Asteroiden",
+									"type" : "number"
+								},
+								"contents" : {
+									"description" : "Inhalt der Slots des Schiffes. Dies ist ein String von Laenge der Asteroiden-Groesse. Je ein Byte gibt den Inhalt des jeweiligen Slots an.",
+									"type" : "string"
+								}
+							}
+						}
 					},
 					"players" : {
 						"description" : "Liste der Spieler, die aktuell im Spiel sind.",
-						"type" : "array"
+						"type" : "array",
+						"items" : {
+							"type" : "object",
+							"properties" : {
+								"id" : {
+									"description" : "ID dieses Spielers.",
+									"type" : "number"
+								},
+								"name" : {
+									"description" : "Name dieses Spielers.",
+									"type" : "string"
+								}
+							}
+						}
 					},
 					"shots" : {
 						"description" : "Liste der gerade gefeuerten Schuesse innerhalb der Bounding-Box, mit ihren Eigenschaften",
