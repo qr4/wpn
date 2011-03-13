@@ -8,6 +8,7 @@
 #include "globals.h"
 #include "screen.h"
 #include "route.h"
+#include "json_output.h"
 
 /* TODO:
  *
@@ -21,7 +22,7 @@ int safety_radius;
 void sdl_setup() {
 	const SDL_VideoInfo *info;
 	if (SDL_Init(SDL_INIT_VIDEO) == -1) {
-		ERROR("SDL_Init() failed: %s\n", SDL_GetError());
+		fprintf(stderr, "SDL_Init() failed: %s\n", SDL_GetError());
 		exit(1);
 	}
 
@@ -45,7 +46,7 @@ void sdl_init() {
 	sdl_screen_init();
 
 	if (screen == NULL) {
-		ERROR("SDL_SetVideoMode() failed: %s\n", SDL_GetError());
+		fprintf(stderr, "SDL_SetVideoMode() failed: %s\n", SDL_GetError());
 		exit(1);
 	}
 }
@@ -207,42 +208,35 @@ int main_loop() {
 						break;
 				}
 				if (start.x != 0 && start.y != 0 && stop.x != 0 && stop.y != 0) {
-					printf("\n\nRoute from (%f,%f) to (%f,%f)\n", start.x, start.y, stop.x, stop.y);
+					fprintf(stderr, "\n\nRoute from (%f,%f) to (%f,%f)\n", start.x, start.y, stop.x, stop.y);
 
 					gettimeofday(&t1, NULL);
 					route1 = plotCourse(&start, &stop, points, n);
 					gettimeofday(&t2, NULL);
 					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
 					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-					printf("plotCourse scanline based took %f ms\n", elapsedTime);
+					fprintf(stderr, "plotCourse scanline based took %f ms\n", elapsedTime);
 
 					gettimeofday(&t1, NULL);
 					route1s = smooth(route1, 5);
 					gettimeofday(&t2, NULL);
 					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
 					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-					printf("smoth scanline based route took %f ms\n", elapsedTime);
+					fprintf(stderr, "smoth scanline based route took %f ms\n", elapsedTime);
 
 					gettimeofday(&t1, NULL);
 					route2 = plotCourse_gridbased(&start, &stop, points, n);
 					gettimeofday(&t2, NULL);
 					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
 					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-					printf("plotCourse gridline based took %f ms\n", elapsedTime);
+					fprintf(stderr, "plotCourse gridline based took %f ms\n", elapsedTime);
 
 					gettimeofday(&t1, NULL);
 					route2s = smooth(route2, 5);
 					gettimeofday(&t2, NULL);
 					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
 					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-					printf("smooth gridline based route took %f ms\n", elapsedTime);
-					/*
-					waypoint_t* r = route;
-					while (r != NULL) {
-						printf("Waypoint (%f,%f)\n", r->point.x, r->point.y);
-						r = r->next;
-					}
-					*/
+					fprintf(stderr, "smooth gridline based route took %f ms\n", elapsedTime);
 				}
 				break;
 			case SDL_KEYDOWN :
@@ -284,14 +278,14 @@ int main_loop() {
 					case SDLK_PLUS:
 					case SDLK_KP_PLUS:
 						fac *= 1.1;
-						printf("fac: %f\n", fac);
+						fprintf(stderr, "fac: %f\n", fac);
 						set(points, n);
 						randomize(points, n, fac);
 						break;
 					case SDLK_MINUS:
 					case SDLK_KP_MINUS:
 						fac /= 1.1;
-						printf("fac: %f\n", fac);
+						fprintf(stderr, "fac: %f\n", fac);
 						set(points, n);
 						randomize(points, n, fac);
 						break;
@@ -307,6 +301,7 @@ int main_loop() {
 			default :
 				break;
 		}
+		json_output(points, n*n);
 	}
 
 	free(points);

@@ -10,15 +10,7 @@ typedef struct {
 	int FULLSCREEN_HEIGHT;
 	int DELTA;
 	int FULLSCREEN;
-	int VERBOSE;
 } options_t;
 
 options_t GLOBALS;
-
-#define VERBOSE(...) \
-	if (GLOBALS.VERBOSE) {\
-		printf(__VA_ARGS__);\
-	}
-
-#define ERROR(...) fprintf(stderr, __VA_ARGS__);
 #endif  /*GLOBALS_H*/

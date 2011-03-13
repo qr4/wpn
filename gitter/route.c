@@ -50,31 +50,10 @@ waypoint_t* go_around(pixel_t* A, pixel_t* B, pixel_t* C, double r) {
 	wp->next = NULL;
 	wp->point.x = W.x;
 	wp->point.y = W.y;
-	//printf("Suggest you go via (%f,%f) to avoid (%f,%f)\n", W.x, W.y, C->x, C->y);
 	return wp;
 }
 
 waypoint_t* route(pixel_t* start, pixel_t* stop, pixel_t* points, int n_points) {
-	//printf("Running route\n");
-
-	/*
-	pixel_t A = {0, 0};
-	pixel_t B = {1000, 0};
-	pixel_t C1 = {500, 200};
-	printf("A = (0,0), B=(1000,0), C1=(500,200)\n");
-	printf("dist(A,B) = %f\n", dist(&A, &B));
-	printf("r(AB, C1) = %f\n", dividing_ratio(&A, &B, &C1));
-	printf("dist_to_seg(A, B, C1) = %f\n", dist_to_seg(&A, &B, &C1));
-	pixel_t C2 = {-100, 200};
-	printf("C2 = (-100,200)\n");
-	printf("r(AB, C2) = %f\n", dividing_ratio(&A, &B, &C2));
-	printf("dist_to_seg(A, B, C2) = %f\n", dist_to_seg(&A, &B, &C2));
-	pixel_t C3 = {200, -400};
-	printf("C3 = (200,-400)\n");
-	printf("r(AB, C3) = %f\n", dividing_ratio(&A, &B, &C2));
-	printf("dist_to_seg(A, B, C3) = %f\n", dist_to_seg(&A, &B, &C3));
-	*/
-
 	int i;
 
 	int i_min = -1;
@@ -97,7 +76,6 @@ waypoint_t* route(pixel_t* start, pixel_t* stop, pixel_t* points, int n_points) 
 		if (r > 0 && r < 1) {
 			double d = dist_to_line(start, stop, &(points[i]));
 			if (fabs(d) < safety_radius) {
-				//printf("Point #%d at (%f,%f) is an obstacle %f pixel away from the course\n", i, points[i].x, points[i].y, d);
 				if(fabs(r-0.5) < fabs(r_min-0.5)) {
 					i_min = i;
 					r_min = r;
@@ -107,7 +85,6 @@ waypoint_t* route(pixel_t* start, pixel_t* stop, pixel_t* points, int n_points) 
 	}
 
 	if(i_min >= 0) {
-		//printf("Point #%d at (%f,%f) is the first obstacle %f pixel down the course\n", i_min, points[i_min].x, points[i_min].y, r_min * dist(start, stop));
 		waypoint_t* wp = go_around(start, stop, &(points[i_min]), r_min);
 
 		waypoint_t* part1 = route(start, &(wp->point), points, n_points);
@@ -202,7 +179,7 @@ void find_face(pixel_t *p, pixel_t *points, int n, int *x, int *y) {
 			double r = dist_to_line(surrounding + edge, surrounding + (edge + 1) % 4, p);
 			if (r > 0) {
 
-				printf("edge: %d, r %f, x %d, y %d\n", edge, r, face_x, face_y);
+				fprintf(stderr, "edge: %d, r %f, x %d, y %d\n", edge, r, face_x, face_y);
 				retry = 1;
 				count++;
 
