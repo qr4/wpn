@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 #include <sys/time.h>
 #include <SDL/SDL.h>
@@ -94,6 +95,25 @@ void draw_route(waypoint_t* route, int r, int g, int b, int with_blobs) {
 	aacircleRGBA(screen, t->point.x, t->point.y, 2, r, g, g, 255);
 }
 
+void squirl(pixel_t *points, int n) {
+	int i, j;
+
+	for (i = 0; i < n; i++) {
+		for (j = 0; j < n; j++) {
+			float x = points[i*n + j].x;
+			float y = points[i*n + j].y;
+			float r = hypotf(x-GLOBALS.WIDTH / 2, y - GLOBALS.HEIGHT/2);
+			float phi = atan2f(y-GLOBALS.HEIGHT / 2, x - GLOBALS.WIDTH/2);
+			float angle = (1e-3 * r - 0.5);
+			phi += angle;
+			x = GLOBALS.WIDTH/2 + r*cos(phi);
+			y = GLOBALS.HEIGHT/2 + r * sin(phi);
+			points[i*n + j].x = x;
+			points[i*n + j].y = y;
+		}
+	}
+}
+
 void randomize(pixel_t *points, int n, float fac) {
 	int i;
 
@@ -101,7 +121,6 @@ void randomize(pixel_t *points, int n, float fac) {
 		points[i].x += (((float) rand() / RAND_MAX) - 0.5) * 2 * fac;
 		points[i].y += (((float) rand() / RAND_MAX) - 0.5) * 2 * fac;
 	}
-	
 }
 
 void set(pixel_t *points, int n) {
@@ -113,6 +132,8 @@ void set(pixel_t *points, int n) {
 			points[y*n + x].y = GLOBALS.HEIGHT * (y + 1) / (n + 1);
 		}
 	}
+
+	squirl(points, n);
 }
 
 int main_loop() {
