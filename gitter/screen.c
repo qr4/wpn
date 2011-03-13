@@ -153,6 +153,7 @@ int main_loop() {
 	waypoint_t* route1s = NULL;
 	waypoint_t* route2 = NULL;
 	waypoint_t* route2s = NULL;
+	char needJsonOutput = 0;
 
 	struct timeval t1, t2;
 	double elapsedTime;
@@ -192,6 +193,7 @@ int main_loop() {
 
 		SDL_Flip(screen);
 		SDL_WaitEvent(&e);
+		needJsonOutput = 1;
 		switch (e.type) {
 			case SDL_QUIT :
 				quit = 1;
@@ -237,6 +239,8 @@ int main_loop() {
 					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
 					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
 					fprintf(stderr, "smooth gridline based route took %f ms\n", elapsedTime);
+
+					json_update(route1s, route2s, n*n);
 				}
 				break;
 			case SDL_KEYDOWN :
@@ -290,6 +294,7 @@ int main_loop() {
 						randomize(points, n, fac);
 						break;
 					default:
+						needJsonOutput = 0;
 						break;
 				}
 				break;
@@ -299,9 +304,12 @@ int main_loop() {
 				sdl_screen_init();
 				break;
 			default :
+				needJsonOutput = 0;
 				break;
 		}
-		json_output(points, n*n);
+		if(needJsonOutput) {
+			json_output(points, n*n);
+		}
 	}
 
 	free(points);
