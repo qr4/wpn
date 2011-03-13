@@ -98,7 +98,7 @@ waypoint_t* route(pixel_t* start, pixel_t* stop, pixel_t* points, int n_points) 
 			double d = dist_to_line(start, stop, &(points[i]));
 			if (fabs(d) < safety_radius) {
 				//printf("Point #%d at (%f,%f) is an obstacle %f pixel away from the course\n", i, points[i].x, points[i].y, d);
-				if(r < r_min) {
+				if(fabs(r-0.5) < fabs(r_min-0.5)) {
 					i_min = i;
 					r_min = r;
 				}
@@ -107,7 +107,7 @@ waypoint_t* route(pixel_t* start, pixel_t* stop, pixel_t* points, int n_points) 
 	}
 
 	if(i_min >= 0) {
-		printf("Point #%d at (%f,%f) is the first obstacle %f pixel down the course\n", i_min, points[i_min].x, points[i_min].y, r_min * dist(start, stop));
+		//printf("Point #%d at (%f,%f) is the first obstacle %f pixel down the course\n", i_min, points[i_min].x, points[i_min].y, r_min * dist(start, stop));
 		waypoint_t* wp = go_around(start, stop, &(points[i_min]), r_min);
 
 		waypoint_t* part1 = route(start, &(wp->point), points, n_points);
