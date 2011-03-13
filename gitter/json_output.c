@@ -19,7 +19,7 @@ void json_output(pixel_t* planets, int n_planets) {
 	printf("    \"asteroids\": [ ],\n");
 	printf("    \"players\": [\n");
 	printf("      {\"id\": 1, \"name\": \"SDL\"},\n");
-	printf("      {\"id\": 2, \"name\": \"Test\"},\n");
+	printf("      {\"id\": 2, \"name\": \"Test\"}\n");
 	printf("    ],\n");
 	printf("    \"shots\": [ ],\n");
 	printf("    \"hits\": [ ],\n");
