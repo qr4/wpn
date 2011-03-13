@@ -1,0 +1,81 @@
+{
+	"id" : "http://code.nerd2nerd.org/?p=spaceconquest.git;a=blob_plain;f=spec/visualizer-world-schema.json;hb=HEAD",
+	"type" : "object",
+
+	"properties" : {
+			"world" : {
+				"type" : "object",
+				"properties" : {
+
+					"bounding-box" : {
+						"description" : "Hint fuer den Visualizer, in welchem Koordinatenbereich sich interessantes abspielt. Es sollte zu erwarten sein, dass keine im Dokument angegebene Koordinate ausserhalb dieser Box liegt.",
+						"type" : "object",
+						"properties" : {
+							"xmin" : {
+								"type" : "number"
+							},
+							"xmax" : {
+								"type" : "number"
+							},
+							"ymin" : {
+								"type" : "number"
+							},
+							"ymax" : {
+								"type" : "number"
+							}
+					},
+
+				  "planets" : {
+						"description" : "Liste der Planeten innerhalb der Bounding-Box, mit ihren Eigenschaften",
+						"type" : "array",
+						"items" : {
+							"type" : "object",
+							"properties" : {
+								"id" : {
+									"description" : "Unique-ID dieses Planeten, die sich im Laufe der Zeit NICHT veraendert.",
+									"type" : "number"
+								},
+								"x" : {
+									"description" : "X-Koordinate im Raum",
+									"type" : "number"
+								},
+								"y" : {
+									"description" : "Y-Koordinate im Raum",
+									"type" : "number"
+								},
+								"owner" : {
+									"description" : "Id des Spielers, der diesen Planeten gerade besetzt, oder null.",
+									"type" : [ "number", "null" ]
+								}
+							}
+						}
+					},
+					"ships" : {
+						"description" : "Liste der Schiffe innerhalb der Bounding-Box, mit ihren Eigenschaften",
+						"type" : "array"
+					},
+					"asteroids" : {
+						"description" : "Liste der Asteroiden innerhalb der Bounding-Box, mit ihren Eigenschaften",
+						"type" : "array"
+					},
+					"players" : {
+						"description" : "Liste der Spieler, die aktuell im Spiel sind.",
+						"type" : "array"
+					},
+					"shots" : {
+						"description" : "Liste der gerade gefeuerten Schuesse innerhalb der Bounding-Box, mit ihren Eigenschaften",
+						"type" : "array"
+					},
+					"hits" : {
+						"description" : "Liste der gerade angekommenen Einschlaege innerhalb der Bounding-Box, mit ihren Eigenschaften",
+						"type" : "array"
+					},
+					"explosions" : {
+						"description" : "Liste der gerade stattfindenden Explosionen innerhalb der Bounding-Box, mit ihren Eigenschaften",
+						"type" : "array"
+					}
+				}
+			}
+		}
+	}
+}
