@@ -6,7 +6,7 @@
     ],
     "ships": [
        {"id": 42023, "x": -3.1, "y": 5.2, "owner": 3, "size": 6, "contents": "LLRRTT", "docked_to": null},
-       {"id": 123, "x": 0., "y": 0., "owner": 3, "size": 3, "contents": "TTL", "docked_to": null}
+       {"id": 123, "x": 0.0, "y": 0.0, "owner": 3, "size": 3, "contents": "TTL", "docked_to": null}
     ],
     "asteroids": [
        {"id": 42, "x": -8, "y": -5, "contents": "RRR   "}
