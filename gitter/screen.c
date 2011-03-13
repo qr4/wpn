@@ -83,11 +83,12 @@ void draw_grid(pixel_t *points, int n) {
 	}
 }
 
-void draw_route(waypoint_t* route, int r, int g, int b) {
+void draw_route(waypoint_t* route, int r, int g, int b, int with_blobs) {
+	if (route == NULL) return;
 	waypoint_t* t = route;
 	while (t->next != NULL) {
-		aacircleRGBA(screen, t->point.x, t->point.y, 2, r, g, b, 255);
-		aalineRGBA(screen, t->point.x, t->point.y, t->next->point.x, t->next->point.y, r, g, b, 64);
+		if (with_blobs) aacircleRGBA(screen, t->point.x, t->point.y, 2, r, g, b, 255);
+		aalineRGBA(screen, t->point.x, t->point.y, t->next->point.x, t->next->point.y, r, g, b, 128);
 		t = t->next;
 	}
 	aacircleRGBA(screen, t->point.x, t->point.y, 2, r, g, g, 255);
@@ -119,6 +120,8 @@ int main_loop() {
 	int n = 16;
 	int view_grid = 0;
 	int view_points  = 1;
+	int view_waypoints = 1;
+	int view_smoothed = 1;
 	float fac = GLOBALS.WIDTH / (n + 1) * 0.3;
 	SDL_Event e;
 	pixel_t *points;
@@ -147,11 +150,14 @@ int main_loop() {
 			draw_points(points, n);
 		}
 
-		if (route1s != NULL) {
-			draw_route(route1s, 0, 0, 255);
+		if (view_waypoints) {
+			draw_route(route1, 0, 0, 255, 1);
+			draw_route(route2, 255, 0, 0, 1);
 		}
-		if (route2s != NULL) {
-			draw_route(route2s, 255, 255, 0);
+
+		if (view_smoothed) {
+			draw_route(route1s, 0, 255, 255, 0);
+			draw_route(route2s, 255, 255, 0, 0);
 		}
 
 		if (start.x != 0 && start.y != 0) {
@@ -227,10 +233,16 @@ int main_loop() {
 					case SDLK_l:
 						view_grid = !view_grid;
 						break;
+					case SDLK_w:
+						view_waypoints = !view_waypoints;
+						break;
+					case SDLK_s:
+						view_smoothed = !view_smoothed;
+						break;
 					case SDLK_r:
 						randomize(points, n, fac);
 						break;
-					case SDLK_s:
+					case SDLK_BACKSPACE:
 						set(points, n);
 						break;
 					case SDLK_q:

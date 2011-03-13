@@ -247,18 +247,17 @@ waypoint_t *smooth(waypoint_t *way, int res) {
 
 	working_start = malloc(sizeof(waypoint_t));
 	*working_start = *way;
-	working_start->next = NULL;
 	working = working_start;
 
 	if (end) {
 		midp = end->point;
 		end  = end->next;
-	} else return NULL;
+	} else return way;
 
 	if (end) {
 		endp = end->point;
 		end  = end->next;
-	} else return NULL;
+	} else return way;
 
 
 	while (end != NULL) {
