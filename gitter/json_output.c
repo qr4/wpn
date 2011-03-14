@@ -42,8 +42,8 @@ void json_update(waypoint_t* route1, waypoint_t* route2, int n_planets) {
 		if(t2) {
 			printf("      {\"id\": %d, \"x\": %f, \"y\": %f, \"owner\": 2, \"size\": 6, \"contents\": \"TTLRR \", \"docked_to\": null}\n", n_planets+2, t2->point.x, t2->point.y);
 		}
-		printf("    \"] \n");
 		if((t1 && ! t1->next) || (t2 && ! t2->next)) {
+			printf("    \"], \n");
 			printf("    \"explosions\": [\n");
 			if(t1 && ! t1->next) {
 				printf("      {\"id\": %d, \"x\": %f, \"y\": %f}%s\n", n_planets+1, t1->point.x, t1->point.y, (t2 && !t2->next) ? ",": "");
@@ -52,6 +52,8 @@ void json_update(waypoint_t* route1, waypoint_t* route2, int n_planets) {
 				printf("      {\"id\": %d, \"x\": %f, \"y\": %f}\n", n_planets+2, t2->point.x, t2->point.y);
 			}
 			printf("    ]\n");
+		} else {
+			printf("    \"]\n");
 		}
 		if(t1) {
 			t1 = t1->next;
