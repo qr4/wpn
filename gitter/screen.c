@@ -263,7 +263,7 @@ int main_loop() {
 						break;
 					case SDLK_j:
 						view_json = !view_json;
-						needJsonOutput *= view_json;
+						needJsonOutput = view_json;
 						break;
 					case SDLK_r:
 						randomize(points, n, fac);

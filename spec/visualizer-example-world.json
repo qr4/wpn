@@ -20,10 +20,10 @@
        {"id": 874123, "owner": 3, "source": 42023, "target": 123}
     ],
     "hits": [
-       {"hit_entity": 123, "xpos": -3, "ypos": 5}
+       {"hit_entity": 123, "x": -3, "y": 5}
     ],
     "explosions": [
-       {"exploding_entity": 123, "xpos": -3, "ypos": 5}
+       {"exploding_entity": 123, "x": -3, "y": 5}
     ]
    }
 }
