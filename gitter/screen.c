@@ -144,6 +144,7 @@ int main_loop() {
 	int view_points  = 1;
 	int view_waypoints = 1;
 	int view_smoothed = 1;
+	int view_json = 0;
 	float fac = GLOBALS.WIDTH / (n + 1) * 0.3;
 	SDL_Event e;
 	pixel_t *points;
@@ -193,7 +194,7 @@ int main_loop() {
 
 		SDL_Flip(screen);
 		SDL_WaitEvent(&e);
-		needJsonOutput = 1;
+		needJsonOutput = view_json;
 		switch (e.type) {
 			case SDL_QUIT :
 				quit = 1;
@@ -240,7 +241,9 @@ int main_loop() {
 					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
 					fprintf(stderr, "smooth gridline based route took %f ms\n", elapsedTime);
 
-					json_update(route1s, route2s, n*n);
+					if(needJsonOutput) {
+						json_update(route1s, route2s, n*n);
+					}
 				}
 				break;
 			case SDL_KEYDOWN :
@@ -257,6 +260,10 @@ int main_loop() {
 						break;
 					case SDLK_s:
 						view_smoothed = !view_smoothed;
+						break;
+					case SDLK_j:
+						view_json = !view_json;
+						needJsonOutput *= view_json;
 						break;
 					case SDLK_r:
 						randomize(points, n, fac);
