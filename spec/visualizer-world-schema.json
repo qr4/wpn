@@ -3,143 +3,333 @@
 	"type" : "object",
 
 	"properties" : {
-			"world" : {
-				"type" : "object",
-				"properties" : {
+		"world" : {
+			"description" : "Beschreibung des Kompletten Welt-Zustandes, mit allen Planeten, Asteroiden und Raumschiffen.",
+			"type" : "object",
+			"properties" : {
 
-					"bounding-box" : {
-						"description" : "Hint fuer den Visualizer, in welchem Koordinatenbereich sich interessantes abspielt. Es sollte zu erwarten sein, dass keine im Dokument angegebene Koordinate ausserhalb dieser Box liegt.",
+				"bounding-box" : {
+					"description" : "Hint fuer den Visualizer, in welchem Koordinatenbereich sich interessantes abspielt. Es sollte zu erwarten sein, dass keine im Dokument angegebene Koordinate ausserhalb dieser Box liegt.",
+					"type" : "object",
+					"properties" : {
+						"xmin" : {
+							"type" : "number"
+						},
+						"xmax" : {
+							"type" : "number"
+						},
+						"ymin" : {
+							"type" : "number"
+						},
+						"ymax" : {
+							"type" : "number"
+						}
+					}
+				},
+
+				"planets" : {
+					"description" : "Liste der Planeten innerhalb der Bounding-Box, mit ihren Eigenschaften",
+					"type" : "array",
+					"items" : {
 						"type" : "object",
 						"properties" : {
-							"xmin" : {
+							"id" : {
+								"description" : "Unique-ID dieses Planeten, die sich im Laufe der Zeit NICHT veraendert.",
 								"type" : "number"
 							},
-							"xmax" : {
+							"x" : {
+								"description" : "X-Koordinate im Raum",
 								"type" : "number"
 							},
-							"ymin" : {
+							"y" : {
+								"description" : "Y-Koordinate im Raum",
 								"type" : "number"
 							},
-							"ymax" : {
-								"type" : "number"
+							"owner" : {
+								"description" : "Id des Spielers, der diesen Planeten gerade besetzt, oder null.",
+								"type" : [ "number", "null" ]
 							}
-					},
+						}
+					}
+				},
+				"ships" : {
+					"description" : "Liste der Schiffe innerhalb der Bounding-Box, mit ihren Eigenschaften",
+					"type" : "array",
+					"items" : {
+						"type" : "object",
+						"properties" : {
+							"id" : {
+								"description" : "Unique-ID dieses Schiffs, die sich im Laufe der Zeit NICHT veraendert.",
+								"type" : "number"
+							},
+							"x" : {
+								"description" : "Aktuelle x-Koordinate dieses Schiffs",
+								"type" : "number"
+							},
+							"y" : {
+								"description" : "Aktuelle y-Koordinate dieses Schiffs",
+								"type" : "number"
+							},
+							"owner" : {
+								"description" : "Id des Spielers, der dieses Schiff gerade kontrolliert, oder null (fuer ein zombieschiff).",
+								"type" : [ "number", "null" ]
+							},
+							"size" : {
+								"description" : "Groesse des Schiffs, in Slot-Zahl.",
+								"type" : "number"
+							},
+							"contents" : {
+								"description" : "Inhalt der Slots des Schiffes. Dies ist ein String von <size> laenge. Je ein Byte gibt den Inhalt des jeweiligen Slots an.",
+								"type" : "string"
+							},
+							"docked_to" : {
+								"description" : "ID der Entity, mit dem dieses Schiff aktuell gedockt ist, oder null.",
+								"type" : [ "number", "null" ]
+							}
+						}
+					}
+				},
+				"asteroids" : {
+					"description" : "Liste der Asteroiden innerhalb der Bounding-Box, mit ihren Eigenschaften",
+					"type" : "array",
+					"items" : {
+						"type" : "object",
+						"properties" : {
+							"id" : {
+								"description" : "Unique-ID dieses Asteroiden, die sich im Laufe der Zeit NICHT veraendert.",
+								"type" : "number"
+							},
+							"x" : {
+								"description" : "Aktuelle x-Koordinate dieses Asteroiden",
+								"type" : "number"
+							},
+							"y" : {
+								"description" : "Aktuelle y-Koordinate dieses Asteroiden",
+								"type" : "number"
+							},
+							"contents" : {
+								"description" : "Inhalt der Slots des Schiffes. Dies ist ein String von Laenge der Asteroiden-Groesse. Je ein Byte gibt den Inhalt des jeweiligen Slots an.",
+								"type" : "string"
+							}
+						}
+					}
+				},
+				"players" : {
+					"description" : "Liste der Spieler, die aktuell im Spiel sind.",
+					"type" : "array",
+					"items" : {
+						"type" : "object",
+						"properties" : {
+							"id" : {
+								"description" : "ID dieses Spielers.",
+								"type" : "number"
+							},
+							"name" : {
+								"description" : "Name dieses Spielers.",
+								"type" : "string"
+							}
+						}
+					}
+				}
+			}
+		}
+	},
 
-				  "planets" : {
-						"description" : "Liste der Planeten innerhalb der Bounding-Box, mit ihren Eigenschaften",
-						"type" : "array",
-						"items" : {
-							"type" : "object",
-							"properties" : {
-								"id" : {
-									"description" : "Unique-ID dieses Planeten, die sich im Laufe der Zeit NICHT veraendert.",
-									"type" : "number"
-								},
-								"x" : {
-									"description" : "X-Koordinate im Raum",
-									"type" : "number"
-								},
-								"y" : {
-									"description" : "Y-Koordinate im Raum",
-									"type" : "number"
-								},
-								"owner" : {
-									"description" : "Id des Spielers, der diesen Planeten gerade besetzt, oder null.",
-									"type" : [ "number", "null" ]
-								}
-							}
+
+
+	"update" : {
+		"description" : "Update des Welt-Zustandes. Existierende Objekte koennen überschrieben werden, und neue hinzukommen. Raumschiffe werden nicht explizit, sondern durch explosionen entfernt. Es ist zu beachten, dass \"shot\", \"hit\" und \"explosion\" nur in updates, aber nicht in world vorkommen koennen.",
+		"type" : "object",
+		"properties" : {
+
+			"bounding-box" : {
+				"description" : "Hint fuer den Visualizer, in welchem Koordinatenbereich sich interessantes abspielt. Es sollte zu erwarten sein, dass keine im Dokument angegebene Koordinate ausserhalb dieser Box liegt. (Es handelt sich hierbei um die globale bounding-box, nicht nur um das aktuelle update).",
+				"type" : "object",
+				"properties" : {
+					"xmin" : {
+						"type" : "number"
+					},
+					"xmax" : {
+						"type" : "number"
+					},
+					"ymin" : {
+						"type" : "number"
+					},
+					"ymax" : {
+						"type" : "number"
+					}
+				}
+			},
+
+			"planets" : {
+				"description" : "Liste der Planeten innerhalb der Bounding-Box, mit ihren Eigenschaften",
+				"type" : "array",
+				"items" : {
+					"type" : "object",
+					"properties" : {
+						"id" : {
+							"description" : "Unique-ID dieses Planeten, die sich im Laufe der Zeit NICHT veraendert.",
+							"type" : "number"
+						},
+						"x" : {
+							"description" : "X-Koordinate im Raum",
+							"type" : "number"
+						},
+						"y" : {
+							"description" : "Y-Koordinate im Raum",
+							"type" : "number"
+						},
+						"owner" : {
+							"description" : "Id des Spielers, der diesen Planeten gerade besetzt, oder null.",
+							"type" : [ "number", "null" ]
 						}
-					},
-					"ships" : {
-						"description" : "Liste der Schiffe innerhalb der Bounding-Box, mit ihren Eigenschaften",
-						"type" : "array",
-						"items" : {
-							"type" : "object",
-							"properties" : {
-								"id" : {
-									"description" : "Unique-ID dieses Schiffs, die sich im Laufe der Zeit NICHT veraendert.",
-									"type" : "number"
-								},
-								"x" : {
-									"description" : "Aktuelle x-Koordinate dieses Schiffs",
-									"type" : "number"
-								},
-								"y" : {
-									"description" : "Aktuelle y-Koordinate dieses Schiffs",
-									"type" : "number"
-								},
-								"owner" : {
-									"description" : "Id des Spielers, der dieses Schiff gerade kontrolliert, oder null (fuer ein zombieschiff).",
-									"type" : [ "number", "null" ]
-								},
-								"size" : {
-									"description" : "Groesse des Schiffs, in Slot-Zahl.",
-									"type" : "number"
-								},
-								"contents" : {
-									"description" : "Inhalt der Slots des Schiffes. Dies ist ein String von <size> laenge. Je ein Byte gibt den Inhalt des jeweiligen Slots an.",
-									"type" : "string"
-								},
-								"docked_to" : {
-									"description" : "ID der Entity, mit dem dieses Schiff aktuell gedockt ist, oder null.",
-									"type" : [ "number", "null" ]
-								}
-							}
+					}
+				}
+			},
+			"ships" : {
+				"description" : "Liste der Schiffe innerhalb der Bounding-Box, mit ihren Eigenschaften",
+				"type" : "array",
+				"items" : {
+					"type" : "object",
+					"properties" : {
+						"id" : {
+							"description" : "Unique-ID dieses Schiffs, die sich im Laufe der Zeit NICHT veraendert.",
+							"type" : "number"
+						},
+						"x" : {
+							"description" : "Aktuelle x-Koordinate dieses Schiffs",
+							"type" : "number"
+						},
+						"y" : {
+							"description" : "Aktuelle y-Koordinate dieses Schiffs",
+							"type" : "number"
+						},
+						"owner" : {
+							"description" : "Id des Spielers, der dieses Schiff gerade kontrolliert, oder null (fuer ein zombieschiff).",
+							"type" : [ "number", "null" ]
+						},
+						"size" : {
+							"description" : "Groesse des Schiffs, in Slot-Zahl.",
+							"type" : "number"
+						},
+						"contents" : {
+							"description" : "Inhalt der Slots des Schiffes. Dies ist ein String von <size> laenge. Je ein Byte gibt den Inhalt des jeweiligen Slots an.",
+							"type" : "string"
+						},
+						"docked_to" : {
+							"description" : "ID der Entity, mit dem dieses Schiff aktuell gedockt ist, oder null.",
+							"type" : [ "number", "null" ]
 						}
-					},
-					"asteroids" : {
-						"description" : "Liste der Asteroiden innerhalb der Bounding-Box, mit ihren Eigenschaften",
-						"type" : "array",
-						"items" : {
-							"type" : "object",
-							"properties" : {
-								"id" : {
-									"description" : "Unique-ID dieses Asteroiden, die sich im Laufe der Zeit NICHT veraendert.",
-									"type" : "number"
-								},
-								"x" : {
-									"description" : "Aktuelle x-Koordinate dieses Asteroiden",
-									"type" : "number"
-								},
-								"y" : {
-									"description" : "Aktuelle y-Koordinate dieses Asteroiden",
-									"type" : "number"
-								},
-								"contents" : {
-									"description" : "Inhalt der Slots des Schiffes. Dies ist ein String von Laenge der Asteroiden-Groesse. Je ein Byte gibt den Inhalt des jeweiligen Slots an.",
-									"type" : "string"
-								}
-							}
+					}
+				}
+			},
+			"asteroids" : {
+				"description" : "Liste der Asteroiden innerhalb der Bounding-Box, mit ihren Eigenschaften",
+				"type" : "array",
+				"items" : {
+					"type" : "object",
+					"properties" : {
+						"id" : {
+							"description" : "Unique-ID dieses Asteroiden, die sich im Laufe der Zeit NICHT veraendert.",
+							"type" : "number"
+						},
+						"x" : {
+							"description" : "Aktuelle x-Koordinate dieses Asteroiden",
+							"type" : "number"
+						},
+						"y" : {
+							"description" : "Aktuelle y-Koordinate dieses Asteroiden",
+							"type" : "number"
+						},
+						"contents" : {
+							"description" : "Inhalt der Slots des Schiffes. Dies ist ein String von Laenge der Asteroiden-Groesse. Je ein Byte gibt den Inhalt des jeweiligen Slots an.",
+							"type" : "string"
 						}
-					},
-					"players" : {
-						"description" : "Liste der Spieler, die aktuell im Spiel sind.",
-						"type" : "array",
-						"items" : {
-							"type" : "object",
-							"properties" : {
-								"id" : {
-									"description" : "ID dieses Spielers.",
-									"type" : "number"
-								},
-								"name" : {
-									"description" : "Name dieses Spielers.",
-									"type" : "string"
-								}
-							}
+					}
+				}
+			},
+			"players" : {
+				"description" : "Liste der Spieler, die aktuell im Spiel sind.",
+				"type" : "array",
+				"items" : {
+					"type" : "object",
+					"properties" : {
+						"id" : {
+							"description" : "ID dieses Spielers.",
+							"type" : "number"
+						},
+						"name" : {
+							"description" : "Name dieses Spielers.",
+							"type" : "string"
 						}
-					},
-					"shots" : {
-						"description" : "Liste der gerade gefeuerten Schuesse innerhalb der Bounding-Box, mit ihren Eigenschaften",
-						"type" : "array"
-					},
-					"hits" : {
-						"description" : "Liste der gerade angekommenen Einschlaege innerhalb der Bounding-Box, mit ihren Eigenschaften",
-						"type" : "array"
-					},
-					"explosions" : {
-						"description" : "Liste der gerade stattfindenden Explosionen innerhalb der Bounding-Box, mit ihren Eigenschaften",
-						"type" : "array"
+					}
+				}
+			},
+
+			"shots" : {
+				"description" : "Liste der gerade gefeuerten Schuesse innerhalb der Bounding-Box, mit ihren Eigenschaften",
+				"type" : "array",
+				"items" : {
+					"type" : "object",
+					"properties" : {
+						"id" : {
+							"description" : "Wie alles andere auch, haben Schüsse eine unique-id.",
+							"type" : "number"
+						},
+						"owner" : {
+							"description" : "Besitzer des Raumschiffs, das diesen Schuss abfeuerte (um z.B. Spieler-spezifisch einzufaerben).",
+							"type" : "number"
+						},
+						"source" : {
+							"description" : "Id des Raumschiffs, das diesen Schuss abgegeben hat.",
+							"type" : "number"
+						},
+						"target" : {
+							"description" : "Id des Objekts, auf das geschossen wird.",
+							"type" : "number"
+						}
+					}
+				}
+			},
+			"hits" : {
+				"description" : "Liste der gerade angekommenen Einschlaege innerhalb der Bounding-Box, mit ihren Eigenschaften",
+				"type" : "array",
+				"items" : {
+					"type" : "object",
+					"properties" : {
+						"hit_entity" : {
+							"description" : "Objekt, das getroffen wurde.",
+							"type" : "number"
+						},
+						"x" : {
+							"description" : "x-Koordinate des Treffers.",
+							"type" : "number"
+						},
+						"y" : {
+							"description" : "y-Koordinate des Treffers",
+							"type" : "number"
+						}
+					}
+				}
+			},
+			"explosions" : {
+				"description" : "Liste der gerade stattfindenden Explosionen innerhalb der Bounding-Box, mit ihren Eigenschaften",
+				"type" : "array",
+				"items" : {
+					"type" : "object",
+					"properties" : {
+						"exploding_entity" : {
+							"description" : "ID des Objekts, das hier gerade explodiert. Bei der Explosion eines Raumschiffs sollte der Visualisierungsclient davon ausgehen, dass dieses nun nicht mehr existiert. (Ein passender Asteroid an seiner Stelle wird getrennt im update mitgeliefert)",
+							"type" : "number"
+						},
+						"x" : {
+							"description" : "x-Koordinate der Explosion.",
+							"type" : "number"
+						},
+						"y" : {
+							"description" : "y-Koordinate der Explosion",
+							"type" : "number"
+						}
 					}
 				}
 			}
