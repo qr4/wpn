@@ -15,7 +15,10 @@
        {"id": 1, "name": "Bernd"},
        {"id": 2, "name": "Heinz"},
        {"id": 3, "name": "Penis."}
-    ],
+    ]
+	},
+	"update" :
+	{
     "shots": [
        {"id": 874123, "owner": 3, "source": 42023, "target": 123}
     ],
