@@ -20,10 +20,7 @@ void json_output(pixel_t* planets, int n_planets) {
 	printf("    \"players\": [\n");
 	printf("      {\"id\": 1, \"name\": \"SDL\"},\n");
 	printf("      {\"id\": 2, \"name\": \"Test\"}\n");
-	printf("    ],\n");
-	printf("    \"shots\": [ ],\n");
-	printf("    \"hits\": [ ],\n");
-	printf("    \"explosions\": [ ]\n");
+	printf("    ]\n");
 	printf("  }\n");
 	printf("}\n");
 }
@@ -51,16 +48,16 @@ void json_update(waypoint_t* route1, waypoint_t* route2, int n_planets) {
 			if(t2 && ! t2->next) {
 				printf("      {\"id\": %d, \"x\": %f, \"y\": %f}\n", n_planets+2, t2->point.x, t2->point.y);
 			}
-			printf("    ]\n");
-		} else {
-			printf("    \"]\n");
 		}
+		printf("    ],\n");
 		if(t1) {
 			t1 = t1->next;
 		}
 		if(t2) {
 			t2 = t2->next;
 		}
+		printf("    \"shots\": [ ],\n");
+		printf("    \"hits\": [ ]\n");
 		printf("  }\n");
 		printf("}\n");
 	}
