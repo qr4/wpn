@@ -4,16 +4,16 @@
 #include "globals.h"
 #include "json_output.h"
 
-void json_output(pixel_t* planets, int n_planets) {
+void json_output(cluster_t* planets, int n_planets) {
 	int i;
 
 	printf("{ \"world\":\n");
 	printf("  { \"bounding-box\": { \"xmin\": 0, \"xmax\": %d, \"ymin\": 0, \"ymax\": %d},\n", GLOBALS.WIDTH, GLOBALS.HEIGHT);
 	printf("    \"planets\": [\n");
 	for(i = 0; i < n_planets-1; i++) {
-		printf("      {\"id\":%d, \"x\": %f, \"y\": %f, \"owner\": null},\n", i, planets[i].x, planets[i].y);
+		printf("      {\"id\":%d, \"x\": %f, \"y\": %f, \"owner\": null},\n", i, planets[i].center.x, planets[i].center.y);
 	}
-	printf("      {\"id\":%d, \"x\": %f, \"y\": %f, \"owner\": null}\n", i, planets[n_planets-1].x, planets[n_planets-1].y);
+	printf("      {\"id\":%d, \"x\": %f, \"y\": %f, \"owner\": null}\n", i, planets[n_planets-1].center.x, planets[n_planets-1].center.y);
 	printf("    ],\n");
 	printf("    \"ships\": [ ],\n");
 	printf("    \"asteroids\": [ ],\n");

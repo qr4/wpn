@@ -6,14 +6,24 @@
 typedef struct {
 	float x;
 	float y;
-} pixel_t;
+} vector_t;
 
-extern int safety_radius;
+typedef struct {
+	vector_t center;
+	float safety_radius;
+} cluster_t;
+
+typedef struct wp_t waypoint_t;
+
+struct wp_t {
+        vector_t point;
+        waypoint_t* next;
+};
 
 void sdl_init();
 int main_loop();
 
-void draw_line(pixel_t *p1, pixel_t *p2);
-void draw_blob(pixel_t *p1);
+void draw_line(vector_t *p1, vector_t *p2);
+void draw_blob(cluster_t* p);
 
 #endif  /*SCREEN_H*/
