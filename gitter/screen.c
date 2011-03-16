@@ -17,7 +17,6 @@
  */
 
 SDL_Surface *screen;
-int safety_radius;
 
 void sdl_setup() {
 	const SDL_VideoInfo *info;
@@ -56,8 +55,10 @@ void draw_line(vector_t* p1, vector_t* p2) {
 }
 
 void draw_blob(cluster_t* p) {
-	aacircleRGBA(screen, p->center.x, p->center.y, 2, 255, 255, 255, 255);
-	aacircleRGBA(screen, p->center.x, p->center.y, p->safety_radius, 64, 64, 64, 255);
+	if(p->safety_radius > 0) {
+		aacircleRGBA(screen, p->center.x, p->center.y, 2, 255, 255, 255, 255);
+		aacircleRGBA(screen, p->center.x, p->center.y, p->safety_radius, 64, 64, 64, 255);
+	}
 }
 
 void draw_clusters(cluster_t* clusters, int n) {
@@ -99,8 +100,8 @@ void draw_route(waypoint_t* route, int r, int g, int b, int with_blobs) {
 void squirl(cluster_t *clusters, int n) {
 	int i, j;
 
-	for (i = 0; i < n; i++) {
-		for (j = 0; j < n; j++) {
+	for (i = 1; i < n-1; i++) {
+		for (j = 1; j < n-1; j++) {
 			float x = clusters[i*n + j].center.x;
 			float y = clusters[i*n + j].center.y;
 			float r = hypotf(x-GLOBALS.WIDTH / 2, y - GLOBALS.HEIGHT/2);
@@ -116,11 +117,13 @@ void squirl(cluster_t *clusters, int n) {
 }
 
 void randomize(cluster_t *clusters, int n, float fac) {
-	int i;
+	int i, j;
 
-	for (i = 0; i < n * n; i++) {
-		clusters[i].center.x += (((float) rand() / RAND_MAX) - 0.5) * 2 * fac;
-		clusters[i].center.y += (((float) rand() / RAND_MAX) - 0.5) * 2 * fac;
+	for (i = 1; i < n-1; i++) {
+		for (j = 1; j < n-1; j++) {
+			clusters[i*n + j].center.x += (((float) rand() / RAND_MAX) - 0.5) * 2 * fac;
+			clusters[i*n + j].center.y += (((float) rand() / RAND_MAX) - 0.5) * 2 * fac;
+		}
 	}
 }
 
@@ -129,9 +132,14 @@ void set(cluster_t *clusters, int n, float safety_radius) {
 
 	for (y = 0; y < n; y++) {
 		for (x = 0; x < n; x++) {
-			clusters[y*n + x].center.x = GLOBALS.WIDTH  * (x + 1) / (n + 1);
-			clusters[y*n + x].center.y = GLOBALS.HEIGHT * (y + 1) / (n + 1);
-			clusters[y*n + x].safety_radius = (y*n+x)%5 ? safety_radius : safety_radius/2;
+			clusters[y*n + x].center.x = GLOBALS.WIDTH  * x / (n - 1);
+			clusters[y*n + x].center.y = GLOBALS.HEIGHT * y / (n - 1);
+			if(x == 0 || y == 0 || x == n-1 || y == n-1) {
+				// Not a real point, just used to extend the grid to the window size
+				clusters[y*n + x].safety_radius = 0;
+			} else {
+				clusters[y*n + x].safety_radius = (y*n+x)%5 ? safety_radius : safety_radius/2;
+			}
 		}
 	}
 
@@ -146,6 +154,7 @@ int main_loop() {
 	int view_waypoints = 1;
 	int view_smoothed = 1;
 	int view_json = 0;
+	int safety_radius = GLOBALS.HEIGHT / (n + 1) / 5;
 	float fac = GLOBALS.WIDTH / (n + 1) * 0.3;
 	SDL_Event e;
 	vector_t start = {0, 0};
