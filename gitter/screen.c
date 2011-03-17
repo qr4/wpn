@@ -17,7 +17,6 @@
  */
 
 SDL_Surface *screen;
-int safety_radius;
 
 void sdl_setup() {
 	const SDL_VideoInfo *info;
@@ -51,37 +50,39 @@ void sdl_init() {
 	}
 }
 
-void draw_line(pixel_t *p1, pixel_t *p2) {
+void draw_line(vector_t* p1, vector_t* p2) {
 	aalineRGBA(screen, p1->x, p1->y, p2->x, p2->y, 255, 255, 255, 255);
 }
 
-void draw_blob(pixel_t *p1) {
-	aacircleRGBA(screen, p1->x, p1->y, 2, 255, 255, 255, 255);
-	aacircleRGBA(screen, p1->x, p1->y, safety_radius, 64, 64, 64, 255);
+void draw_blob(cluster_t* p) {
+	if(p->safety_radius > 0) {
+		aacircleRGBA(screen, p->center.x, p->center.y, 2, 255, 255, 255, 255);
+		aacircleRGBA(screen, p->center.x, p->center.y, p->safety_radius, 64, 64, 64, 255);
+	}
 }
 
-void draw_points(pixel_t *points, int n) {
+void draw_clusters(cluster_t* clusters, int n) {
 	int x, y;
 
 	for (y = 0; y < n; y++) {
 		for (x = 0; x < n; x++) {
-			draw_blob(&points[y*n + x]);
+			draw_blob(&clusters[y*n + x]);
 		}
 	}
 }
 
-void draw_grid(pixel_t *points, int n) {
+void draw_grid(cluster_t *clusters, int n) {
 	int x, y;
 
 	for (y = 0; y < n - 1; y++) {
 		for (x = 0; x < n - 1; x++) {
-			draw_line(&points[y*n + x], &points[y*n + x + 1]);
-			draw_line(&points[y*n + x], &points[(y + 1)*n + x]);
+			draw_line(&(clusters[y*n + x].center), &(clusters[y*n + x + 1].center));
+			draw_line(&(clusters[y*n + x].center), &(clusters[(y + 1)*n + x].center));
 		}
-		draw_line(&points[y*n + x], &points[(y + 1)*n + x]);
+		draw_line(&(clusters[y*n + x].center), &(clusters[(y + 1)*n + x].center));
 	}
 	for (x = 0; x < n - 1; x++) {
-		draw_line(&points[y*n + x], &points[y*n + x + 1]);
+		draw_line(&(clusters[y*n + x].center), &(clusters[y*n + x + 1].center));
 	}
 }
 
@@ -96,45 +97,53 @@ void draw_route(waypoint_t* route, int r, int g, int b, int with_blobs) {
 	aacircleRGBA(screen, t->point.x, t->point.y, 2, r, g, g, 255);
 }
 
-void squirl(pixel_t *points, int n) {
+void squirl(cluster_t *clusters, int n) {
 	int i, j;
 
-	for (i = 0; i < n; i++) {
-		for (j = 0; j < n; j++) {
-			float x = points[i*n + j].x;
-			float y = points[i*n + j].y;
+	for (i = 1; i < n-1; i++) {
+		for (j = 1; j < n-1; j++) {
+			float x = clusters[i*n + j].center.x;
+			float y = clusters[i*n + j].center.y;
 			float r = hypotf(x-GLOBALS.WIDTH / 2, y - GLOBALS.HEIGHT/2);
 			float phi = atan2f(y-GLOBALS.HEIGHT / 2, x - GLOBALS.WIDTH/2);
 			float angle = (1e-3 * r - 0.5);
 			phi += angle;
 			x = GLOBALS.WIDTH/2 + r*cos(phi);
 			y = GLOBALS.HEIGHT/2 + r * sin(phi);
-			points[i*n + j].x = x;
-			points[i*n + j].y = y;
+			clusters[i*n + j].center.x = x;
+			clusters[i*n + j].center.y = y;
 		}
 	}
 }
 
-void randomize(pixel_t *points, int n, float fac) {
-	int i;
+void randomize(cluster_t *clusters, int n, float fac) {
+	int i, j;
 
-	for (i = 0; i < n * n; i++) {
-		points[i].x += (((float) rand() / RAND_MAX) - 0.5) * 2 * fac;
-		points[i].y += (((float) rand() / RAND_MAX) - 0.5) * 2 * fac;
+	for (i = 1; i < n-1; i++) {
+		for (j = 1; j < n-1; j++) {
+			clusters[i*n + j].center.x += (((float) rand() / RAND_MAX) - 0.5) * 2 * fac;
+			clusters[i*n + j].center.y += (((float) rand() / RAND_MAX) - 0.5) * 2 * fac;
+		}
 	}
 }
 
-void set(pixel_t *points, int n) {
+void set(cluster_t *clusters, int n, float safety_radius) {
 	int x, y;
 
 	for (y = 0; y < n; y++) {
 		for (x = 0; x < n; x++) {
-			points[y*n + x].x = GLOBALS.WIDTH  * (x + 1) / (n + 1);
-			points[y*n + x].y = GLOBALS.HEIGHT * (y + 1) / (n + 1);
+			clusters[y*n + x].center.x = GLOBALS.WIDTH  * x / (n - 1);
+			clusters[y*n + x].center.y = GLOBALS.HEIGHT * y / (n - 1);
+			if(x == 0 || y == 0 || x == n-1 || y == n-1) {
+				// Not a real point, just used to extend the grid to the window size
+				clusters[y*n + x].safety_radius = 0;
+			} else {
+				clusters[y*n + x].safety_radius = (y*n+x)%5 ? safety_radius : safety_radius/2;
+			}
 		}
 	}
 
-	squirl(points, n);
+	squirl(clusters, n);
 }
 
 int main_loop() {
@@ -145,43 +154,47 @@ int main_loop() {
 	int view_waypoints = 1;
 	int view_smoothed = 1;
 	int view_json = 0;
+	int safety_radius = GLOBALS.HEIGHT / (n + 1) / 5;
 	float fac = GLOBALS.WIDTH / (n + 1) * 0.3;
 	SDL_Event e;
-	pixel_t *points;
-	pixel_t start = {0, 0};
-	pixel_t stop = {0, 0};
+	vector_t start = {0, 0};
+	vector_t stop = {0, 0};
 	waypoint_t* route1 = NULL;
 	waypoint_t* route1s = NULL;
 	waypoint_t* route2 = NULL;
 	waypoint_t* route2s = NULL;
+	waypoint_t* route3 = NULL;
+	waypoint_t* route3s = NULL;
 	char needJsonOutput = 0;
 
 	struct timeval t1, t2;
 	double elapsedTime;
 
-	points = (pixel_t *) malloc (sizeof(pixel_t) * n * n);
+	cluster_t* clusters = malloc (sizeof(cluster_t) * n * n);
 
-	set(points, n);
+	set(clusters, n, safety_radius);
 
 	while (!quit) {
 		safety_radius = GLOBALS.HEIGHT / (n + 1) / 5 ;
 		SDL_FillRect( SDL_GetVideoSurface(), NULL, 0 );
 		if (view_grid) {
-			draw_grid(points, n);
+			draw_grid(clusters, n);
 		}
 
 		if (view_points) {
-			draw_points(points, n);
+			draw_clusters(clusters, n);
 		}
 
 		if (view_waypoints) {
 			draw_route(route1, 0, 0, 255, 1);
-			draw_route(route2, 255, 0, 0, 1);
+			draw_route(route2, 0, 255, 0, 1);
+			draw_route(route3, 255, 0, 0, 1);
 		}
 
 		if (view_smoothed) {
 			draw_route(route1s, 0, 255, 255, 0);
-			draw_route(route2s, 255, 255, 0, 0);
+			draw_route(route2s, 128, 255, 128, 0);
+			draw_route(route3s, 255, 255, 0, 0);
 		}
 
 		if (start.x != 0 && start.y != 0) {
@@ -210,11 +223,19 @@ int main_loop() {
 						stop.y = e.button.y;
 						break;
 				}
+				if (start.x != 0 && start.y != 0) {
+					aacircleRGBA(screen, start.x, start.y, 2, 0, 255, 0, 255);
+				}
+
+				if (stop.x != 0 && stop.y != 0) {
+					aacircleRGBA(screen, stop.x, stop.y, 2, 255, 0, 0, 255);
+				}
+				SDL_Flip(screen);
 				if (start.x != 0 && start.y != 0 && stop.x != 0 && stop.y != 0) {
 					fprintf(stderr, "\n\nRoute from (%f,%f) to (%f,%f)\n", start.x, start.y, stop.x, stop.y);
 
 					gettimeofday(&t1, NULL);
-					route1 = plotCourse(&start, &stop, points, n);
+					route1 = plotCourse(&start, &stop, clusters, n);
 					gettimeofday(&t2, NULL);
 					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
 					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
@@ -228,14 +249,29 @@ int main_loop() {
 					fprintf(stderr, "smoth scanline based route took %f ms\n", elapsedTime);
 
 					gettimeofday(&t1, NULL);
-					route2 = plotCourse_gridbased(&start, &stop, points, n);
+					route2 = plotCourse_scanline_gridbased(&start, &stop, clusters, n);
+					gettimeofday(&t2, NULL);
+					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
+					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+					fprintf(stderr, "plotCourse scanline based gridbased took %f ms\n", elapsedTime);
+
+					gettimeofday(&t1, NULL);
+					route2s = smooth(route2, 5);
+					gettimeofday(&t2, NULL);
+					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
+					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+					fprintf(stderr, "smoth scanline based gridbased route took %f ms\n", elapsedTime);
+
+
+					gettimeofday(&t1, NULL);
+					route3 = plotCourse_gridbased(&start, &stop, clusters, n);
 					gettimeofday(&t2, NULL);
 					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
 					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
 					fprintf(stderr, "plotCourse gridline based took %f ms\n", elapsedTime);
 
 					gettimeofday(&t1, NULL);
-					route2s = smooth(route2, 5);
+					route3s = smooth(route3, 5);
 					gettimeofday(&t2, NULL);
 					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
 					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
@@ -266,39 +302,39 @@ int main_loop() {
 						needJsonOutput = view_json;
 						break;
 					case SDLK_r:
-						randomize(points, n, fac);
+						randomize(clusters, n, fac);
 						break;
 					case SDLK_BACKSPACE:
-						set(points, n);
+						set(clusters, n, safety_radius);
 						break;
 					case SDLK_q:
 						quit = 1;
 						break;
 					case SDLK_UP:
 						n++;
-						points = (pixel_t *) realloc (points, sizeof(pixel_t) * n * n);
+						clusters = realloc(clusters, sizeof(cluster_t) * n * n);
 						fac = GLOBALS.WIDTH / (n + 1) * 0.3;
-						set(points, n);
+						set(clusters, n, safety_radius);
 						break;
 					case SDLK_DOWN:
 						n--;
-						points = (pixel_t *) realloc (points, sizeof(pixel_t) * n * n);
+						clusters = realloc (clusters, sizeof(cluster_t) * n * n);
 						fac = GLOBALS.WIDTH / (n + 1) * 0.3;
-						set(points, n);
+						set(clusters, n, safety_radius);
 						break;
 					case SDLK_PLUS:
 					case SDLK_KP_PLUS:
 						fac *= 1.1;
 						fprintf(stderr, "fac: %f\n", fac);
-						set(points, n);
-						randomize(points, n, fac);
+						set(clusters, n, safety_radius);
+						randomize(clusters, n, fac);
 						break;
 					case SDLK_MINUS:
 					case SDLK_KP_MINUS:
 						fac /= 1.1;
 						fprintf(stderr, "fac: %f\n", fac);
-						set(points, n);
-						randomize(points, n, fac);
+						set(clusters, n, safety_radius);
+						randomize(clusters, n, fac);
 						break;
 					default:
 						needJsonOutput = 0;
@@ -315,11 +351,11 @@ int main_loop() {
 				break;
 		}
 		if(needJsonOutput) {
-			json_output(points, n*n);
+			json_output(clusters, n*n);
 		}
 	}
 
-	free(points);
+	free(clusters);
 
 	return 0;
 }
