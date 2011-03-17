@@ -2,7 +2,7 @@
 // Read JSON data
 $map_data = file_get_contents("map.json");
 if (!$map_data) {
-  die("Could not file!\n");
+  die("Could not read file!\n");
 }
 $map = json_decode($map_data, TRUE);
 if (!$map) {
