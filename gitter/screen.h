@@ -16,8 +16,8 @@ typedef struct {
 typedef struct wp_t waypoint_t;
 
 struct wp_t {
-        vector_t point;
-        waypoint_t* next;
+	vector_t point;
+	waypoint_t* next;
 };
 
 void sdl_init();

@@ -163,6 +163,8 @@ int main_loop() {
 	waypoint_t* route1s = NULL;
 	waypoint_t* route2 = NULL;
 	waypoint_t* route2s = NULL;
+	waypoint_t* route3 = NULL;
+	waypoint_t* route3s = NULL;
 	char needJsonOutput = 0;
 
 	struct timeval t1, t2;
@@ -185,12 +187,14 @@ int main_loop() {
 
 		if (view_waypoints) {
 			draw_route(route1, 0, 0, 255, 1);
-			draw_route(route2, 255, 0, 0, 1);
+			draw_route(route2, 0, 255, 0, 1);
+			draw_route(route3, 255, 0, 0, 1);
 		}
 
 		if (view_smoothed) {
 			draw_route(route1s, 0, 255, 255, 0);
-			draw_route(route2s, 255, 255, 0, 0);
+			draw_route(route2s, 128, 255, 128, 0);
+			draw_route(route3s, 255, 255, 0, 0);
 		}
 
 		if (start.x != 0 && start.y != 0) {
@@ -219,6 +223,14 @@ int main_loop() {
 						stop.y = e.button.y;
 						break;
 				}
+				if (start.x != 0 && start.y != 0) {
+					aacircleRGBA(screen, start.x, start.y, 2, 0, 255, 0, 255);
+				}
+
+				if (stop.x != 0 && stop.y != 0) {
+					aacircleRGBA(screen, stop.x, stop.y, 2, 255, 0, 0, 255);
+				}
+				SDL_Flip(screen);
 				if (start.x != 0 && start.y != 0 && stop.x != 0 && stop.y != 0) {
 					fprintf(stderr, "\n\nRoute from (%f,%f) to (%f,%f)\n", start.x, start.y, stop.x, stop.y);
 
@@ -237,14 +249,29 @@ int main_loop() {
 					fprintf(stderr, "smoth scanline based route took %f ms\n", elapsedTime);
 
 					gettimeofday(&t1, NULL);
-					route2 = plotCourse_gridbased(&start, &stop, clusters, n);
+					route2 = plotCourse_scanline_gridbased(&start, &stop, clusters, n);
+					gettimeofday(&t2, NULL);
+					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
+					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+					fprintf(stderr, "plotCourse scanline based gridbased took %f ms\n", elapsedTime);
+
+					gettimeofday(&t1, NULL);
+					route2s = smooth(route2, 5);
+					gettimeofday(&t2, NULL);
+					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
+					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+					fprintf(stderr, "smoth scanline based gridbased route took %f ms\n", elapsedTime);
+
+
+					gettimeofday(&t1, NULL);
+					route3 = plotCourse_gridbased(&start, &stop, clusters, n);
 					gettimeofday(&t2, NULL);
 					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
 					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
 					fprintf(stderr, "plotCourse gridline based took %f ms\n", elapsedTime);
 
 					gettimeofday(&t1, NULL);
-					route2s = smooth(route2, 5);
+					route3s = smooth(route3, 5);
 					gettimeofday(&t2, NULL);
 					elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;
 					elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;

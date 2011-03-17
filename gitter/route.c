@@ -51,77 +51,11 @@ waypoint_t* go_around(vector_t* A, vector_t* B, cluster_t* C, double r) {
 	return wp;
 }
 
-waypoint_t* route(vector_t* start, vector_t* stop, cluster_t* cluster, int n_points) {
-	int i;
-
-	int i_min = -1;
-	double r_min = 1;
-
-	for(i = 0; i < n_points; i++) {
-		double r = dividing_ratio(start, stop, &(cluster[i].center));
-		if (r > 0 && r < 1) {
-			double d = dist_to_line(start, stop, &(cluster[i].center));
-			if (fabs(d) < cluster[i].safety_radius) {
-				if(fabs(r-0.5) < fabs(r_min-0.5)) {
-					i_min = i;
-					r_min = r;
-				}
-			}
-		}
-	}
-
-	if(i_min >= 0) {
-		waypoint_t* wp = go_around(start, stop, &(cluster[i_min]), r_min);
-
-		waypoint_t* part1 = route(start, &(wp->point), cluster, n_points);
-		if(part1 == NULL) {
-			part1 = wp;
-		} else {
-			waypoint_t* t = part1;
-			while(t->next != NULL) {
-				t = t->next;
-			}
-			t->next = wp;
-		}
-		waypoint_t* part2 = route(&(wp->point), stop, cluster, n_points);
-		if(part2 != 0) {
-			waypoint_t* t = part1;
-			while(t->next != NULL) {
-				t = t->next;
-			}
-			t->next = part2;
-		}
-		return part1;
-	} else {
-		return NULL;
-	}
-}
-
-waypoint_t* plotCourse(vector_t* start, vector_t* stop, cluster_t* cluster, int n) {
-	int n_points = n*n;
-	waypoint_t* wp_start = malloc(sizeof(waypoint_t));
-	waypoint_t* wp_stop = malloc(sizeof(waypoint_t));
-	wp_start->point.x = start->x;
-	wp_start->point.y = start->y;
-	wp_stop->point.x = stop->x;
-	wp_stop->point.y = stop->y;
-	wp_start->next = route(start, stop, cluster, n_points);
-	wp_stop->next = NULL;
-	waypoint_t* t = wp_start;
-
-	while (t->next != NULL) {
-		t = t->next;
-	}
-
-	t->next = wp_stop;
-	return wp_start;
-}
-
-void get_surrounding_points(vector_t *surrounding_points, cluster_t *clusters, int n, int face_x, int face_y) {
-	surrounding_points[0] = clusters[(face_y - 1) * n + (face_x - 1)].center;
-	surrounding_points[1] = clusters[(face_y) * n + (face_x - 1)].center;
-	surrounding_points[2] = clusters[(face_y) * n + (face_x)].center;
-	surrounding_points[3] = clusters[(face_y - 1) * n + (face_x)].center;
+void get_surrounding_points(cluster_t **surrounding_points, cluster_t* clusters, int n, int face_x, int face_y) {
+	surrounding_points[0] = &(clusters[(face_y - 1) * n + (face_x - 1)]);
+	surrounding_points[1] = &(clusters[(face_y) * n + (face_x - 1)]);
+	surrounding_points[2] = &(clusters[(face_y) * n + (face_x)]);
+	surrounding_points[3] = &(clusters[(face_y - 1) * n + (face_x)]);
 }
 
 int get_line_intersection(vector_t *P0, vector_t *P1, vector_t *P2, vector_t *P3, vector_t *result)
@@ -148,24 +82,24 @@ int get_line_intersection(vector_t *P0, vector_t *P1, vector_t *P2, vector_t *P3
 	return 0;
 }
 
-void find_face(vector_t *p, cluster_t *cluster, int n, int *x, int *y) {
+void find_face(vector_t *p, cluster_t *clusters, int n, int *x, int *y) {
 	int face_x = p->x / (GLOBALS.WIDTH / (n + 1));
 	int face_y = p->y / (GLOBALS.HEIGHT / (n + 1));
 	int edge;
 	int retry = 1;
 	int count = 0;
 
-	vector_t surrounding[4];
+	cluster_t *surrounding[4];
 
 	while (retry && count < 4) {
 		retry = 0;
-		get_surrounding_points(surrounding, cluster, n, face_x, face_y);
+		get_surrounding_points(surrounding, clusters, n, face_x, face_y);
 
 		for (edge = 0; edge < 4; edge++) {
-			double r = dist_to_line(surrounding + edge, surrounding + (edge + 1) % 4, p);
+			double r = dist_to_line(&(surrounding[edge]->center), &(surrounding[(edge + 1) % 4]->center), p);
 			if (r > 0) {
 
-				fprintf(stderr, "edge: %d, r %f, x %d, y %d\n", edge, r, face_x, face_y);
+				//fprintf(stderr, "edge: %d, r %f, x %d, y %d\n", edge, r, face_x, face_y);
 				retry = 1;
 				count++;
 
@@ -192,6 +126,184 @@ void find_face(vector_t *p, cluster_t *cluster, int n, int *x, int *y) {
 	*x = face_x;
 	*y = face_y;
 
+}
+
+waypoint_t* route_scanline_gridbased(vector_t* start, vector_t* stop, cluster_t* clusters, int n) {
+	static int called = 0;
+	int i = -1;
+	int last_edge = -1;
+	int face_x, face_y, face_stop_x, face_stop_y; //should be passed as argument
+
+	cluster_t *min = NULL;
+	double r_min = 1;
+
+
+	find_face(start, clusters, n, &face_x, &face_y);
+	find_face(stop, clusters, n, &face_stop_x, &face_stop_y);
+
+	called++;
+
+	//fprintf(stderr, "going from (%.1f, %.1f) to (%.1f, %.1f)\n", start->x, start->y, stop->x, stop->y);
+	while (min == NULL && (face_x != face_stop_x || face_y != face_stop_y)) {
+		//printf("x %d y %d sx %d sy %d called: %d i: %d\n", face_x, face_y, face_stop_x, face_stop_y, called, i);
+		//getchar();
+		cluster_t *surrounding[4];
+		get_surrounding_points(surrounding, clusters, n, face_x, face_y);
+
+		for (i = 0; i < 4; i++) {
+			double r = dividing_ratio(start, stop, &(surrounding[i]->center));
+			if (r > 0 && r < 1) {
+				double d = dist_to_line(start, stop, &(surrounding[i]->center));
+				if (fabs(d) < surrounding[i]->safety_radius) {
+					min = surrounding[i];
+					r_min = r;
+					break;
+				}
+			}
+		}
+
+		if (min == NULL) {
+			for (i = 0; i < 4; i++) {
+				if (i == last_edge) {
+					continue;
+				}
+
+				if (get_line_intersection(&(surrounding[i]->center), &(surrounding[(i + 1)%4]->center), start, stop, NULL)) {
+					break;
+				}
+			}
+
+			switch (i) {
+				case 0 :
+					face_x--;
+					break;
+				case 1 :
+					face_y++;
+					break;
+				case 2 :
+					face_x++;
+					break;
+				case 3 :
+					face_y--;
+					break;
+				default:
+					break;
+			}
+
+			last_edge = (i + 2) % 4;
+		}
+	}
+
+	if(min != NULL) {
+		waypoint_t* wp = go_around(start, stop, min, r_min);
+
+		waypoint_t* part1 = route_scanline_gridbased(start, &(wp->point), clusters, n);
+		if(part1 == NULL) {
+			part1 = wp;
+		} else {
+			waypoint_t* t = part1;
+			while(t->next != NULL) {
+				t = t->next;
+			}
+			t->next = wp;
+		}
+		waypoint_t* part2 = route_scanline_gridbased(&(wp->point), stop, clusters, n);
+		if(part2 != 0) {
+			waypoint_t* t = part1;
+			while(t->next != NULL) {
+				t = t->next;
+			}
+			t->next = part2;
+		}
+		return part1;
+	} else {
+		return NULL;
+	}
+}
+
+waypoint_t* route(vector_t* start, vector_t* stop, cluster_t* clusters, int n_points) {
+	int i;
+
+	int i_min = -1;
+	double r_min = 1;
+
+	for(i = 0; i < n_points; i++) {
+		double r = dividing_ratio(start, stop, &(clusters[i].center));
+		if (r > 0 && r < 1) {
+			double d = dist_to_line(start, stop, &(clusters[i].center));
+			if (fabs(d) < clusters[i].safety_radius) {
+				if(fabs(r-0.5) < fabs(r_min-0.5)) {
+					i_min = i;
+					r_min = r;
+				}
+			}
+		}
+	}
+
+	if(i_min >= 0) {
+		waypoint_t* wp = go_around(start, stop, &(clusters[i_min]), r_min);
+
+		waypoint_t* part1 = route(start, &(wp->point), clusters, n_points);
+		if(part1 == NULL) {
+			part1 = wp;
+		} else {
+			waypoint_t* t = part1;
+			while(t->next != NULL) {
+				t = t->next;
+			}
+			t->next = wp;
+		}
+		waypoint_t* part2 = route(&(wp->point), stop, clusters, n_points);
+		if(part2 != 0) {
+			waypoint_t* t = part1;
+			while(t->next != NULL) {
+				t = t->next;
+			}
+			t->next = part2;
+		}
+		return part1;
+	} else {
+		return NULL;
+	}
+}
+
+waypoint_t* plotCourse_scanline_gridbased(vector_t* start, vector_t* stop, cluster_t* clusters, int n) {
+	//int n_points = n*n;
+	waypoint_t* wp_start = malloc(sizeof(waypoint_t));
+	waypoint_t* wp_stop = malloc(sizeof(waypoint_t));
+	wp_start->point.x = start->x;
+	wp_start->point.y = start->y;
+	wp_stop->point.x = stop->x;
+	wp_stop->point.y = stop->y;
+	wp_start->next = route_scanline_gridbased(start, stop, clusters, n);
+	wp_stop->next = NULL;
+	waypoint_t* t = wp_start;
+
+	while (t->next != NULL) {
+		t = t->next;
+	}
+
+	t->next = wp_stop;
+	return wp_start;
+}
+
+waypoint_t* plotCourse(vector_t* start, vector_t* stop, cluster_t* clusters, int n) {
+	waypoint_t* wp_start = malloc(sizeof(waypoint_t));
+	waypoint_t* wp_stop = malloc(sizeof(waypoint_t));
+	wp_start->point.x = start->x;
+	wp_start->point.y = start->y;
+	wp_stop->point.x = stop->x;
+	wp_stop->point.y = stop->y;
+	wp_start->next = route(start, stop, clusters, n * n);
+	wp_stop->next = NULL;
+	waypoint_t* t = wp_start;
+
+	while (t->next != NULL) {
+		t = t->next;
+	}
+
+	t->next = wp_stop;
+	return wp_start;
 }
 
 waypoint_t *smooth(waypoint_t *way, int res) {
@@ -253,7 +365,7 @@ waypoint_t *smooth(waypoint_t *way, int res) {
 			working = working->next;
 			working->point = s;
 		}
-		
+
 		working->next = end;
 		end = end->next;
 	}
@@ -261,14 +373,14 @@ waypoint_t *smooth(waypoint_t *way, int res) {
 	return working_start;
 }
 
-waypoint_t* plotCourse_gridbased(vector_t *start, vector_t *stop, cluster_t *cluster, int n) {
+waypoint_t* plotCourse_gridbased(vector_t *start, vector_t *stop, cluster_t *clusters, int n) {
 	int face_x, face_y, face_s_x, face_s_y;
 	int edge;
 	int last_edge = -1;
 
-	find_face(start, cluster, n, &face_x, &face_y);
-	find_face(stop, cluster, n, &face_s_x, &face_s_y);
-	vector_t surrounding[4];
+	find_face(start, clusters, n, &face_x, &face_y);
+	find_face(stop, clusters, n, &face_s_x, &face_s_y);
+	cluster_t *surrounding[4];
 	waypoint_t *wp_start = malloc (sizeof(waypoint_t));
 	wp_start->point = *start;
 	wp_start->next  = NULL;
@@ -277,15 +389,15 @@ waypoint_t* plotCourse_gridbased(vector_t *start, vector_t *stop, cluster_t *clu
 
 	while (face_x != face_s_x || face_y != face_s_y) {
 		vector_t c;
-		get_surrounding_points(surrounding, cluster, n, face_x, face_y);
+		get_surrounding_points(surrounding, clusters, n, face_x, face_y);
 
 		for (edge = 0; edge < 4; edge++) {
 			if (edge == last_edge) continue;
 			c = working->point;
 
-			if (get_line_intersection(surrounding + edge, surrounding + (edge + 1)%4, &c, stop, NULL)) {
-				c.x = (surrounding[edge].x + surrounding[(edge + 1) % 4].x) / 2;
-				c.y = (surrounding[edge].y + surrounding[(edge + 1) % 4].y) / 2;
+			if (get_line_intersection(&(surrounding[edge]->center), &(surrounding[(edge + 1)%4]->center), &c, stop, NULL)) {
+				c.x = (surrounding[edge]->center.x + surrounding[(edge + 1) % 4]->center.x) / 2;
+				c.y = (surrounding[edge]->center.y + surrounding[(edge + 1) % 4]->center.y) / 2;
 				break;
 			}
 		}
