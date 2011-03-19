@@ -106,7 +106,7 @@ void squirl(cluster_t *clusters, int n) {
 			float y = clusters[i*n + j].center.y;
 			float r = hypotf(x-GLOBALS.WIDTH / 2, y - GLOBALS.HEIGHT/2);
 			float phi = atan2f(y-GLOBALS.HEIGHT / 2, x - GLOBALS.WIDTH/2);
-			float angle = (1e-3 * r - 0.5);
+			float angle = (8e-4 * r - 0.35);
 			phi += angle;
 			x = GLOBALS.WIDTH/2 + r*cos(phi);
 			y = GLOBALS.HEIGHT/2 + r * sin(phi);
@@ -157,8 +157,8 @@ int main_loop() {
 	int safety_radius = GLOBALS.HEIGHT / (n + 1) / 5;
 	float fac = GLOBALS.WIDTH / (n + 1) * 0.3;
 	SDL_Event e;
-	vector_t start = {0, 0};
-	vector_t stop = {0, 0};
+	vector_t start = {{0, 0}};
+	vector_t stop = {{0, 0}};
 	waypoint_t* route1 = NULL;
 	waypoint_t* route1s = NULL;
 	waypoint_t* route2 = NULL;

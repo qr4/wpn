@@ -3,9 +3,18 @@
 
 #include "globals.h"
 
-typedef struct {
-	float x;
-	float y;
+#ifdef __SSE__
+#include <x86intrin.h>
+#endif
+
+typedef double v2d __attribute__ ((vector_size (16)));
+
+typedef union {
+	v2d v;
+	struct {
+		double x;
+		double y;
+	};
 } vector_t;
 
 typedef struct {
