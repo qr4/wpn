@@ -1,3 +1,10 @@
+//
+// das hier hat twist verbrochen :-)
+//
+// twist@nerd2nerd.org
+//
+//
+
 #include <stdio.h>
 #include <unistd.h>
 
@@ -7,19 +14,6 @@
 #include <sys/wait.h>
 
 #include <stdlib.h>
-
-#if 0
-
-#include <errno.h>
-#include <sys/socket.h>
-#include <resolv.h>
-#include <strings.h>
-
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
-#endif
-
 #include <string.h>
 
 #include <netdb.h>
