@@ -58,7 +58,7 @@ void json_output(cluster_t* planets, int n_planets) {
 			for(j = 0; j < i%7; j++) {
 				contents[j] = 'R';
 			}
-			printf("      {\"id\":%d, \"x\": %f, \"y\": %f, \"contents\": %s}%s\n", i+1, planets[i].center.x, planets[i].center.y, contents, asteroidseen < asteroidmax-1 ? "," : "");
+			printf("      {\"id\":%d, \"x\": %f, \"y\": %f, \"contents\": \"%s\"}%s\n", i+1, planets[i].center.x, planets[i].center.y, contents, asteroidseen < asteroidmax-1 ? "," : "");
 			asteroidseen++;
 		}
 	}
