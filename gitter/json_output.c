@@ -5,7 +5,7 @@
 #include "json_output.h"
 
 void json_output(cluster_t* planets, int n_planets) {
-	int i;
+	int i, j;
 
 	float asteroidradius = 0;
 	float planetradius = 0;
@@ -54,7 +54,11 @@ void json_output(cluster_t* planets, int n_planets) {
 	printf("    \"asteroids\": [\n");
 	for(i = 0; i < n_planets-1; i++) {
 		if(planets[i].safety_radius >= asteroidradius && planets[i].safety_radius < planetradius) {
-			printf("      {\"id\":%d, \"x\": %f, \"y\": %f, \"owner\": null}%s\n", i+1, planets[i].center.x, planets[i].center.y, asteroidseen < asteroidmax-1 ? "," : "");
+			char contents[8] = "       ";
+			for(j = 0; j < i%7; j++) {
+				contents[j] = 'R';
+			}
+			printf("      {\"id\":%d, \"x\": %f, \"y\": %f, \"contents\": %s}%s\n", i+1, planets[i].center.x, planets[i].center.y, contents, asteroidseen < asteroidmax-1 ? "," : "");
 			asteroidseen++;
 		}
 	}
