@@ -1,8 +1,8 @@
 CC = gcc
-FLAGS = -Wall -g3 -O2 -march=native -mtune=native
+FLAGS = -Wall -g3 -O2 -march=native -mtune=native -pipe
 CLIBS =
 LDFLAGS = -lm 
-OBJ = main.o 
+OBJ = main.o entities.o vector.o
 
 main: $(OBJ)
 	$(CC) $(FLAGS) $(LDFLAGS) -o $@ $(OBJ) 
@@ -15,4 +15,4 @@ main: $(OBJ)
 
 .PHONY : clean
 clean:
-	rm -f *.o main
+	rm -f *.s *.o main

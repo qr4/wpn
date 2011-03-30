@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "vector.h"
 #include "entities.h"
@@ -7,32 +8,40 @@
 	printf("sizeof(%-14s) = %4lu\n", #TYPE, sizeof(TYPE));
 
 int main(int argc, char *argv[]) {
-	print_sizeof(type_t);
+	vector_t v1 = vector(5);
+	vector_t v2 = vector(0);
+	v2.x = 5;
+	v1.v += v2.v;
+
+	printf("v1 x: %f, y: %f\n", v1.x, v1.y);
+	printf("v2 x: %f, y: %f\n", v2.x, v2.y);
+	printf("dist(v1, v2): %f\n", vector_dist(&v1, &v2));
+	print_sizeof(vector_t);
 	print_sizeof(entity_t);
 
-	printf("\nShips:\n");
+	printf("\n\n");
 
-	print_sizeof(SHIP_S_t);
-	print_sizeof(SHIP_M_t);
-	print_sizeof(SHIP_L_t);
-	print_sizeof(SHIP_XL_t);
-	print_sizeof(SHIP_XXL_t);
+	entity_t ship1, asteroid1;
+	ship1.type.slots = 3;
+	ship1.type.ship = 1;
+	ship1.radius = 1;
+	ship1.pos = vector(0);            // set both x and y position to 0
+	ship1.v.v = (v2d)       {10, 0};  // set x speed to 10, y speed to 0
+	ship1.v   = (vector_t) {{10, 0}}; // this is equivalent
 
-	printf("\nPlanets:\n");
+	asteroid1.type.slots = 4;
+	asteroid1.type.asteroid = 1;
+	asteroid1.radius = 0.5;
+	asteroid1.pos.x = 5;
+	asteroid1.pos.y = 2;
 
-	print_sizeof(PLANET_S_t);
-	print_sizeof(PLANET_M_t);
-	print_sizeof(PLANET_L_t);
-	print_sizeof(PLANET_XL_t);
-	print_sizeof(PLANET_XXL_t);
+	int i;
+	for (i = 0; i < 20; i++) {
+		printf("ship x: %.2f, y: %.2f; collision_distance(ship, asteroid): %.2f\n", ship1.pos.x, ship1.pos.y, collision_dist(&ship1, &asteroid1));
+		move_ship(&ship1);            // move the ship one physicstep further
+	}
 
-	printf("\nAsteroids:\n");
+	printf("ship x: %.2f, y: %.2f\n", ship1.pos.x, ship1.pos.y);
 
-	print_sizeof(ASTEROID_S_t);
-	print_sizeof(ASTEROID_M_t);
-	print_sizeof(ASTEROID_L_t);
-	print_sizeof(ASTEROID_XL_t);
-	print_sizeof(ASTEROID_XXL_t);
-	return 0;
-	return 0;
+	return EXIT_SUCCESS;
 }
