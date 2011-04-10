@@ -1,5 +1,7 @@
 
-
+// 
+// code by twist<at>nerd2nerd.org
+//
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -12,20 +14,16 @@
 #include <strings.h>
 #include <errno.h>
 
-
 // shm_open
 #include <sys/mman.h>
 #include <sys/stat.h>        /* For mode constants */
 #include <fcntl.h>           /* For O_* constants */
 
-// 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-
 #include <arpa/inet.h>
 
-#include "../logging/logging.h"
+#include <logging.h>
+
+#include "network.h"
 
 #include "net.h"
 
@@ -35,15 +33,10 @@
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
 #define MAX(a, b)  (((a) > (b)) ? (a) : (b))
 
-// get sockaddr, IPv4 or IPv6:
-void *get_in_addr(struct sockaddr *sa)
-{
-  if (sa->sa_family == AF_INET) {
-    return &(((struct sockaddr_in*)sa)->sin_addr);
-  }
-  return &(((struct sockaddr_in6*)sa)->sin6_addr);
-}
-
+// achtung: NET_MAP muss mit _a enden, da a hochgezaehlt wird bis z
+#define NET_MAP "/wpn_map_a"
+// achtung: NET_UPDATE muss mit _A enden, da A hochgezaehlt wird biw Z
+#define NET_UPDATE "/wpn_update_A"
 
 struct net_map_info net;
 
@@ -55,31 +48,63 @@ int map_printf(const char *fmt, ...) {
   va_list ap;
   int ret;
   va_start(ap, fmt);
-  ret = vdprintf(net.map_fd[net.current_map], fmt, ap);
+  ret = vdprintf(net.map_fd, fmt, ap);
   va_end(ap);
   return ret;
 }
 
 void map_flush() {
-  close(net.map_fd[net.current_map]);
-  net.current_map = 1 - net.current_map;
-  
-  int fd = shm_open(net.current_map == 0 ? "/wpn_map0" : "/wpn_map1", O_CREAT | O_RDWR, 0700);
-  if (fd == -1) { log_perror("shm_open"); exit(EXIT_FAILURE); }
+  char map[] = NET_MAP;
+  char now[] = { 'a' + net.current_map };
 
-  net.map_fd[net.current_map] = fd;
+  close(net.map_fd);   // fertig mit der map
 
-  write(net.pipefd[1], net.current_map == 0 ? "a" : "b", 1);
+  write(net.pipefd[1], now, sizeof(now));  //  client benachrichtigen
+
+  net.current_map = (net.current_map + 1) % ('z' - 'a' + 1);  // auf die naechste zeigen
+  now[0] = 'a' + net.current_map;
+  map[sizeof(map) - 2] = now[0];
+
+  net.map_fd = shm_open(map, O_CREAT | O_EXCL | O_RDWR, 0700);
+  if (net.map_fd == -1) {
+    if (errno == EEXIST) {
+      log_perror("client konsumiert meine maps nicht schnell genug -- ABBRUCH");
+    }
+    log_perror("shm_open");
+    exit(EXIT_FAILURE); 
+  }
 }
 
 int update_printf(const char *fmt, ...) {
   va_list ap;
+  int ret;
   va_start(ap, fmt);
-  vprintf(fmt, ap);
+  ret = vdprintf(net.update_fd, fmt, ap);
   va_end(ap);
+  return ret;
 }
 
-void updated_flush() {}
+void update_flush() {
+  char update[] = NET_UPDATE;
+  char now[] = { 'A' + net.current_update };
+
+  close(net.update_fd);
+
+  write(net.pipefd[1], now, sizeof(now));
+
+  net.current_update = (net.current_update + 1) % ('Z' - 'A' + 1);
+  now[0] = 'A' + net.current_update;
+  update[sizeof(update) - 2] = now[0];
+
+  net.update_fd = shm_open(update, O_CREAT | O_EXCL | O_RDWR, 0700);
+  if (net.update_fd == -1) {
+    if (errno == EEXIST) {
+      log_perror("client konsumiert meine updates nicht schnell genug -- ABBRUCH");
+    }
+    log_perror("shm_open"); 
+    exit(EXIT_FAILURE); 
+  }
+}
 
 
 
@@ -87,88 +112,10 @@ void updated_flush() {}
 // ---------------------- internes zeux
 //
 
-int net_bind(char* port) {
-  int listener;     // listening socket descriptor
-  int yes = 1;      // for setsockopt() SO_REUSEADDR
-  int rv;
-
-  struct addrinfo hints, *ai, *p;
-
-  // get us a socket and bind it
-  memset(&hints, 0, sizeof(hints));
-  hints.ai_family = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_PASSIVE;
-  if ((rv = getaddrinfo(NULL, port, &hints, &ai)) != 0) {
-    log_msg("getaddrinfo %s", gai_strerror(rv));
-    goto err;
-  }
-
-  for(p = ai; p != NULL; p = p->ai_next) {
-    listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-    if (listener < 0) { 
-      continue;
-    }
-
-    // lose the pesky "address already in use" error message
-    setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-
-    if (bind(listener, p->ai_addr, p->ai_addrlen) < 0) {
-      close(listener);
-      continue;
-    }
-
-    break;
-  }
-
-  // if we got here, it means we didn't get bound
-  if (p == NULL) {
-    log_msg("failed to bind server - alles belegt???");
-    goto err;
-  }
-
-  // listen
-  if (listen(listener, MAX_CONNECTION) == -1) {
-    log_perror("listen");
-    close(listener);
-    goto err;
-  }
-
-  freeaddrinfo(ai); // all done with this
-    
-  return listener;
-  
-err:
-  freeaddrinfo(ai); // all done with this
-  return -1;
-}
-
-
-
-void net_timer() {
-  log_msg("timer hat zugeschlagen!!!");
-}
-
-int net_pipe(int fd) {
-  char buffer[128];
-  ssize_t len;
-  len = read(fd, buffer, sizeof(buffer));
-  if (len == -1) { log_perror("read"); exit(EXIT_FAILURE); }
-  
-  if (len == 0) {
-    log_msg("keine verbindung zum vater - kann socket read hat laenge 0");
-    return -1;
-  }
-
-  log_msg("neue sachen zum verteilen (%.*s)...", len, buffer);
-
-  fprintf(stderr, "pipe talk: notify all clients\n");
-
-  return 0;
-}
-
-void net_client_connect(int fd, fd_set* master, int* fdmax) {
-
+//
+// neue verbindung wurde aufgebaut
+//
+void net_client_connect(int fd, fd_set* master, int* fdmax, struct timeval* tv) {
   struct sockaddr_storage remoteaddr;
   socklen_t addrlen = sizeof(remoteaddr);
   int newfd = accept(fd, (struct sockaddr *)&remoteaddr, &addrlen);
@@ -193,12 +140,28 @@ void net_client_connect(int fd, fd_set* master, int* fdmax) {
   log_msg("<%d> new connection from %s",
     newfd,
     inet_ntop(remoteaddr.ss_family, get_in_addr((struct sockaddr*)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
+
+  net.nc[newfd].data_fd = dup(net.map_fd);
+  if (net.nc[newfd].data_fd == -1) {
+    log_perror("dup");
+    close(newfd);
+    return;
+  }
+
+  net.nc[newfd].status = NETCS_NEW_CONNECTED;
+  net.nc[newfd].pos = 0;
+
+  // die neue connection gleich mit sachen versorgen lassen
+  tv->tv_sec = 0;
+  tv->tv_usec = 0;
 }
 
+//
+// client sagt irgendwas - das interessiert uns aber nicht
+// und wird deshalb nur weggeloggt
+//
 void net_client_talk(int fd, fd_set* master) {
-
   char buffer[512];
-  // ssize_t len = read(fd, buffer, sizeof(buffer));
   ssize_t len = recv(fd, buffer, sizeof(buffer), 0);
 
   if (len == 0) {
@@ -206,56 +169,168 @@ void net_client_talk(int fd, fd_set* master) {
     log_msg("<%d> client hang up", fd);
     close(fd);
     FD_CLR(fd, master);
+
+    net.nc[fd].status = NETCS_NOT_CONNECTED;
+    close(net.nc[fd].data_fd);
     return;
   }
 
   log_msg("<%d> client sagt >%.*s<", fd, len, buffer);
 }
 
+//
+// timeout - verwenden um langsamen clients neue daten reinzudruecken
+//
+void net_timer(struct timeval* tv) {
+  log_msg("timer hat zugeschlagen!!!");
+  int haveMoreWork = 0;
+  for (int fd = 0; fd < MAX_CONNECTION; ++fd) {
+    switch(net.nc[fd].status) {
+      case NETCS_NEW_CONNECTED:
+      {
+        log_msg("-------------------------------------");
+        struct stat st;
+        int ret = fstat(net.nc[fd].data_fd, &st);
+        if (ret == -1) { log_perror("fstat"); break; }
+
+        log_msg("fd = %d, size = %d", net.nc[fd].data_fd, st.st_size);
+
+        char* data = mmap(0, st.st_size, PROT_READ, MAP_PRIVATE, net.nc[fd].data_fd, 0);
+        if (data == (char*)-1) { log_perror("mmap"); break; }
+
+        ssize_t len = write(fd, data + net.nc[fd].pos, st.st_size - net.nc[fd].pos);
+        if (len == -1) {log_perror("write"); break; }
+
+        net.nc[fd].pos += len;
+
+        if (munmap(data, st.st_size) == -1) { log_perror("munmap"); break; }
+
+        if (len == st.st_size) {
+          close(net.nc[fd].data_fd);
+          net.nc[fd].status = NETCS_ACCEPT_UPDATE;
+        } else {
+          haveMoreWork = 1;
+        }
+
+        break;
+      } while(0);
+      case NETCS_ACCEPT_UPDATE:
+      {
+        log_msg("-------------------------------------");
+        struct stat st;
+        int ret = fstat(net.nc[fd].data_fd, &st);
+
+      } while(0);
+    }
+  }
+
+  if (haveMoreWork) {
+    // wenn nicht alles verschickt werden konnte, dann probieren wir es in 10ms noch einmal
+    tv->tv_sec = 0;
+    tv->tv_usec = 1000 * 10;
+  } else {
+    // alle sind glücklich und haben ihre daten -> in 5 sek wieder vorbei schauen
+    tv->tv_sec = 5;
+    tv->tv_usec = 0;
+  }
+
+  log_msg("");
+}
+
+//
+// es stehen neue daten zum verteilen an
+//
+int net_pipe(int fd, struct timeval* tv) {
+  char buffer[128];
+  ssize_t len;
+  len = read(fd, buffer, sizeof(buffer));
+  if (len == -1) { log_perror("read"); return -1; }
+  
+  if (len == 0) {
+    log_msg("keine verbindung zum vater");
+    return -1;
+  }
+
+  log_msg("neue sachen zum verteilen (%.*s)...", len, buffer);
+
+  char map[] = NET_MAP;
+  char update[] = NET_UPDATE;
+
+  for (ssize_t i = 0; i < len; ++i) {
+    if ('a' <= buffer[i] && buffer[i] <= 'z') {
+      // new map
+      char map[] = NET_MAP;
+      map[sizeof(map) - 2] = buffer[i];
+
+      int map_fd = shm_open(map, O_RDONLY, 0700);
+      if (map_fd == -1) { log_perror("shm_open"); continue; } // TODO sollten wir hier nicht lieber abbrechen?
+
+      // map aus /dev/tmpfs löschen - wir haben ja noch den fd
+      if (shm_unlink(map) == -1) { log_perror("shm_unlink"); /* das knallt dann spaeter */ } 
+
+      if (net.map_fd != -1)
+        if (close(net.map_fd) == -1) { log_perror("close"); }
+
+      net.map_fd = map_fd;
+    } else if ('A' <= buffer[i] && buffer[i] <= 'Z') {
+      // new update
+      char update[] = NET_UPDATE;
+      update[sizeof(update) - 2] = buffer[i];
+
+      int update_fd = shm_open(update, O_RDONLY, 0700);
+      if (update_fd == -1) { log_perror("shm_open"); continue; } // TODO sollten wir hier nicht lieber abbrechen?
+
+      // update aus /dev/tmpfs löschen - wir haben ja den fd
+      if (shm_unlink(update) == -1) { log_perror("shm_unlink"); /* das knallt dann spaeter */ }
+
+      if (net.update_fd != -1) 
+        if (close(net.update_fd) == -1) { log_perror("close"); }
+
+      net.update_fd = update_fd;
+    }
+  }
+
+  // daten weitergeben
+  tv->tv_sec = 0;
+  tv->tv_usec = 0;
+
+  return 0;
+}
 
 
 void net_client_loop(int pipe_fd, int net_fd) {
   fd_set rfds, rfds_tmp;
-  struct timeval tv;
+  struct timeval tv = {5, 0};
   int ret;
  
   FD_ZERO(&rfds);
   FD_SET(pipe_fd, &rfds);
   FD_SET(net_fd, &rfds);
-  
+
   int max_fd = MAX(pipe_fd, net_fd);
 
   for(;;) {
-
-    tv.tv_sec = 5;
-    tv.tv_usec = 0;
-
     rfds_tmp = rfds;
     ret = select(max_fd + 1, &rfds_tmp, NULL, NULL, &tv);
-
-    fprintf(stderr, "-------------------------\n");
 
     if (ret == -1) { log_perror("select"); exit(EXIT_FAILURE); }
 
     if (ret == 0) {
-      net_timer();
+      net_timer(&tv);
     } else {
-      for (int fd = 0; fd <= max_fd; ++fd) {
+      int max_fd_tmp = max_fd;  // brauchen wir, da sich max_fd durch client-connects ändern kann
+      for (int fd = 0; fd <= max_fd_tmp; ++fd) {
         if (FD_ISSET(fd, &rfds_tmp)) {
           if (fd == pipe_fd) {
-            ret = net_pipe(fd);
-            fprintf(stderr, "pipe gelesen: %d\n", ret);
-            if (ret == -1) { return; } // return on closed pipe
+            ret = net_pipe(fd, &tv);
+            if (ret == -1) { return; } // papa-pipe redet nicht mehr mit uns
           } else if (fd == net_fd) {
             // client connect
-            net_client_connect(net_fd, &rfds, &max_fd);
-            fprintf(stderr, "net_client_connect ferig... max_fd = %d\n", max_fd);
+            net_client_connect(net_fd, &rfds, &max_fd, &tv);
           } else {
-            // client sagt irgendwas...
+            // client sagt irgendwas... wegloggen und gut
             net_client_talk(fd, &rfds);
-            fprintf(stderr, "net_client_talk fertig...\n");
           }
-          break;
         } // FD_SET
       } // for
     } // else
@@ -267,14 +342,11 @@ void net_init() {
   if (pipe(net.pipefd) == -1) { log_perror("pipe"); exit(EXIT_FAILURE); }
 
   net.ppid = getpid();
-
   net.current_map = 0;
-  int fd = shm_open("/wpn_map0", O_CREAT | O_RDWR, 0700);
-  if (fd == -1) { log_perror("shm_open"); exit(EXIT_FAILURE); }
+  net.current_update = 0;
 
-  net.map_fd[net.current_map] = fd;
-
-  if ((net.cpid = fork()) == -1) { log_perror("fork"); exit(EXIT_FAILURE); }
+  net.cpid = fork();
+  if (net.cpid == -1) { log_perror("fork"); exit(EXIT_FAILURE); }
 
   if (net.cpid == 0) {
     // wir sind der client
@@ -283,18 +355,53 @@ void net_init() {
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
 //    close(STDERR_FILENO);
-    close(net.pipefd[1]);
+    close(net.pipefd[1]);   // lesen reicht
 
-    int listener = net_bind(PORT);
+    net.map_fd = -1;
+    net.update_fd = -1;
+
+    net.nc = (struct net_client*)malloc(MAX_CONNECTION * sizeof(struct net_client));
+    if (net.nc == NULL) { log_msg("malloc net_client == NULL: kein platz"); exit(EXIT_FAILURE); }
+    for (int i = 0; i < MAX_CONNECTION; ++i) {
+      net.nc[i].status = NETCS_NOT_CONNECTED;
+    }
+
+    int listener = network_bind(PORT, MAX_CONNECTION);
     if (listener == -1) { log_msg("kann auf port "PORT" nicht binden... exit"); exit(EXIT_FAILURE); }
 
-    net_client_loop(net.pipefd[0], listener);
+   net_client_loop(net.pipefd[0], listener);
 
     close(net.pipefd[0]);
+    log_msg("client exit");
     _exit(EXIT_SUCCESS);
   }
 
-  close(net.pipefd[0]);
+  // wir sind der papa!
+  close(net.pipefd[0]); // schreiben reicht!
+
+  // leftovers beseitigen
+  char map[] = NET_MAP;
+  char update[] = NET_UPDATE;
+  char now[] = { '?' };
+  for (int i = 0; i < 'z' - 'a' + 1; ++i) {
+    now[0] = 'a' + i;
+    map[sizeof(map) - 2] = now[0];
+    shm_unlink(map);
+
+    now[0] = 'A' + i;
+    update[sizeof(update) - 2] = now[0];
+    shm_unlink(update);
+  }
+
+  now[0] = 'a' + net.current_map;
+  map[sizeof(map) - 2] = now[0];
+  net.map_fd = shm_open(map, O_CREAT | O_RDWR, 0700);
+  if (net.map_fd == -1) { log_perror("shm_open"); exit(EXIT_FAILURE); }
+
+  now[0] = 'A' + net.current_update;
+  update[sizeof(update) - 2] = now[0];
+  net.update_fd = shm_open(update, O_CREAT | O_RDWR, 0700);
+  if (net.update_fd == -1) { log_perror("shm_open"); exit(EXIT_FAILURE); }
 }
 
 
@@ -309,12 +416,17 @@ int main() {
   for (int loop = 0; loop < 10; ++loop) {
 
     for (int i = 0; i < 5; ++i) {
-      map_printf("hello, map %d\n", loop);
+      map_printf("loop: %d, hello map %d\n", loop, i);
     }
-
     map_flush();
 
     sleep(2);
+
+    for (int i = 0; i < 10; ++i) {
+      update_printf("loop: %d, hello update %d\n", loop, i);
+      update_flush();
+      sleep(1);
+    }
 
   }
 

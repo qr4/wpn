@@ -1,12 +1,20 @@
+CC = gcc
+CFLAGS = -std=gnu99 -DNET_HAVE_MAIN -I../logging -g3
+LDFLAGS = -lrt
+OBJ = network.o net.o ../logging/logging.o
 
 
+net: $(OBJ)
+		$(CC) $(LDFLAGS) -o $@ $(OBJ) 
 
-all:
-		gcc -c net.c -o net.o -DNET_HAVE_MAIN -std=gnu99
-		gcc -o net net.o ../logging/logging.o -DNET_HAVE_MAIN -std=gnu99 -lrt
+%.o: %.c %.h
+		$(CC) $(CFLAGS) -c $< 
 
+%.o: %.c 
+		$(CC) $(CFLAGS) -c $< 
 
+.PHONY : clean
 clean:
-		rm -f net net.o
+		rm -f *.o net
 
 
