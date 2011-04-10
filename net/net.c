@@ -193,7 +193,7 @@ void net_timer(struct timeval* tv) {
         int ret = fstat(net.nc[fd].data_fd, &st);
         if (ret == -1) { log_perror("fstat"); break; }
 
-        log_msg("fd = %d, size = %d", net.nc[fd].data_fd, st.st_size);
+        log_msg("MAP fd = %d, size = %d", net.nc[fd].data_fd, st.st_size);
 
         char* data = mmap(0, st.st_size, PROT_READ, MAP_PRIVATE, net.nc[fd].data_fd, 0);
         if (data == (char*)-1) { log_perror("mmap"); break; }
@@ -214,11 +214,33 @@ void net_timer(struct timeval* tv) {
 
         break;
       } while(0);
-      case NETCS_ACCEPT_UPDATE:
+      case NETCS_UPDATE_IN_PROGRESS:
       {
         log_msg("-------------------------------------");
         struct stat st;
         int ret = fstat(net.nc[fd].data_fd, &st);
+        if (ret == -1) { log_perror("fstat"); break; }
+
+        log_msg("UPDATE fd = %d, size = %d", net.nc[fd].data_fd, st.st_size);
+
+        char* data = mmap(0, st.st_size, PROT_READ, MAP_PRIVATE, net.nc[fd].data_fd, 0);
+        if (data == (char*)-1) { log_perror("mmap"); break; }
+
+        ssize_t len = write(fd, data + net.nc[fd].pos, st.st_size - net.nc[fd].pos);
+        if (len == -1) {log_perror("write"); break; }
+
+        net.nc[fd].pos += len;
+
+        if (munmap(data, st.st_size) == -1) { log_perror("munmap"); break; }
+
+        if (len == st.st_size) {
+          close(net.nc[fd].data_fd);
+          net.nc[fd].status = NETCS_ACCEPT_UPDATE;
+        } else {
+          haveMoreWork = 1;
+        }
+
+        break;
 
       } while(0);
     }
@@ -228,8 +250,9 @@ void net_timer(struct timeval* tv) {
     // wenn nicht alles verschickt werden konnte, dann probieren wir es in 10ms noch einmal
     tv->tv_sec = 0;
     tv->tv_usec = 1000 * 10;
+    log_msg("INFO: slow client");
   } else {
-    // alle sind glücklich und haben ihre daten -> in 5 sek wieder vorbei schauen
+    // alle sind glücklich und haben ihre daten -> in 5 sek wieder hier
     tv->tv_sec = 5;
     tv->tv_usec = 0;
   }
@@ -255,6 +278,8 @@ int net_pipe(int fd, struct timeval* tv) {
 
   char map[] = NET_MAP;
   char update[] = NET_UPDATE;
+
+  int moep_fd = -1;
 
   for (ssize_t i = 0; i < len; ++i) {
     if ('a' <= buffer[i] && buffer[i] <= 'z') {
@@ -287,7 +312,21 @@ int net_pipe(int fd, struct timeval* tv) {
         if (close(net.update_fd) == -1) { log_perror("close"); }
 
       net.update_fd = update_fd;
+      moep_fd = update_fd;
     }
+  }
+
+  if (moep_fd != -1) {
+    for (int i = 0; i < MAX_CONNECTION; ++i) {
+      if (net.nc[i].status == NETCS_ACCEPT_UPDATE) {
+        net.nc[i].status = NETCS_UPDATE_IN_PROGRESS;
+        net.nc[i].pos = 0;
+        net.nc[i].data_fd = dup(moep_fd);
+
+      }
+
+    }
+
   }
 
   // daten weitergeben
@@ -300,7 +339,7 @@ int net_pipe(int fd, struct timeval* tv) {
 
 void net_client_loop(int pipe_fd, int net_fd) {
   fd_set rfds, rfds_tmp;
-  struct timeval tv = {5, 0};
+  struct timeval tv = {5, 0}; // 5 sec
   int ret;
  
   FD_ZERO(&rfds);

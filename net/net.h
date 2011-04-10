@@ -26,6 +26,7 @@ enum net_client_status {
   NETCS_NOT_CONNECTED,    // hier lauscht niemand
   NETCS_NEW_CONNECTED,    // verbindung wurde gerade aufgebaut, die map muss dem client noch gepuscht werden
   NETCS_ACCEPT_UPDATE,    // so, jetzt will der client jede menge updates haben
+  NETCS_UPDATE_IN_PROGRESS, // der client muss den update erst verarbeiten
 };
 
 struct net_client {
