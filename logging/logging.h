@@ -1,4 +1,8 @@
 
+//
+// code by twist<at>nerd2nerd.org
+//
+
 #ifndef LOGGING_H
 #define LOGGING_H
 

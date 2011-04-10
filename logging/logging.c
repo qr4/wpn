@@ -1,6 +1,9 @@
 
-#include "logging.h"
+//
+// code by twist<at>nerd2nerd.org
+//
 
+#include "logging.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -13,6 +16,7 @@
 #include <time.h>
 #include <errno.h>
 
+#include <string.h>
 
 int log_fd;
 
