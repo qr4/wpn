@@ -22,7 +22,7 @@
 
 
 #define HOST "localhost"
-#define PORT "1234"
+#define PORT "8080"
 #define MAXBUF (1024*16)
 
 #define NO_OF_PARALLEL_FETCHES 8
