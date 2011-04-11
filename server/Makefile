@@ -1,8 +1,8 @@
 CC = gcc
-FLAGS = -Wall -g3 -O2 -march=native -mtune=native -pipe
+FLAGS = -Wall -g3 -O2 -march=native -mtune=native -pipe `pkg-config lua5.1 --cflags`
 CLIBS =
-LDFLAGS = -lm 
-OBJ = main.o entities.o vector.o
+LDFLAGS = -lm `pkg-config lua5.1 --libs`
+OBJ = main.o entities.o vector.o ship.o luastate.o luafuncs.o
 
 main: $(OBJ)
 	$(CC) $(FLAGS) $(LDFLAGS) -o $@ $(OBJ) 

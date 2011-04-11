@@ -1,6 +1,7 @@
 #ifndef ENTITIES_H
 #define ENTITIES_H
 
+#include <lua.h>
 #include "vector.h"
 
 typedef enum {
@@ -35,6 +36,7 @@ typedef struct {
 		unsigned int cluster:1;
 	} type;
 	void *data; // if the entity has slots, the first member of the structure pointed to by *data has to be the the array pointer where the slots are saved.
+	lua_State* lua;
 } entity_t;
 
 typedef struct {
