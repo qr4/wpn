@@ -3,6 +3,7 @@
 
 #include "vector.h"
 #include "entities.h"
+#include "ship.h"
 #include "luastate.h"
 
 #define print_sizeof(TYPE) \
@@ -32,8 +33,8 @@ int main(int argc, char *argv[]) {
 	//ship1.v   = (vector_t) {{10, 0}}; // this is equivalent
 
 	asteroid1 = malloc(sizeof(entity_t));
-	asteroid1.slots = 4;
-	asteroid1.type = ASTEROID;
+	asteroid1->slots = 4;
+	asteroid1->type = ASTEROID;
 	asteroid1->radius = 0.5;
 	asteroid1->pos.x = 5;
 	asteroid1->pos.y = 2;

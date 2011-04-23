@@ -3,6 +3,7 @@
  * to the lua-callable functions in luafuncs.c)
  */
 #include <lua.h>
+#include <lualib.h>
 #include <lauxlib.h>
 #include "luastate.h"
 #include "luafuncs.h"
@@ -35,7 +36,7 @@ void init_ship_computer(entity_t* s) {
 	/* Initialize a new, blank lua state */
 	s->lua = luaL_newstate();
 	if(s->lua == NULL) {
-		fprintf(stderr, "Creating a new lua state failed for entity %x\n", s);
+		fprintf(stderr, "Creating a new lua state failed for entity %lx\n", (unsigned long) s);
 		exit(1);
 	}
 
@@ -55,7 +56,7 @@ void init_ship_computer(entity_t* s) {
 	/* TODO: location of this file should be configurable */
 	lua_active_entity = s;
 	if(luaL_dofile(s->lua, "init.lua")) {
-		fprintf(stderr, "Running init-code for entity %x failed:\n", s);
+		fprintf(stderr, "Running init-code for entity %lx failed:\n", (unsigned long) s);
 		fprintf(stderr, "%s\n", lua_tostring(s->lua,-1));
 		kill_computer(s);
 	}

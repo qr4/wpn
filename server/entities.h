@@ -49,7 +49,7 @@ struct entity_t {
 		base_data_t     *base_data;
 	};
 	lua_State* lua;
-} entity_t;
+};
 
 struct slot_data_t {
 	slot_t *slot;

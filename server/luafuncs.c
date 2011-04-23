@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "luafuncs.h"
 #include "luastate.h"
 #include "entities.h"
@@ -8,7 +9,7 @@
  * causing the error handler to kill the ship. */
 int lua_killself(lua_State* L) {
 	entity_t* e;
-	int n;
+	//int n;
 
 	/* Fetch self-pointer */
 	lua_getglobal(L, "self");
@@ -46,7 +47,8 @@ int lua_killself(lua_State* L) {
 int lua_moveto(lua_State* L) {
 	entity_t* e;
 	int n;
-	double x,y;
+	double x = 0;
+	double y = 0;
 	char* callback=NULL;
 
 	/* Check number of arguments */
@@ -101,8 +103,10 @@ int lua_moveto(lua_State* L) {
 	/* TODO: Actually do this. */
 	/* moveto_planner(e, x, y, callback) */
 	/* Until then: just set the speed to arrive at the target location within 5 timesteps. We do, however, not stop yet. */
-	e->v.x = (x - e->pos.x) / 5.;
-	e->v.y = (y - e->pos.y) / 5.;
+	//e->v.x = (x - e->pos.x) / 5.;
+	//e->v.y = (y - e->pos.y) / 5.;
+
+	e->v.v = (((v2d) {x, y}) - e->pos.v) / vector(5).v;
 
 	return 0;
 }
