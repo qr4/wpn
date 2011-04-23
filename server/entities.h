@@ -1,6 +1,7 @@
 #ifndef ENTITIES_H
 #define ENTITIES_H
 
+#include <lua.h>
 #include "vector.h"
 
 typedef enum {
@@ -47,9 +48,8 @@ struct entity_t {
 		cluster_data_t  *cluster_data;
 		base_data_t     *base_data;
 	};
-	void *lua_stuff;
-};
-
+	lua_State* lua;
+} entity_t;
 
 struct slot_data_t {
 	slot_t *slot;
