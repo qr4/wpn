@@ -22,15 +22,15 @@ int main(int argc, char *argv[]) {
 	printf("\n\n");
 
 	entity_t ship1, asteroid1;
-	ship1.type.slots = 3;
-	ship1.type.ship = 1;
+	ship1.slots = 3;
+	ship1.type = SHIP;
 	ship1.radius = 1;
 	ship1.pos = vector(0);            // set both x and y position to 0
 	ship1.v.v = (v2d)       {10, 0};  // set x speed to 10, y speed to 0
 	ship1.v   = (vector_t) {{10, 0}}; // this is equivalent
 
-	asteroid1.type.slots = 4;
-	asteroid1.type.asteroid = 1;
+	asteroid1.slots = 4;
+	asteroid1.type = ASTEROID;
 	asteroid1.radius = 0.5;
 	asteroid1.pos.x = 5;
 	asteroid1.pos.y = 2;

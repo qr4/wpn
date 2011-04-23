@@ -12,58 +12,76 @@ typedef enum {
 	SHIELD,    // currently unused
 } slot_t;
 
-typedef struct {
+typedef enum {
+	CLUSTER,
+	PLANET,
+	ASTEROID,
+	BASE,
+	SHIP,
+} type_t;
+
+typedef struct slot_data_t     slot_data_t;
+typedef struct planet_data_t   planet_data_t;
+typedef struct ship_data_t     ship_data_t;
+typedef struct asteroid_data_t asteroid_data_t;
+typedef struct cluster_data_t  cluster_data_t;
+typedef struct base_data_t     base_data_t;
+
+typedef struct entity_t entity_t;
+
+struct entity_t {
 	vector_t pos;
-	union {
-		vector_t v;
+	vector_t v;
 
-		// if an object is static, the following 128 bit can be used freely:
-		struct {
-			void *data1; 
-			void *data2;
-		};
-
-		// add more for different entities
-	};
 	float radius;
-	struct {
-		unsigned int slots:8;      // number of slots, zero means has no slots or a planet has no base
-		unsigned int ship:1;       // tell if it is a ship
-		unsigned int asteroid:1;   
-		unsigned int planet:1;
-		unsigned int base:1;
-		unsigned int cluster:1;
-	} type;
-	void *data; // if the entity has slots, the first member of the structure pointed to by *data has to be the the array pointer where the slots are saved.
-} entity_t;
+	type_t type;
+	unsigned int slots;
+	unsigned int player_id;
 
-typedef struct {
+	union {
+		void            *data; 
+		slot_data_t     *slot_data;
+		planet_data_t   *planet_data;
+		ship_data_t     *ship_data;
+		asteroid_data_t *asteroid_data;
+		cluster_data_t  *cluster_data;
+		base_data_t     *base_data;
+	};
+	void *lua_stuff;
+};
+
+
+struct slot_data_t {
 	slot_t *slot;
-} basic_slot_t;
+};
 
-/*
- * test-functions
- */
-static inline int num_of_slots(entity_t *e) {
-	return e->type.slots;
-}
+struct planet_data_t {
+	slot_t *slot;
 
-static inline int has_slots(entity_t *e) {
-	return e->type.slots > 0;
-}
+	entity_t *planet;
+	entity_t *asteroid;
+	unsigned int asteroids;
 
-static inline int is_ship(entity_t *e) {
-	return e->type.slots != 0;
-}
+	// fill with usefull stuff
+};
 
-static inline int is_planet(entity_t *e) {
-	return e->type.planet != 0;
-}
+struct ship_data_t {
+	slot_t *slot;
+};
 
+struct asteroid_data_t {
+	slot_t *slot;
+};
 
-static inline int is_asteroid(entity_t *e) {
-	return e->type.asteroid != 0;
-}
+struct cluster_data_t {
+	entity_t *planet;
+	entity_t *asteroid;
+	unsigned int asteroids;
+};
+
+struct base_data_t {
+	slot_t *slot;
+};
 
 /*
  * mapped vector functions
@@ -143,5 +161,7 @@ ETRANSFER swap_slots(entity_t *left, int pos_left, entity_t *right, int pos_righ
  * Target position has to be empty.
  */
 ETRANSFER transfer_slot(entity_t *left, int pos_left, entity_t *right, int pos_right);
+
+void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned int slots);
 
 #endif /* ENTITIES_H */

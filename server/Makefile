@@ -2,7 +2,7 @@ CC = gcc
 FLAGS = -Wall -g3 -O2 -march=native -mtune=native -pipe
 CLIBS =
 LDFLAGS = -lm 
-OBJ = main.o entities.o vector.o
+OBJ = main.o entities.o vector.o map.o
 
 main: $(OBJ)
 	$(CC) $(FLAGS) $(LDFLAGS) -o $@ $(OBJ) 
