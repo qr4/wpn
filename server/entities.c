@@ -51,8 +51,6 @@ ETRANSFER transfer_slot(entity_t *left, int pos_left, entity_t *right, int pos_r
 }
 
 void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned int slots) {
-	int i;
-
 	e->pos.v = pos.v;
 	slots = (slots > 255) ? 255 : slots;
 	e->type  = type;
@@ -60,27 +58,32 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 	
 	switch (type) {
 		case CLUSTER :
-			e->cluster_data = (cluster_data_t *) malloc (sizeof(cluster_data_t));
+			e->cluster_data  = (cluster_data_t *)  malloc (sizeof(cluster_data_t));
 			break;
 		case PLANET :
-			e->planet_data = (planet_data_t *) malloc (sizeof(planet_data_t));
+			e->planet_data   = (planet_data_t *)   malloc (sizeof(planet_data_t));
 			break;
 		case ASTEROID :
 			e->asteroid_data = (asteroid_data_t *) malloc (sizeof(asteroid_data_t));
 			break;
 		case BASE :
-			e->base_data = (base_data_t *) malloc (sizeof(base_data_t));
+			e->base_data     = (base_data_t *)     malloc (sizeof(base_data_t));
 			break;
 		case SHIP :
-			e->ship_data = (ship_data_t *) malloc (sizeof(ship_data_t));
+			e->ship_data     = (ship_data_t *)     malloc (sizeof(ship_data_t));
 			e->v = vector(0);
 			break;
 		default :
 			fprintf(stderr, "%s in %s: Unknown type %d!", __func__, __FILE__, type);
-			return;
+
+			if (slots > 0) {
+				e->slot_data = (slot_data_t *) malloc (sizeof(slot_data_t));
+			}
 	}
 
 	if (slots > 0) {
+		int i;
+
 		e->slot_data->slot = malloc(sizeof(slot_t) * slots);
 
 		for (i = 0; i < slots; i++) {
