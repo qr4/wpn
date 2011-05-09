@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "map.h"
 #include "entities.h"
@@ -21,9 +22,10 @@ size_t CLUSTERS_Y = 10;
 
 void distribute_asteroids(entity_t *cluster, const unsigned int n);
 void set_limits(map_t *map);
+void build_quads(map_t *map);
 
 map_t *generate_map() {
-	srand48(0);
+	srand48(1);
 	size_t x, y;
 	vector_t pos;
 	map_t *map;
@@ -32,16 +34,17 @@ map_t *generate_map() {
 	map->clusters_x = CLUSTERS_X;
 	map->clusters_y = CLUSTERS_Y;
 	map->cluster = (entity_t *) malloc(sizeof(entity_t) * map->clusters_x * map->clusters_y);
+	map->quad_size = AVERAGE_GRID_SIZE;
 
 	// position clusters at initial grid positions, try to avoid x,y values < 0
 	for (y = 0, pos.y = AVERAGE_CLUSTER_DISTANCE; y < map->clusters_y ; y++, pos.y += AVERAGE_CLUSTER_DISTANCE) {
 		for (x = 0, pos.x = AVERAGE_CLUSTER_DISTANCE; x < map->clusters_x; x++, pos.x += AVERAGE_CLUSTER_DISTANCE) {
 			vector_t cluster_pos = pos;
-			cluster_pos.v += randv().v * vector(AVERAGE_CLUSTER_DISTANCE / 3).v;
-			init_entity(map->cluster + y * map->clusters_x + x, pos, CLUSTER, 0);
+			cluster_pos.v += randv().v * vector(MAXIMUM_CLUSTER_SIZE).v;
+			init_entity(map->cluster + y * map->clusters_x + x, cluster_pos, CLUSTER, 0);
 		}
 	}
-	
+
 	// fill with planets / asteroids, set radius
 	for (y = 0; y < map->clusters_y; y++) {
 		for (x = 0; x < map->clusters_x; x++) {
@@ -61,15 +64,16 @@ map_t *generate_map() {
 				working->cluster_data->planet = NULL;
 				working->cluster_data->asteroid = NULL;
 				working->cluster_data->asteroids = 0;
+				working->radius = 0;
 		 	}
 		}
 	}
-	
+
 	// find area of the map
 	set_limits(map);
 
 	// build quads
-
+	build_quads(map);
 	return map;
 }
 
@@ -137,11 +141,12 @@ void set_limits(map_t *map) {
 	// find lower bound
 	for (i = (map->clusters_y - 1) * map->clusters_x; i < map->clusters_x * map->clusters_y; i++) {
 		double t = map->cluster[i].pos.y + map->cluster[i].radius;
-		if (t > upper_bound) {
+		if (t > lower_bound) {
 			lower_bound = t;
 		}
 	}
-	
+
+	// find left and right bound
 	for (i = 0; i < map->clusters_x * map->clusters_y; i += map->clusters_x) {
 		double t = map->cluster[i].pos.x - map->cluster[i].radius;
 		if (t < left_bound) {
@@ -149,7 +154,7 @@ void set_limits(map_t *map) {
 		}
 
 		t = map->cluster[i + map->clusters_x - 1].pos.x - map->cluster[i + map->clusters_x - 1].radius;
-		if (t > left_bound) {
+		if (t > right_bound) {
 			right_bound = t;
 		}
 	}
@@ -158,4 +163,43 @@ void set_limits(map_t *map) {
 	map->upper_bound = upper_bound;
 	map->right_bound = right_bound;
 	map->lower_bound = lower_bound;
+}
+
+void add_cluster(map_quad_t *quad, entity_t *cluster) {
+	quad->cluster = (entity_t **) realloc (quad->cluster, (++(quad->clusters)) * sizeof(entity_t *));
+	quad->cluster[quad->clusters - 1] = cluster;
+}
+
+void add_static_object(map_quad_t *quad, entity_t *e) {
+	quad->static_object = (entity_t **) realloc (quad->static_object, (quad->static_objects + 1) * sizeof(entity_t *));
+	quad->static_object[quad->static_objects++] = e;
+}
+
+map_quad_t *get_quad(map_t *map, entity_t *e) {
+	size_t quad_x = e->pos.x / map->quad_size;
+	size_t quad_y = e->pos.y / map->quad_size;
+
+	return &(map->quad[map->quads_x * quad_y + quad_x]);
+}
+void build_quads(map_t *map) {
+	entity_t *cluster;
+	size_t i;
+	size_t j;
+	size_t quads_x = map->right_bound / map->quad_size + 1; // +1 in order to have a little room left
+	size_t quads_y = map->lower_bound / map->quad_size + 1;
+
+	map->quads_x = quads_x;
+	map->quads_y = quads_y;
+	map->quad = (map_quad_t *) calloc (quads_x * quads_y, sizeof(map_quad_t)); // use calloc, or init the pointer with NULL
+
+	for (i = 0, cluster = map->cluster; i < map->clusters_x * map->clusters_y; i++, cluster++) {
+		add_cluster(get_quad(map, cluster), cluster);
+
+		if (cluster->cluster_data->planet != NULL) {
+			add_static_object(get_quad(map, cluster->cluster_data->planet), cluster->cluster_data->planet);
+		}
+		for (j = 0; j < cluster->cluster_data->asteroids; j++) {
+			add_static_object(get_quad(map, cluster->cluster_data->asteroid + j), cluster->cluster_data->asteroid + j);
+		}
+	}
 }

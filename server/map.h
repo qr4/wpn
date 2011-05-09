@@ -19,6 +19,8 @@ typedef struct {
 	size_t clusters_x;
 	size_t clusters_y;
 	size_t quad_size;
+	size_t quads_x;
+	size_t quads_y;
 	double left_bound;
 	double upper_bound;
 	double right_bound;

@@ -93,3 +93,21 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 		}
 	}
 }
+
+void destroy_entity(entity_t **e) {
+	type_t type = (*e)->type;
+	switch (type) {
+		case CLUSTER :
+			break;
+		case PLANET :
+			break;
+		case ASTEROID :
+			break;
+		case BASE :
+			break;
+		case SHIP :
+			break;
+		default :
+			break;
+	}
+}

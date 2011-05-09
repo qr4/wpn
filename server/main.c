@@ -11,52 +11,52 @@
 	printf("sizeof(%-14s) = %4lu\n", #TYPE, sizeof(TYPE));
 
 int main(int argc, char *argv[]) {
-	vector_t v1 = vector(5);
-	vector_t v2 = vector(0);
-	v2.x = 5;
-	v1.v += v2.v;
+	//vector_t v1 = vector(5);
+	//vector_t v2 = vector(0);
+	//v2.x = 5;
+	//v1.v += v2.v;
 
-	printf("v1 x: %f, y: %f\n", v1.x, v1.y);
-	printf("v2 x: %f, y: %f\n", v2.x, v2.y);
-	printf("dist(v1, v2): %f\n", vector_dist(&v1, &v2));
-	print_sizeof(vector_t);
-	print_sizeof(entity_t);
+	//printf("v1 x: %f, y: %f\n", v1.x, v1.y);
+	//printf("v2 x: %f, y: %f\n", v2.x, v2.y);
+	//printf("dist(v1, v2): %f\n", vector_dist(&v1, &v2));
+	//print_sizeof(vector_t);
+	//print_sizeof(entity_t);
 
-	printf("\n\n");
+	//printf("\n\n");
 
-	entity_t* ship1, *asteroid1;
-	ship1 = create_ship(v1, 6);
+	//entity_t* ship1, *asteroid1;
+	//ship1 = create_ship(v1, 6);
 
-	asteroid1 = malloc(sizeof(entity_t));
-	asteroid1->slots = 4;
-	asteroid1->type = ASTEROID;
-	asteroid1->radius = 0.5;
-	asteroid1->pos.x = 5;
-	asteroid1->pos.y = 2;
+	//asteroid1 = malloc(sizeof(entity_t));
+	//asteroid1->slots = 4;
+	//asteroid1->type = ASTEROID;
+	//asteroid1->radius = 0.5;
+	//asteroid1->pos.x = 5;
+	//asteroid1->pos.y = 2;
 
-	/* Main loop */
-	int i;
-	for (i = 0; i < 20; i++) {
+	///* Main loop */
+	//int i;
+	//for (i = 0; i < 20; i++) {
 
-		/* TODO: Evaluate ship's flight plan */
+	//	/* TODO: Evaluate ship's flight plan */
 
-		/* If the ship is resting, tell it that it's arrived somewhere */
-		if(ship1->v.x == 0 && ship1->v.y == 0) {
-			call_entity_callback(ship1, AUTOPILOT_ARRIVED);
-		}
+	//	/* If the ship is resting, tell it that it's arrived somewhere */
+	//	if(ship1->v.x == 0 && ship1->v.y == 0) {
+	//		call_entity_callback(ship1, AUTOPILOT_ARRIVED);
+	//	}
 
-		move_ship(ship1);            // move the ship one physicstep further
+	//	move_ship(ship1);            // move the ship one physicstep further
 
-		/* Check distances, call callbacks if required */
-		printf("ship x: %.2f, y: %.2f; collision_distance(ship, asteroid): %.2f\n", ship1->pos.x, ship1->pos.y, collision_dist(ship1, asteroid1));
-		if(collision_dist(ship1, asteroid1) < 3.) {
-			call_entity_callback(ship1, ENTITY_APPROACHING);
-		}
+	//	/* Check distances, call callbacks if required */
+	//	printf("ship x: %.2f, y: %.2f; collision_distance(ship, asteroid): %.2f\n", ship1->pos.x, ship1->pos.y, collision_dist(ship1, asteroid1));
+	//	if(collision_dist(ship1, asteroid1) < 3.) {
+	//		call_entity_callback(ship1, ENTITY_APPROACHING);
+	//	}
 
-		/* Check timers, call callbacks if required */
-	}
+	//	/* Check timers, call callbacks if required */
+	//}
 
-	printf("ship x: %.2f, y: %.2f\n", ship1->pos.x, ship1->pos.y);
+	//printf("ship x: %.2f, y: %.2f\n", ship1->pos.x, ship1->pos.y);
 
 	map_t *map = generate_map();
 
