@@ -2,8 +2,8 @@
 #define VECTOR_H
 
 /*
- * This file includes the vector_t datastructure and provides rudimentary 
- * vector functions. 
+ * This file includes the vector_t datastructure and provides rudimentary
+ * vector functions.
  */
 
 #ifdef __SSE2__
@@ -24,7 +24,7 @@ typedef union {
 
 
 /*
- * Returns the distance between 2 points squared. 
+ * Returns the distance between 2 points squared.
  * This is faster than dist().
  */
 static inline double vector_quaddist(const vector_t* A, const vector_t* B) {
@@ -35,7 +35,7 @@ static inline double vector_quaddist(const vector_t* A, const vector_t* B) {
 }
 
 /*
- * Returns the distance between 2 points 
+ * Returns the distance between 2 points
  */
 static inline double vector_dist(const vector_t* A, const vector_t* B) {
 	return sqrt(vector_quaddist(A, B));
@@ -46,6 +46,15 @@ static inline double vector_dist(const vector_t* A, const vector_t* B) {
  */
 static inline vector_t vector(const double x) {
 	return (vector_t) {{x, x}};
+}
+
+/*
+ * return random vector between {-1, -1} - {1, 1}
+ */
+static inline vector_t randv() {
+	vector_t v;
+	v.v = (v2d) { drand48(), drand48() } * vector(2).v - vector(1).v;
+	return v;
 }
 
 /*

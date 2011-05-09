@@ -26,7 +26,7 @@ ETRANSFER swap_slots(entity_t *left, int pos_left, entity_t *right, int pos_righ
 }
 
 /*
- * Moves one slot from left to right. 
+ * Moves one slot from left to right.
  * Target position has to be empty.
  */
 ETRANSFER transfer_slot(entity_t *left, int pos_left, entity_t *right, int pos_right) {
@@ -62,9 +62,11 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 			break;
 		case PLANET :
 			e->planet_data   = (planet_data_t *)   malloc (sizeof(planet_data_t));
+			e->radius = PLANET_SIZE;
 			break;
 		case ASTEROID :
 			e->asteroid_data = (asteroid_data_t *) malloc (sizeof(asteroid_data_t));
+			e->radius = ASTEROID_RADIUS_TO_SLOTS_RATIO * slots;
 			break;
 		case BASE :
 			e->base_data     = (base_data_t *)     malloc (sizeof(base_data_t));

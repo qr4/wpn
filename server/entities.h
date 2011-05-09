@@ -4,6 +4,9 @@
 #include <lua.h>
 #include "vector.h"
 
+#define ASTEROID_RADIUS_TO_SLOTS_RATIO 1
+#define PLANET_SIZE 50
+
 typedef enum {
 	EMPTY,
 	WEAPON,
@@ -59,9 +62,6 @@ struct planet_data_t {
 	slot_t *slot;
 
 	entity_t *planet;
-	entity_t *asteroid;
-	unsigned int asteroids;
-
 	// fill with usefull stuff
 };
 
@@ -71,6 +71,9 @@ struct ship_data_t {
 
 struct asteroid_data_t {
 	slot_t *slot;
+
+	entity_t *asteroid;
+	unsigned int asteroids;
 };
 
 struct cluster_data_t {

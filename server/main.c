@@ -5,6 +5,7 @@
 #include "entities.h"
 #include "ship.h"
 #include "luastate.h"
+#include "map.h"
 
 #define print_sizeof(TYPE) \
 	printf("sizeof(%-14s) = %4lu\n", #TYPE, sizeof(TYPE));
@@ -25,12 +26,6 @@ int main(int argc, char *argv[]) {
 
 	entity_t* ship1, *asteroid1;
 	ship1 = create_ship(v1, 6);
-	//ship1.type.slots = 3;
-	//ship1.type.ship = 1;
-	//ship1.radius = 1;
-	//ship1.pos = vector(0);            // set both x and y position to 0
-	//ship1.v.v = (v2d)       {10, 0};  // set x speed to 10, y speed to 0
-	//ship1.v   = (vector_t) {{10, 0}}; // this is equivalent
 
 	asteroid1 = malloc(sizeof(entity_t));
 	asteroid1->slots = 4;
@@ -62,6 +57,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	printf("ship x: %.2f, y: %.2f\n", ship1->pos.x, ship1->pos.y);
+
+	map_t *map = generate_map();
 
 	return EXIT_SUCCESS;
 }
