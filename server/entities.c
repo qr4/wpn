@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "entities.h"
+#include "map.h"
 
 /*
  * Swaps two slots. *left can be the same as *right
@@ -84,7 +85,7 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 	}
 
 	if (slots > 0) {
-		int i;
+		unsigned int i;
 
 		e->slot_data->slot = malloc(sizeof(slot_t) * slots);
 
@@ -94,10 +95,34 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 	}
 }
 
-void destroy_entity(entity_t **e) {
-	type_t type = (*e)->type;
+void destroy_entity(map_t *map, entity_t *e) {
+	unsigned int i;
+	type_t type;
+
+	if (e == NULL) return;
+
+	if (e->slots > 0) {
+		free(e->slot_data->slot);
+		e->slot_data->slot = NULL;
+	}
+
+	type = (e)->type;
+
+	// uncomment if costum free are nescessary
 	switch (type) {
 		case CLUSTER :
+			destroy_entity(map, e->cluster_data->planet);
+			free(e->cluster_data->planet);
+			e->cluster_data->planet = NULL;
+
+			for (i = 0; i < e->cluster_data->asteroids; i++) {
+				destroy_entity(map, e->cluster_data->asteroid + i);
+			}
+
+			free(e->cluster_data->asteroid);
+			e->cluster_data->asteroid = NULL;
+			e->cluster_data->asteroids = 0;
+			
 			break;
 		case PLANET :
 			break;
@@ -106,6 +131,21 @@ void destroy_entity(entity_t **e) {
 		case BASE :
 			break;
 		case SHIP :
+			break;
+		default :
+			break;
+	}
+
+	// Free data pointer and unregister from grid
+	switch (type) {
+		case CLUSTER :
+		case PLANET :
+		case ASTEROID :
+		case BASE :
+		case SHIP :
+			unregister_object(map, e);
+			free((e)->data);
+			e->data = NULL;
 			break;
 		default :
 			break;

@@ -2,7 +2,6 @@
 #include <stdio.h>
 
 #include "map.h"
-#include "entities.h"
 
 double AVERAGE_CLUSTER_DISTANCE = 500;
 double MAXIMUM_CLUSTER_SIZE = 500 / 3;
@@ -165,6 +164,17 @@ void set_limits(map_t *map) {
 	map->lower_bound = lower_bound;
 }
 
+void free_map(map_t *map) {
+	size_t i;
+
+	for (i = 0; i < map->clusters_y * map->clusters_x; i++) {
+		destroy_entity(map, map->cluster + i);
+	}
+
+	free(map->cluster);
+	free(map->quad);
+}
+
 void add_cluster(map_quad_t *quad, entity_t *cluster) {
 	quad->cluster = (entity_t **) realloc (quad->cluster, (++(quad->clusters)) * sizeof(entity_t *));
 	quad->cluster[quad->clusters - 1] = cluster;
@@ -202,4 +212,39 @@ void build_quads(map_t *map) {
 			add_static_object(get_quad(map, cluster->cluster_data->asteroid + j), cluster->cluster_data->asteroid + j);
 		}
 	}
+}
+
+void unregister_object(map_t *map, entity_t *e) {
+	map_quad_t *quad = get_quad(map, e);
+	entity_t ***object_pointer;
+	size_t *objects;
+	size_t i;
+
+	switch (e->type) {
+		case CLUSTER :
+			object_pointer = &(quad->cluster);
+			objects = &(quad->clusters);
+			break;
+		case PLANET :
+		case ASTEROID :
+			object_pointer = &(quad->static_object);
+			objects = &(quad->static_objects);
+			break;
+		case SHIP :
+			object_pointer = &(quad->moving_object);
+			objects = &(quad->moving_objects);
+			break;
+		case BASE :
+		default :
+			return;
+			break;
+	}
+
+	if (*objects == 0) return;
+
+	for (i = 0; i < *objects && (*object_pointer)[i] != e; i++);
+
+	(*object_pointer)[i] = (*object_pointer)[*objects - 1];
+	(*objects)--;
+	*object_pointer = (entity_t **) realloc (*object_pointer, *objects * sizeof(entity_t *));
 }

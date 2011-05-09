@@ -59,6 +59,8 @@ int main(int argc, char *argv[]) {
 	//printf("ship x: %.2f, y: %.2f\n", ship1->pos.x, ship1->pos.y);
 
 	map_t *map = generate_map();
+	free_map(map);
 
+	free(map);
 	return EXIT_SUCCESS;
 }

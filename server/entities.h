@@ -3,88 +3,11 @@
 
 #include <lua.h>
 #include "vector.h"
+#include "types.h"
+#include "map.h"
 
 #define ASTEROID_RADIUS_TO_SLOTS_RATIO 1
 #define PLANET_SIZE 50
-
-typedef enum {
-	EMPTY,
-	WEAPON,
-	DRIVE,
-	ORE,
-	BLOCKED,   // signals, that this slot may not be altered
-	SHIELD,    // currently unused
-} slot_t;
-
-typedef enum {
-	CLUSTER,
-	PLANET,
-	ASTEROID,
-	BASE,
-	SHIP,
-} type_t;
-
-typedef struct slot_data_t     slot_data_t;
-typedef struct planet_data_t   planet_data_t;
-typedef struct ship_data_t     ship_data_t;
-typedef struct asteroid_data_t asteroid_data_t;
-typedef struct cluster_data_t  cluster_data_t;
-typedef struct base_data_t     base_data_t;
-
-typedef struct entity_t entity_t;
-
-struct entity_t {
-	vector_t pos;
-	vector_t v;
-
-	float radius;
-	type_t type;
-	unsigned int slots;
-	unsigned int player_id;
-
-	union {
-		void            *data; 
-		slot_data_t     *slot_data;
-		planet_data_t   *planet_data;
-		ship_data_t     *ship_data;
-		asteroid_data_t *asteroid_data;
-		cluster_data_t  *cluster_data;
-		base_data_t     *base_data;
-	};
-	lua_State* lua;
-};
-
-struct slot_data_t {
-	slot_t *slot;
-};
-
-struct planet_data_t {
-	slot_t *slot;
-
-	entity_t *planet;
-	// fill with usefull stuff
-};
-
-struct ship_data_t {
-	slot_t *slot;
-};
-
-struct asteroid_data_t {
-	slot_t *slot;
-
-	entity_t *asteroid;
-	unsigned int asteroids;
-};
-
-struct cluster_data_t {
-	entity_t *planet;
-	entity_t *asteroid;
-	unsigned int asteroids;
-};
-
-struct base_data_t {
-	slot_t *slot;
-};
 
 /*
  * mapped vector functions
@@ -166,5 +89,6 @@ ETRANSFER swap_slots(entity_t *left, int pos_left, entity_t *right, int pos_righ
 ETRANSFER transfer_slot(entity_t *left, int pos_left, entity_t *right, int pos_right);
 
 void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned int slots);
+void destroy_entity(map_t *map, entity_t *e);
 
 #endif /* ENTITIES_H */
