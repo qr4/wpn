@@ -89,6 +89,6 @@ ETRANSFER swap_slots(entity_t *left, int pos_left, entity_t *right, int pos_righ
 ETRANSFER transfer_slot(entity_t *left, int pos_left, entity_t *right, int pos_right);
 
 void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned int slots);
-void destroy_entity(map_t *map, entity_t *e);
+void destroy_entity(entity_t *e);
 
 #endif /* ENTITIES_H */

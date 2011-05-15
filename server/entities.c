@@ -95,7 +95,7 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 	}
 }
 
-void destroy_entity(map_t *map, entity_t *e) {
+void destroy_entity(entity_t *e) {
 	unsigned int i;
 	type_t type;
 
@@ -111,12 +111,12 @@ void destroy_entity(map_t *map, entity_t *e) {
 	// uncomment if costum free are nescessary
 	switch (type) {
 		case CLUSTER :
-			destroy_entity(map, e->cluster_data->planet);
+			destroy_entity(e->cluster_data->planet);
 			free(e->cluster_data->planet);
 			e->cluster_data->planet = NULL;
 
 			for (i = 0; i < e->cluster_data->asteroids; i++) {
-				destroy_entity(map, e->cluster_data->asteroid + i);
+				destroy_entity(e->cluster_data->asteroid + i);
 			}
 
 			free(e->cluster_data->asteroid);
@@ -143,7 +143,7 @@ void destroy_entity(map_t *map, entity_t *e) {
 		case ASTEROID :
 		case BASE :
 		case SHIP :
-			unregister_object(map, e);
+			unregister_object(e);
 			free((e)->data);
 			e->data = NULL;
 			break;

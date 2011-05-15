@@ -82,9 +82,6 @@ struct slot_data_t {
 
 struct planet_data_t {
 	slot_t *slot;
-
-	entity_t *planet;
-	// fill with usefull stuff
 };
 
 struct ship_data_t {
@@ -93,9 +90,6 @@ struct ship_data_t {
 
 struct asteroid_data_t {
 	slot_t *slot;
-
-	entity_t *asteroid;
-	unsigned int asteroids;
 };
 
 struct cluster_data_t {
