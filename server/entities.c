@@ -59,7 +59,12 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 	
 	switch (type) {
 		case CLUSTER :
+			// init as empty cluster
 			e->cluster_data  = (cluster_data_t *)  malloc (sizeof(cluster_data_t));
+			e->cluster_data->planet = NULL;
+			e->cluster_data->asteroid = NULL;
+			e->cluster_data->asteroids = 0;
+			e->radius = 0;
 			break;
 		case PLANET :
 			e->planet_data   = (planet_data_t *)   malloc (sizeof(planet_data_t));

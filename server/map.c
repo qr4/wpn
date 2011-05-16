@@ -52,18 +52,12 @@ void init_map() {
 
 			if (r < PLANET_DENSITY) {
 				working->cluster_data->planet = (entity_t *) malloc (sizeof(entity_t));
-				working->cluster_data->asteroid = NULL;
-				working->cluster_data->asteroids = 0;
 				working->radius = PLANET_SIZE;
 				init_entity(working->cluster_data->planet, working->pos, PLANET, 0);
 			} else if (r < PLANET_DENSITY + ASTEROID_DENSITY) {
-				distribute_asteroids(working, AVERAGE_ASTEROID_NUMBER);
+				distribute_asteroids(working, AVERAGE_ASTEROID_NUMBER + rand()%4 - 2);
 			} else {
 				// Empty cluster
-				working->cluster_data->planet = NULL;
-				working->cluster_data->asteroid = NULL;
-				working->cluster_data->asteroids = 0;
-				working->radius = 0;
 		 	}
 		}
 	}
@@ -174,22 +168,44 @@ void free_map() {
 	free(map.quad);
 }
 
-void add_cluster(map_quad_t *quad, entity_t *cluster) {
-	quad->cluster = (entity_t **) realloc (quad->cluster, (++(quad->clusters)) * sizeof(entity_t *));
-	quad->cluster[quad->clusters - 1] = cluster;
-}
-
-void add_static_object(map_quad_t *quad, entity_t *e) {
-	quad->static_object = (entity_t **) realloc (quad->static_object, (quad->static_objects + 1) * sizeof(entity_t *));
-	quad->static_object[quad->static_objects++] = e;
-}
-
 map_quad_t *get_quad(entity_t *e) {
 	size_t quad_x = e->pos.x / map.quad_size;
 	size_t quad_y = e->pos.y / map.quad_size;
 
 	return &(map.quad[map.quads_x * quad_y + quad_x]);
 }
+
+map_quad_t *register_object(entity_t *e) {
+	map_quad_t *quad = get_quad(e);
+	entity_t ***object_pointer;
+	size_t *objects;
+
+	switch (e->type) {
+		case CLUSTER :
+			object_pointer = &(quad->cluster);
+			objects = &(quad->clusters);
+			break;
+		case PLANET :
+		case ASTEROID :
+			object_pointer = &(quad->static_object);
+			objects = &(quad->static_objects);
+			break;
+		case SHIP :
+			object_pointer = &(quad->moving_object);
+			objects = &(quad->moving_objects);
+			break;
+		case BASE :
+		default :
+			return NULL;
+			break;
+	}
+
+	*object_pointer = (entity_t **) realloc (*object_pointer, (*objects + 1) * sizeof(entity_t *)); 
+	(*object_pointer)[(*objects)++] = e;
+
+	return quad;
+}
+
 void build_quads() {
 	entity_t *cluster;
 	size_t i;
@@ -202,13 +218,14 @@ void build_quads() {
 	map.quad = (map_quad_t *) calloc (quads_x * quads_y, sizeof(map_quad_t)); // use calloc, or init the pointer with NULL
 
 	for (i = 0, cluster = map.cluster; i < map.clusters_x * map.clusters_y; i++, cluster++) {
-		add_cluster(get_quad(cluster), cluster);
+		register_object(cluster);
 
 		if (cluster->cluster_data->planet != NULL) {
-			add_static_object(get_quad(cluster->cluster_data->planet), cluster->cluster_data->planet);
+			register_object(cluster->cluster_data->planet);
 		}
+
 		for (j = 0; j < cluster->cluster_data->asteroids; j++) {
-			add_static_object(get_quad(cluster->cluster_data->asteroid + j), cluster->cluster_data->asteroid + j);
+			register_object(cluster->cluster_data->asteroid + j);
 		}
 	}
 }
@@ -241,9 +258,12 @@ void unregister_object(entity_t *e) {
 
 	if (*objects == 0) return;
 
-	for (i = 0; i < *objects && (*object_pointer)[i] != e; i++);
+	// find position of entity to delete
+	for (i = 0; i < *objects && (*object_pointer)[i] != e; i++); 
 
+	// move last to this position
 	(*object_pointer)[i] = (*object_pointer)[*objects - 1];
 	(*objects)--;
+
 	*object_pointer = (entity_t **) realloc (*object_pointer, *objects * sizeof(entity_t *));
 }
