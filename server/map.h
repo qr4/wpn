@@ -10,7 +10,20 @@ extern map_t map;
 void init_map();
 void free_map();
 
-map_quad_t *get_quad(entity_t *e);
+static inline quad_index_t get_quad_index_by_pos(const vector_t pos) {
+	return (quad_index_t) {(size_t) (pos.x / map.quad_size), (size_t) (pos.y / map.quad_size)};
+}
+
+static inline map_quad_t *get_quad_by_index(const quad_index_t quad_index) {
+	return &(map.quad[map.quads_x * quad_index.quad_y + quad_index.quad_x]);
+}
+
+static inline map_quad_t *get_quad_by_pos(const vector_t pos) {
+	return get_quad_by_index(get_quad_index_by_pos(pos));
+}
+
 map_quad_t *register_object(entity_t *e);
 void unregister_object(entity_t *e);
+
+entity_t *find_closest(entity_t *e, double radius);
 #endif  /*MAP_H*/

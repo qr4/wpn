@@ -10,6 +10,29 @@
 #define print_sizeof(TYPE) \
 	printf("sizeof(%-14s) = %4lu\n", #TYPE, sizeof(TYPE));
 
+const char *type_string(type_t type) {
+	switch (type) {
+		case CLUSTER :
+			return "cluster";
+			break;
+		case BASE :
+			return "base";
+			break;
+		case PLANET :
+			return "planet";
+			break;
+		case ASTEROID :
+			return "asteroid";
+			break;
+		case SHIP :
+			return "ship";
+			break;
+		default :
+			return "";
+			break;
+	}
+}
+
 int main(int argc, char *argv[]) {
 	//vector_t v1 = vector(5);
 	//vector_t v2 = vector(0);
@@ -58,7 +81,29 @@ int main(int argc, char *argv[]) {
 
 	//printf("ship x: %.2f, y: %.2f\n", ship1->pos.x, ship1->pos.y);
 
+	int i;
+	entity_t e;
+	entity_t *closest;
+
+	e.radius = 1;
+
 	init_map();
+	
+	for (i = 0; i < 100; i++) {
+		e.pos.v = (randv().v + vector(1).v) * vector(2000).v;
+		closest = find_closest(&e, 200);
+		printf("Checking (%f, %f)\n", e.pos.x, e.pos.y);
+		if (closest != NULL) {
+			printf("Found %s, at position (%f, %f). Collision distance: %f\n", 
+					type_string(closest->type), 
+					closest->pos.x, 
+					closest->pos.y, 
+					collision_dist(&e, closest));
+		} else {
+			printf("Nothing\n");
+		}
+	}
+
 	free_map();
 
 	return EXIT_SUCCESS;

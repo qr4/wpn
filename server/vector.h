@@ -10,6 +10,7 @@
 #include <x86intrin.h>
 #endif
 
+#include <stdlib.h>
 #include <math.h>
 
 typedef double v2d __attribute__ ((vector_size (16)));

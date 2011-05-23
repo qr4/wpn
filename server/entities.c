@@ -1,17 +1,18 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "types.h"
 #include "entities.h"
 #include "map.h"
 
 /*
  * Swaps two slots. *left can be the same as *right
  */
-ETRANSFER swap_slots(entity_t *left, int pos_left, entity_t *right, int pos_right) {
-	if (left->slots < pos_left + 1 || pos_left < 0) {
+ETRANSFER swap_slots(entity_t *left, unsigned int pos_left, entity_t *right, unsigned int pos_right) {
+	if (left->slots <= pos_left) {
 		return OUT_OF_BOUNDS_LEFT;
 	}
-	if (right->slots < pos_right + 1 || pos_right < 0) {
+	if (right->slots <= pos_right) {
 		return OUT_OF_BOUNDS_RIGHT;
 	}
 
@@ -30,11 +31,11 @@ ETRANSFER swap_slots(entity_t *left, int pos_left, entity_t *right, int pos_righ
  * Moves one slot from left to right.
  * Target position has to be empty.
  */
-ETRANSFER transfer_slot(entity_t *left, int pos_left, entity_t *right, int pos_right) {
-	if (left->slots < pos_left + 1 || pos_left < 0) {
+ETRANSFER transfer_slot(entity_t *left, unsigned int pos_left, entity_t *right, unsigned int pos_right) {
+	if (left->slots <= pos_left) {
 		return OUT_OF_BOUNDS_LEFT;
 	}
-	if (right->slots < pos_right + 1 || pos_right < 0) {
+	if (right->slots <= pos_right) {
 		return OUT_OF_BOUNDS_RIGHT;
 	}
 
@@ -53,7 +54,7 @@ ETRANSFER transfer_slot(entity_t *left, int pos_left, entity_t *right, int pos_r
 
 void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned int slots) {
 	e->pos.v = pos.v;
-	slots = (slots > 255) ? 255 : slots;
+	slots = (slots > 255u) ? 255u : slots;
 	e->type  = type;
 	e->slots = slots;
 	

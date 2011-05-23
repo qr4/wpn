@@ -168,15 +168,8 @@ void free_map() {
 	free(map.quad);
 }
 
-map_quad_t *get_quad(entity_t *e) {
-	size_t quad_x = e->pos.x / map.quad_size;
-	size_t quad_y = e->pos.y / map.quad_size;
-
-	return &(map.quad[map.quads_x * quad_y + quad_x]);
-}
-
 map_quad_t *register_object(entity_t *e) {
-	map_quad_t *quad = get_quad(e);
+	map_quad_t *quad = get_quad_by_pos(e->pos);
 	entity_t ***object_pointer;
 	size_t *objects;
 
@@ -185,6 +178,7 @@ map_quad_t *register_object(entity_t *e) {
 			object_pointer = &(quad->cluster);
 			objects = &(quad->clusters);
 			break;
+		case BASE :
 		case PLANET :
 		case ASTEROID :
 			object_pointer = &(quad->static_object);
@@ -194,7 +188,6 @@ map_quad_t *register_object(entity_t *e) {
 			object_pointer = &(quad->moving_object);
 			objects = &(quad->moving_objects);
 			break;
-		case BASE :
 		default :
 			return NULL;
 			break;
@@ -231,7 +224,7 @@ void build_quads() {
 }
 
 void unregister_object(entity_t *e) {
-	map_quad_t *quad = get_quad(e);
+	map_quad_t *quad = get_quad_by_pos(e->pos);
 	entity_t ***object_pointer;
 	size_t *objects;
 	size_t i;
@@ -241,6 +234,7 @@ void unregister_object(entity_t *e) {
 			object_pointer = &(quad->cluster);
 			objects = &(quad->clusters);
 			break;
+		case BASE :
 		case PLANET :
 		case ASTEROID :
 			object_pointer = &(quad->static_object);
@@ -250,7 +244,6 @@ void unregister_object(entity_t *e) {
 			object_pointer = &(quad->moving_object);
 			objects = &(quad->moving_objects);
 			break;
-		case BASE :
 		default :
 			return;
 			break;
@@ -266,4 +259,56 @@ void unregister_object(entity_t *e) {
 	(*objects)--;
 
 	*object_pointer = (entity_t **) realloc (*object_pointer, *objects * sizeof(entity_t *));
+}
+
+void get_search_bounds(vector_t pos, double radius, quad_index_t *start, quad_index_t *end) {
+	vector_t up_left;
+	vector_t down_right;
+
+	up_left.v = pos.v - vector(radius).v;
+	down_right.v = pos.v + vector(radius).v;
+
+	*start = get_quad_index_by_pos(up_left);
+	*end = get_quad_index_by_pos(down_right);
+}
+
+entity_t *find_closest(entity_t *e, double radius) {
+	quad_index_t start, end;
+	quad_index_t index;
+
+	size_t x, y;
+	unsigned int i;
+	double dist = radius;
+	double t;
+
+	entity_t *closest = NULL;
+
+	get_search_bounds(e->pos, radius, &start, &end);
+	index = get_quad_index_by_pos(e->pos);
+
+//	fprintf(stderr, "search goes from (%lu, %lu) to (%lu, %lu) for (%lu, %lu)\n", start.quad_x, start.quad_y, 
+//			end.quad_x, end.quad_y, 
+//			index.quad_x, index.quad_y);
+
+	for (y = start.quad_y; y <= end.quad_y; y++) {
+		for (x = start.quad_x ; x <= end.quad_x; x++) {
+			map_quad_t *quad = get_quad_by_index((quad_index_t) {x, y});
+
+			for (i = 0; i < quad->static_objects; i++) {
+				if ((t = collision_dist(e, quad->static_object[i])) < dist && e != quad->static_object[i]) {
+					dist = t;
+					closest = quad->static_object[i];
+				}
+			}
+			
+			for (i = 0; i < quad->moving_objects; i++) {
+				if ((t = collision_dist(e, quad->moving_object[i])) < dist && e != quad->static_object[i]) {
+					dist = t;
+					closest = quad->moving_object[i];
+				}
+			}
+		}
+	}
+	
+	return closest;
 }

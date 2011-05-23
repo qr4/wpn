@@ -28,9 +28,15 @@ typedef struct asteroid_data_t asteroid_data_t;
 typedef struct cluster_data_t  cluster_data_t;
 typedef struct base_data_t     base_data_t;
 
-typedef struct entity_t   entity_t;
-typedef struct map_quad_t map_quad_t;
-typedef struct map_t      map_t;
+typedef struct entity_t     entity_t;
+typedef struct map_quad_t   map_quad_t;
+typedef struct quad_index_t quad_index_t;
+typedef struct map_t        map_t;
+
+struct quad_index_t {
+	size_t quad_x;
+	size_t quad_y;
+};
 
 struct map_quad_t {
 	entity_t **cluster;

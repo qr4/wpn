@@ -80,13 +80,13 @@ typedef enum {
 /*
  * Swaps two slots. *left can be the same as *right
  */
-ETRANSFER swap_slots(entity_t *left, int pos_left, entity_t *right, int pos_right);
+ETRANSFER swap_slots(entity_t *left, unsigned int pos_left, entity_t *right, unsigned int pos_right);
 
 /*
  * Moves one slot from left to right. 
  * Target position has to be empty.
  */
-ETRANSFER transfer_slot(entity_t *left, int pos_left, entity_t *right, int pos_right);
+ETRANSFER transfer_slot(entity_t *left, unsigned int pos_left, entity_t *right, unsigned int pos_right);
 
 void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned int slots);
 void destroy_entity(entity_t *e);
