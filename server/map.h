@@ -25,5 +25,5 @@ static inline map_quad_t *get_quad_by_pos(const vector_t pos) {
 map_quad_t *register_object(entity_t *e);
 void unregister_object(entity_t *e);
 
-entity_t *find_closest(entity_t *e, double radius);
+entity_t *find_closest(entity_t *e, const double radius, const unsigned int filter);
 #endif  /*MAP_H*/
