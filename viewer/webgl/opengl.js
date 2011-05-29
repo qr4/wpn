@@ -36,12 +36,12 @@ function glInit() {
 	fullscreen_vbo = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, fullscreen_vbo);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array( 
-			[ -1024., -1024., 0., 	0., 0.,
-				 1024., -1024., 0.,		1., 0.,
-				-1024.,  1024., 0.,		0., 1.,
-				 1024., -1024., 0.,   1., 0.,
-				 1024.,  1024., 0.,   1., 1.,
-				-1024.,  1024., 0.,		0., 1.] ), gl.STATIC_DRAW);
+			[ -1024., -1024., -.5, 	0., 0.,
+				 1024., -1024., -.5,		5., 0.,
+				-1024.,  1024., -.5,		0., 5.,
+				 1024., -1024., -.5,   5., 0.,
+				 1024.,  1024., -.5,   5., 5.,
+				-1024.,  1024., -.5,		0., 5.] ), gl.STATIC_DRAW);
 
 	resize_handler();
 	window.addEventListener( 'resize', resize_handler, false);
@@ -96,7 +96,6 @@ function create_shader(vs_text, fs_text) {
 }
 
 // Textur laden
-// TODO: Mipmapping
 // TODO: racecondition?
 function load_texture(url) {
 	var texture = gl.createTexture();
@@ -106,7 +105,8 @@ function load_texture(url) {
 		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+		gl.generateMipmap(gl.TEXTURE_2D);
 		gl.bindTexture(gl.TEXTURE_2D, null);
 	}
 

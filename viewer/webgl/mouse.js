@@ -43,6 +43,12 @@ function mousewheel_handler(event) {
 	}
 	if(amount != 0) {
 		amount = 1. + 0.3 * amount;
-		mat4.scale(view_matrix, [amount,amount,1.]);
+
+		/* Zoom von links an die view-matrix dranmultiplizieren */
+		var zoom_matrix = mat4.create();
+		mat4.identity(zoom_matrix);
+		mat4.scale(zoom_matrix, [amount,amount,1.]);
+		mat4.multiply(zoom_matrix, view_matrix);
+		view_matrix = zoom_matrix;
 	}
 }

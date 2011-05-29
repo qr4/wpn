@@ -37,14 +37,12 @@ function parse_planet(planet) {
 	for(var i=0; i<planets.length; i++) {
 		if(planets[i].id == planet.id) {
 			planets[i] = planet;
-			update_planet_vbo();
 			return;
 		}
 	}	
 	
 	// Ansonsten: Anfügen.
 	planets.push(planet);
-	update_planet_vbo();
 }
 
 /* Male alle aktuell bekannten planeten, in einem schub */
@@ -56,7 +54,8 @@ function render_planets() {
 	gl.uniformMatrix4fv(gl.getUniformLocation(planet_shader, 'modelmatrix'), false, model_matrix);
 	gl.uniformMatrix4fv(gl.getUniformLocation(planet_shader, 'viewmatrix'), false, view_matrix);
 	gl.uniformMatrix4fv(gl.getUniformLocation(planet_shader, 'projectionmatrix'), false, projection_matrix);
-	gl.uniform1f(gl.getUniformLocation(planet_shader, 'scaling'), Math.sqrt(mat4.determinant(view_matrix)));
+	gl.uniform1f(gl.getUniformLocation(planet_shader, 'scaling'), Math.sqrt(mat4.determinant(view_matrix)*canvas.width*canvas.height));
+	gl.uniform1f(gl.getUniformLocation(planet_shader, 'time'), time/5000.);
 
 	/* Planeten-VBO angeben */
 	gl.uniform1i(gl.getUniformLocation(planet_shader, 'planet_data'), false, 0);

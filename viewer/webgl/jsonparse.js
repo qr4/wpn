@@ -23,6 +23,7 @@ function init_json_listener() {
 	//ajaxobject.setRequestHeader('Cache-Control', 'no-cache');
 	//ajaxobject.open("GET", "/cgi/test.cgi?x=" + cachebuster);
 	ajaxobject.open("GET", "test.json?x=" + cachebuster);
+	//ajaxobject.open("GET", "visualizer-example-world.json?x=" + cachebuster);
 	ajaxobject.send(null);
 }
 
@@ -71,9 +72,15 @@ function parse_world(world) {
 
 	// Planeten werden einfach direkt dem parser übergeben
 	if(world.planets) {
+
+		// Mit neuem, leerem array anfangen.
+		planets = [];
 		for(var i=0; i<world.planets.length; i++) {
 			parse_planet(world.planets[i]);
 		}
+
+		// Die Graphikkarte sollte davon auch wissen.
+		update_planet_vbo();
 	}
 
 	// Ein world-bounding-box-update führt zum zoomen auf
@@ -97,8 +104,11 @@ function parse_world(world) {
 
 function parse_update(update) {
 	if(update.planets) {
+		// eventuelle planeten-veränderungen einpflegen
 		for(var i=0; i<update.planets.length; i++) {
 			parse_planet(update.planets[i]);
 		}
+		// Die Graphikkarte sollte davon auch wissen.
+		update_planet_vbo();
 	}
 }

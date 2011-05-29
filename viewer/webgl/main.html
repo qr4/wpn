@@ -126,13 +126,13 @@
 			}
 
 			float turbulence(vec3 v){
-				return 0.5+(sn(v*3.)/3.+sn(v*9.)/9.+sn(v*27.)/27.);
+				return 0.6+(sn(v*3.)/3.+sn(v*9.)/9.+sn(v*27.)/27.);
 			}
 			void main() {
 				vec3 w = worldpos;
-				w.z=time/5e5;
-				highp float c = turbulence(w/1000.);
-				gl_FragColor = vec4(0.1*c*c*c,0.1*c*c,0.3*c,0.3*c*c);
+				w.z=time/100.;
+				highp float c = max(0.,turbulence(w/1000.));
+				gl_FragColor = vec4(0.1*c*c*c,0.1*c*c,0.3*c,0.4*c*c);
 			}
 		</script>
 
@@ -153,14 +153,15 @@
 				vec4 p = vec4(planet_data.xy, 0., 1.);
 				gl_Position = projectionmatrix * viewmatrix * modelmatrix * p;
 
-				// Planetenfarbe uniqe aus der player-id berechnen
-				planet_color = vec3(sin(planet_data.a), cos(2. * planet_data.a), sin(3. * planet_data.a));
-
-				// Planetengroesse aus der ID "irgendwie rauswurschteln"
-				gl_PointSize = 1000. * (2. + sin(planet_data.z))  * scaling;
-
 				// Und planet_id an den pixelshader weitergeben
 				planet_id = planet_data.z;
+
+				// Planetenfarbe uniqe aus der planeten-id berechnen
+				planet_color = abs(vec3(cos(planet_id), sin(1.71*planet_id),sin(planet_id*planet_id)));
+
+				// Planetengroesse aus der ID "irgendwie rauswurschteln"
+				gl_PointSize = (2. + sin(planet_data.z))  * scaling;
+
 			}
 		</script>
 
@@ -170,9 +171,98 @@
 			varying vec3 planet_color;
 			varying float planet_id;
 			
+			float sn(in vec3 p) {
+				const vec4 v = vec4(17.* 17., 34., 1., 7.);
+				const vec2 c = vec2(1./6., 1./3.);
+				const vec4 d = vec4(0., .5, 1., 2.);
+				const float n = 1./v.w;
+
+				vec3 i = floor(p + dot(p, c.yyy));
+				vec3 x0 = p - i + dot(i, c.xxx);
+
+				vec3 g = 1.-step(x0.xyz, x0.yzx);
+				vec3 l = step(x0.xyz, x0.yzx);
+
+				vec3 i1 = g.xyz * l.zxy;
+				vec3 i2 = max(g.xyz, l.zxy);
+
+				i = mod(i, v.x);
+				vec4 r = i.z + vec4(0., i1.z, i2.z, 1.);
+				r = mod((mod(r*v.y, v.x)+v.z)*r, v.x);
+				r += i.y + vec4(0., i1.y, i2.y, 1.);
+				r = mod((mod(r*v.y, v.x)+v.z)*r, v.x);
+				r += i.x + vec4(0., i1.x, i2.x, 1.);
+				r = mod((mod(r*v.y, v.x)+v.z)*r, v.x);
+				r = floor(r);
+
+				vec3 x1 = x0 - i1 + 1. * c.x;
+				vec3 x2 = x0 - i2 + 2. * c.x;
+				vec3 x3 = x0 - 1. + 3.  * c.x;
+
+				vec3 ns = n * d.wyz - d.xzx;
+				r -= v.w*v.w*floor(r*ns.z*ns.z);
+				vec4 a = floor(r*ns.z);
+				vec4 b = floor(r - v.w*a);
+
+				vec4 x = a*ns.x + ns.y;
+				vec4 y = b*ns.x + ns.y;
+				vec4 h = 1. - abs(x) - abs(y);
+
+				vec4 b0 = vec4(x.xy, y.xy);
+				vec4 b1 = vec4(x.zw, y.zw);
+
+				vec4 s0 = ceil(b0)*2.-1.;
+				vec4 s1 = ceil(b1)*2.-1.;
+				vec4 sh = floor(h);
+
+				vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
+				vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+
+				vec4 t = vec4(
+				dot(vec3(a0.xy, h.x), x0),
+				dot(vec3(a0.zw, h.y), x1),
+				dot(vec3(a1.xy, h.z), x2),
+				dot(vec3(a1.zw, h.w), x3)
+				);
+
+				vec4 s = vec4(
+				dot(x0, x0),
+				dot(x1, x1),
+				dot(x2, x2),
+				dot(x3, x3)
+				);
+
+				s = max(0.6 - s, 0.);
+				s *= s;
+				s *= s;
+
+				return 48.0 * dot(s, t);
+			}
+			float turbulence(vec3 v){
+				return 0.5+(sn(v*3.)/3.+sn(v*6.)/6.+sn(v*12.)/12.)+sn(v*19.)/19.;
+			}
 			void main() {
 				vec2 p = 2.*(gl_PointCoord-vec2(.5));
-				gl_FragColor = (1. - step(1.0,length(p))) * vec4(planet_color,1.);
+				vec3 n = vec3(p, sqrt(1. - length(p)));
+				n=normalize(n);
+
+				// Rotierende Planeten!
+				vec3 ra = normalize(vec3(sin(planet_id),1.,sin(5.*planet_id))); // Rotationsachse
+				float angle = cos(3.7*planet_id)*time; // Drehwinkel
+				vec3 r1 = cross(n,ra);
+				vec3 r2 = cross(r1,ra);
+				vec3 v = normalize(cos(angle)*r1 - sin(angle)*r2+ra*dot(n,ra));
+
+				float noise1_scale = 3. + 2. * cos(4.2*planet_id);
+				float noise2_scale = noise1_scale + 2. * sin(3.7*planet_id);
+				n+=turbulence(noise1_scale*v);
+				n=normalize(n);
+
+				vec3 c = planet_color * max(0.,dot(n,vec3(-.57,-.57,.57))) // <-- hilight
+				+ vec3(.7,0.5,0.4) * planet_color *abs(sin(planet_id)) * turbulence(4.2*v); // <-- ambient
+				//c+= vec3(.3*pow(turbulence(2.*(n+vec3(0.,0.,planet_id))), 4.)); // <-- clouds
+				c*=sin(n.z); // <-- rand-verdunklung
+				gl_FragColor = vec4(c, 1. - step(1.0,length(p)));
 			}
 		</script>
 
@@ -197,13 +287,14 @@
 			var bg_shader = create_shader("worldpos_vs", "space_shader");
 
 			var start_time = new Date().getTime();
+			var time=0;
 
 			window.requestAnimFrame(render_frame);
 
 			// Die render-funktion wird in regelmässigen abständen aufgerufen
 			// und malt das zeug.
 			function render_frame() {
-				var time = new Date().getTime() - start_time;
+				time = new Date().getTime() - start_time;
 
 				// Screen clearen
 				gl.clearColor(0.,0.,0.,1.);
