@@ -7,10 +7,14 @@
 #define dt 0.5
 #define vmax 25
 
-// Leergewicht eines kleinen Schiffs
+// Leergewicht eines kleinen Schiffs (3 slots)
 #define m0_small 1
-// Leergewicht eines mittleren Schiffs
+// Leergewicht eines mittleren Schiffs (6 slots)
 #define m0_medium 2
+// Leergewicht eines grossen Schiffs (12 slots)
+#define m0_large 4
+// Leergewicht eines riesigen Schiffs (24 slots)
+#define m0_huge 8
 // Gewicht eines Klotzes (thruster, recourse, laser)
 #define m0_klotz 1
 // Schub eines thrusters

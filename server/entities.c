@@ -4,6 +4,7 @@
 #include "types.h"
 #include "entities.h"
 #include "map.h"
+#include "physics.h"
 
 /*
  * Swaps two slots. *left can be the same as *right
@@ -138,6 +139,7 @@ void destroy_entity(entity_t *e) {
 		case BASE :
 			break;
 		case SHIP :
+			free_route(e->ship_data->flightplan);
 			break;
 		default :
 			break;

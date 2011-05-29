@@ -14,14 +14,24 @@ double get_mass(entity_t* s) {
 	if(!s) {
 		fprintf(stderr, "Very funny, calling get_mass with s = NULL\n");
 		exit(1);
-	} else if(s->slots != 3 && s->slots != 6) {
-		fprintf(stderr, "Very funny, calling get_mass with s->slots = %d\n", s->slots);
+	} else if(s->type != SHIP) {
+		fprintf(stderr, "Very funny, calling get_mass with something that is not a ship\n");
 		exit(1);
 	}
-	if(s->slots == 3) {
+	if(s->slots < 1) {
+		fprintf(stderr, "Very funny, calling get_mass with something that has no slots\n");
+		exit(1);
+	} else if(s->slots <= 3) {
 		m += m0_small;
-	} else if(s->slots == 6) {
+	} else if(s->slots <= 6) {
 		m += m0_medium;
+	} else if(s->slots <= 12) {
+		m += m0_large;
+	} else if(s->slots <= 24) {
+		m += m0_huge;
+	} else {
+		fprintf(stderr, "get_mass finds your death start very funny. not.\n");
+		exit(1);
 	}
 
 	for(i = 0; i < s->slots; i++) {
@@ -41,7 +51,10 @@ double get_thrust(entity_t* s) {
 	if(!s) {
 		fprintf(stderr, "Very funny, calling get_thrust with s = NULL\n");
 		exit(1);
-	} else if(s->slots != 3 && s->slots != 6) {
+	} else if(s->type != SHIP) {
+		fprintf(stderr, "Very funny, calling get_thrust with something that is not a ship\n");
+		exit(1);
+	} else if(s->slots < 1) {
 		fprintf(stderr, "Very funny, calling get_thrust with s->slots = %d\n", s->slots);
 		exit(1);
 	}
@@ -165,7 +178,6 @@ void coast(waypoint_t* wp0, waypoint_t* wp1) {
 	waypoint_t* wpx = wp0;
 	for(t = ceil(wp0->t / dt)*dt; t < wp0->t + t_coast; t += dt) {
 		double delta_t = t - wp0->t;
-		//fprintf(stdout, "    %f %f %f %f %f\n", t, wp0->x.x + wp0->v.x * delta_t, wp0->x.y + wp0->v.y * delta_t, wp0->v.x, wp0->v.y);
 		waypoint_t* wpy = create_waypoint(wp0->point.x + wp0->speed.x * delta_t, wp0->point.y + wp0->speed.y * delta_t, wp0->speed.x, wp0->speed.y, t, WP_VIA);
 		wpx->next = wpy;
 		wpx = wpy;
@@ -182,8 +194,6 @@ void _straight_minimal_time(waypoint_t* wp0, waypoint_t* wp1, double a) {
 		fprintf(stderr, "Very funny, calling _straight_minimal_time with wp1 == NULL\n");
 		return;
 	}
-
-	//fprintf(stderr, "Going from x0=(%f,%f), v0=(%f,%f), to x1=(%f,%f), v1=(%f,%f) with acceleration a=%f\n", wp0->x.x, wp0->x.y, wp0->v.x, wp0->v.y, wp1->x.x, wp1->x.y, wp1->v.x, wp1->v.y, a);
 
 	double dist = hypot(wp1->point.x - wp0->point.x, wp1->point.y - wp0->point.y);
 	double distx = wp1->point.x - wp0->point.x;
@@ -204,14 +214,12 @@ void _straight_minimal_time(waypoint_t* wp0, waypoint_t* wp1, double a) {
 		for(t = ceil(wp0->t / dt)*dt; t < wp0->t + t_end; t += dt) {
 			if(t <= wp0->t + t_midway) {
 				double delta_t = t - wp0->t;
-				//fprintf(stdout, "    %f %f %f %f %f\n", t, wp0->x.x + wp0->v.x * delta_t + 0.5 * a * distx * delta_t * delta_t / dist, wp0->x.y + wp0->v.y * delta_t + 0.5 * a * disty * delta_t * delta_t / dist, wp0->v.x + a * distx * delta_t / dist, wp0->v.y + a * disty * delta_t / dist);
 				waypoint_t* wpy = create_waypoint(wp0->point.x + wp0->speed.x * delta_t + 0.5 * a * distx * delta_t * delta_t / dist, wp0->point.y + wp0->speed.y * delta_t + 0.5 * a * disty * delta_t * delta_t / dist, wp0->speed.x + a * distx * delta_t / dist, wp0->speed.y + a * disty * delta_t / dist, t, WP_VIA);
 				wpx->next = wpy;
 				wpx = wpy;
 				wpx = wpy;
 			} else {
 				double delta_t = t - wp0->t - t_end;
-				//fprintf(stdout, "    %f %f %f %f %f\n", t, wp1->x.x + wp1->v.x * delta_t - 0.5 * a * delta_t * delta_t * distx / dist, wp1->x.y + wp1->v.y * delta_t - 0.5 * a * delta_t * delta_t * disty / dist, wp1->v.x - a * delta_t * distx / dist, wp1->v.y - a * delta_t * disty / dist);
 				waypoint_t* wpy = create_waypoint(wp1->point.x + wp1->speed.x * delta_t - 0.5 * a * delta_t * delta_t * distx / dist, wp1->point.y + wp1->speed.y * delta_t - 0.5 * a * delta_t * delta_t * disty / dist, wp1->speed.x - a * delta_t * distx / dist, wp1->speed.y - a * delta_t * disty / dist, t, WP_VIA);
 				wpx->next = wpy;
 				wpx = wpy;
@@ -240,21 +248,14 @@ void straight_minimal_time(waypoint_t* wp0, waypoint_t* wp1, double a) {
 	double distx = wp1->point.x - wp0->point.x;
 	double disty = wp1->point.y - wp0->point.y;
 
-	//fprintf(stderr, "Distance to travel is %f, distance to spinup is %f, distance to stop is %f\n", dist, l_spinup, l_spindown);
-
 	if(dist < l_spinup + l_spindown) {
 		_straight_minimal_time(wp0, wp1, a);
 	} else {
-		//fprintf(stderr, "We need a coast phase in between\n");
-		//fprintf(stderr, "Spinup\n");
 		waypoint_t* wp_coaststart = create_waypoint(wp0->point.x + l_spinup*distx/dist, wp0->point.y + l_spinup*disty/dist, vmax*distx/dist, vmax*disty/dist, 0, WP_VIA);
 		_straight_minimal_time(wp0, wp_coaststart, a);
-		//fprintf(stderr, "Coast\n");
 		waypoint_t* wp_coaststop = create_waypoint(wp1->point.x - l_spindown*distx/dist, wp1->point.y - l_spindown*disty/dist, vmax*distx/dist, vmax*disty/dist, 0, WP_VIA);
 		coast(wp_coaststart, wp_coaststop);
-		//fprintf(stderr, "Spindown\n");
 		_straight_minimal_time(wp_coaststop, wp1, a);
-		//fprintf(stderr, "Done\n");
 	}
 }
 
@@ -283,13 +284,8 @@ void swing_by(waypoint_t* wp0, vector_t obstacle, waypoint_t* wp1, double a) {
 	double bearing0 = atan2(distx, disty);
 	double bearing1 = atan2(wp1->point.x - obstacle.x, wp1->point.y - obstacle.y);
 
-	//fprintf(stderr, "Going from (%f,%f) to (%f,%f) with turnrate %f\n", wp0->x.x, wp0->x.y, wp1->x.x, wp1->x.y, turn_rate);
-	//fprintf(stderr, "Going around (%f,%f) from bearing %f to %f\n", obstacle.x, obstacle.y, bearing0, bearing1);
-
 	double angle = bearing1 - bearing0;
 	double t_rotate = angle / turn_rate;
-
-	//Fprintf(stderr, "Need to cover %f radians, this will take %f s\n", angle, t_rotate);
 
 	if(fabs(dist0 - dist1) > epsilon) {
 		fprintf(stderr, "A swing_by can't just change the distance from %f to %f (obs = %f, %f, diff = %e)\n", dist0, dist1, obstacle.x, obstacle.y, dist0 - dist1);
@@ -310,7 +306,6 @@ void swing_by(waypoint_t* wp0, vector_t obstacle, waypoint_t* wp1, double a) {
 		double newvx =  wp0->speed.x * c + wp0->speed.y * s;
 		double newvy = -wp0->speed.x * s + wp0->speed.y * c;
 
-		//fprintf(stdout, "  %f %f %f %f %f\n", t, newx, newy, newvx, newvy);
 		waypoint_t* wpy = create_waypoint(newx, newy, newvx, newvy, t, WP_TURN_VIA);
 		wpx->next = wpy;
 		wpx = wpy;
@@ -319,45 +314,6 @@ void swing_by(waypoint_t* wp0, vector_t obstacle, waypoint_t* wp1, double a) {
 	wpx->next = wp1;
 	wp1->t = wp0->t + t_rotate;
 }
-
-/*
-void insert_circle(entity_t* s, waypoint_t* start, waypoint_t* via, waypoint_t* stop, vector_t* obs) {
-	double ratio1 = dividing_ratio(&(start->point), &(via->point), obs);
-	double l1 = dist(&(start->point), &(via->point));
-	double l1x = via->point.x - start->point.x;
-	double l1y = via->point.y - start->point.y;
-	double x = start->point.x + (via->point.x - start->point.x) * ratio1;
-	double y = start->point.y + (via->point.y - start->point.y) * ratio1;
-	double r1 = hypot(x - obs->x, y - obs->y);
-	double v = get_max_curve_speed(s, r1);
-	double vx = v * (via->point.x - start->point.x) / l1;
-	double vy = v * (via->point.y - start->point.y) / l1;
-	waypoint_t* t1 = create_waypoint(x, y, vx, vy, 0, WP_TURN_START);
-	fprintf(stderr, "(%f,%f) to (%f,%f), obs = (%f,%f), l1 = %f, ratio1=%f\n", start->point.x, start->point.y, via->point.x, via->point.y, obs->x, obs->y, l1, ratio1);
-	fprintf(stderr, "l1x = %f, l1y = %f, (%f,%f)\n", l1x, l1y, x, y);
-
-	double ratio2 = dividing_ratio(&(via->point), &(stop->point), obs);
-	double l2 = dist(&(via->point), &(stop->point));
-	double l2x = stop->point.x - via->point.x;
-	double l2y = stop->point.y - via->point.y;
-	x = via->point.x + (stop->point.x - via->point.x) * ratio2;
-	y = via->point.y + (stop->point.y - via->point.y) * ratio2;
-	double r2 = hypot(x - obs->x, y - obs->y);
-	vx = v * (stop->point.x - via->point.x) / l2;
-	vy = v * (stop->point.y - via->point.y) / l2;
-	waypoint_t* t2 = create_waypoint(x, y, vx, vy, 0, WP_TURN_STOP);
-	fprintf(stderr, "(%f,%f) to (%f,%f), obs = (%f,%f), l2 = %f, ratio2=%f\n", via->point.x, via->point.y, stop->point.x, stop->point.y, obs->x, obs->y, l2, ratio2);
-	fprintf(stderr, "l2x = %f, l2y = %f, (%f,%f)\n", l2x, l2y, x, y);
-
-	fprintf(stderr, "r1 = %f, r2 = %f\n", r1, r2);
-
-	start->next = t1;
-	t1->next = t2;
-	t2->next = stop;
-
-	free_waypoint(via);
-}
-*/
 
 vector_t point_tangent(vector_t p, vector_t center, double r, vector_t hint) {
 	double x0 = center.x - p.x;
@@ -375,20 +331,15 @@ vector_t point_tangent(vector_t p, vector_t center, double r, vector_t hint) {
 
 	vector_t ret;
 	if(d0 <= d1 && d0 <= d2 && d0 <= d3) {
-		//printf("%f %f\n", p.x + x0 + r * cos(t0), p.y + y0 + r * sin(t0));
 		ret.x = p.x + x0 + r * cos(t0);
 		ret.y = p.y + y0 + r * sin(t0);
 	} else if(d1 <= d0 && d1 <= d2 && d1 <= d3) {
-		//printf("%f %f\n", p.x + x0 + r * cos(t1), p.y + y0 + r * sin(t1));
 		ret.x = p.x + x0 + r * cos(t1);
 		ret.y = p.y + y0 + r * sin(t1);
 	} else if(d2 <= d0 && d2 <= d1 && d2 <= d3) {
-		//printf("%f %f\n", p.x + x0 + r * cos(t2), p.y + y0 + r * sin(t2));
 		ret.x = p.x + x0 + r * cos(t2);
 		ret.y = p.y + y0 + r * sin(t2);
-	//} else if(d3 <= d0 && d3 <= d1 && d3 <= d2) {
 	} else {
-			//printf("%f %f\n", p.x + x0 + r * cos(t3), p.y + y0 + r * sin(t3));
 		ret.x = p.x + x0 + r * cos(t3);
 		ret.y = p.y + y0 + r * sin(t3);
 	}
@@ -435,7 +386,6 @@ vector_t outer_tangent(vector_t c1, double r1, vector_t hint1, vector_t c2, doub
 		} else if(d2 <= d0 && d2 <= d1 && d2 <= d3) {
 			ret.x = c1.x + r1 * cos(t2);
 			ret.y = c1.y + r1 * sin(t2);
-		//} else if(d3 <= d0 && d3 <= d1 && d3 <= d2) {
 		} else {
 			ret.x = c1.x + r1 * cos(t3);
 			ret.y = c1.y + r1 * sin(t3);
@@ -475,7 +425,6 @@ vector_t outer_tangent(vector_t c1, double r1, vector_t hint1, vector_t c2, doub
 			return ta1;
 		} else if(d2 <= d0 && d2 <= d1 && d2 <= d3) {
 			return ta2;
-		//} else if(d3 <= d0 && d3 <= d1 && d3 <= d2) {
 		} else {
 			return ta3;
 		}
@@ -517,7 +466,6 @@ vector_t inner_tangent(vector_t c1, double r1, vector_t hint1, vector_t c2, doub
 		return ta1;
 	} else if(d2 <= d0 && d2 <= d1 && d2 <= d3) {
 		return ta2;
-	//} else if(d3 <= d0 && d3 <= d1 && d3 <= d2) {
 	} else {
 		return ta3;
 	}
@@ -538,7 +486,6 @@ void splice_curves(entity_t* s) {
 	while(prev && via) {
 		if(prev && via && prev->type == WP_START && via->type == WP_TURN_VIA) {
 			vector_t tangent_start = point_tangent(prev->point, via->obs, hypot(via->obs.x - via->point.x, via->obs.y - via->point.y), via->point);
-			//printf("The course meets the first curve at (%f, %f)\n", tangent_start.x, tangent_start.y);
 			double r = hypot(tangent_start.x - via->obs.x, tangent_start.y - via->obs.y);
 			double v = get_max_curve_speed(s, r);
 			double vx = -v * (tangent_start.y - via->obs.y) / r;
@@ -551,7 +498,6 @@ void splice_curves(entity_t* s) {
 		}
 		if(prev && via && prev->type == WP_TURN_VIA && via->type == WP_STOP) {
 			vector_t tangent_stop = point_tangent(via->point, prev->obs, hypot(prev->obs.x - prev->point.x, prev->obs.y - prev->point.y), prev->point);
-			//printf("The course leave the last curve at (%f, %f)\n", tangent_stop.x, tangent_stop.y);
 			double r = hypot(tangent_stop.x - prev->obs.x, tangent_stop.y - prev->obs.y);
 			double v = get_max_curve_speed(s, r);
 			double vx = -v * (tangent_stop.y - prev->obs.y) / r;
