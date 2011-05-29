@@ -6,6 +6,6 @@
 #include "vector.h"
 
 /* Create a new, empty ship */
-extern entity_t* create_ship(vector_t pos, uint8_t size);
+extern void init_ship(entity_t* e, vector_t pos, uint8_t size);
 
 #endif /* _SHIP_H */

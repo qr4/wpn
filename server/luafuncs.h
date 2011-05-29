@@ -20,4 +20,8 @@ extern int lua_moveto(lua_State* L);
  * avoiding planets and asteroid fields */
 extern int lua_set_autopilot_to(lua_State* L);
 
+/* Debugging helper function, creating a string description of the given entity */
+int lua_entity_to_string(lua_State* L);
+
+
 #endif /* _LUAFUNCS_H */

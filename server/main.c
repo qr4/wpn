@@ -11,29 +11,6 @@
 #define print_sizeof(TYPE) \
 	printf("sizeof(%-14s) = %4lu\n", #TYPE, sizeof(TYPE));
 
-const char *type_string(type_t type) {
-	switch (type) {
-		case CLUSTER :
-			return "cluster";
-			break;
-		case BASE :
-			return "base";
-			break;
-		case PLANET :
-			return "planet";
-			break;
-		case ASTEROID :
-			return "asteroid";
-			break;
-		case SHIP :
-			return "ship";
-			break;
-		default :
-			return "";
-			break;
-	}
-}
-
 int main(int argc, char *argv[]) {
 	//vector_t v1 = vector(5);
 	//vector_t v2 = vector(0);
@@ -92,8 +69,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	vector_t v1 = vector(5);
-	entity_t* ship1;
-	ship1 = create_ship(v1, 6);
+	entity_t* ship1 = malloc(sizeof(entity_t));
+	init_ship(ship1,v1, 6);
 
 	e.radius = 1;
 
