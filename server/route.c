@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "map.h"
 #include "physics.h"
 #include "route.h"
 #include "types.h"
@@ -64,22 +65,70 @@ waypoint_t* route(vector_t* start, vector_t* stop, entity_t* entities, int n_poi
 	}
 }
 
+waypoint_t* intra_cluster_route(vector_t* start, vector_t* stop, entity_t* cluster) {
+	if(cluster->cluster_data->asteroids == 0) {
+		return route(start, stop, cluster->cluster_data->planet, 1);
+	} else {
+		return route(start, stop, cluster->cluster_data->asteroid, cluster->cluster_data->asteroids);
+	}
+}
+
 waypoint_t* plotCourse(vector_t* start, vector_t* stop, entity_t* entities, int n) {
 	waypoint_t* wp_start = malloc(sizeof(waypoint_t));
 	waypoint_t* wp_stop = malloc(sizeof(waypoint_t));
+	waypoint_t* jp1 = wp_start;
+	waypoint_t* jp2 = wp_stop;
+
 	wp_start->point = *start;
 	wp_start->type = WP_START;
+	wp_start->next = NULL;
 	wp_stop->point = *stop;
 	wp_stop->type = WP_STOP;
-	wp_start->next = route(start, stop, entities, n * n);
 	wp_stop->next = NULL;
-	waypoint_t* t = wp_start;
 
+	entity_t* e_start = find_closest_by_position(*start, 0, 0, CLUSTER);
+	entity_t* e_stop = find_closest_by_position(*stop, 0, 0, CLUSTER);
+
+	waypoint_t* t;
+
+	if(e_start == NULL && e_stop == NULL) {
+		// inter cluster flight
+		wp_start->next = route(start, stop, entities, n * n);
+	} else if(e_start != NULL && e_stop != NULL && e_start->pos.x == e_stop->pos.x && e_start->pos.y == e_stop->pos.y) {
+		// flight within a cluster
+		wp_start->next = intra_cluster_route(start, stop, e_start);
+	} else {
+		if(e_start != NULL) {
+			// We start in a cluster
+			jp1 = malloc(sizeof(waypoint_t));
+			jp1->point.x = e_start->pos.x + (start->x - e_start->pos.x) * e_start->radius / vector_dist(&(e_start->pos), start);
+			jp1->point.y = e_start->pos.y + (start->y - e_start->pos.y) * e_start->radius / vector_dist(&(e_start->pos), start);
+			jp1->type = WP_VIA;
+			jp1->next = NULL;
+			wp_start->next = intra_cluster_route(start, &(jp1->point), e_start);
+		}
+		if(e_stop != NULL) {
+			// We start in a cluster
+			jp2 = malloc(sizeof(waypoint_t));
+			jp2->point.x = e_stop->pos.x + (stop->x - e_stop->pos.x) * e_stop->radius / vector_dist(&(e_stop->pos), stop);
+			jp2->point.y = e_stop->pos.y + (stop->y - e_stop->pos.y) * e_stop->radius / vector_dist(&(e_stop->pos), stop);
+			jp2->type = WP_VIA;
+			jp2->next = intra_cluster_route(&(jp2->point), stop, e_stop);
+			t = jp2;
+			while (t->next != NULL) {
+				t = t->next;
+			}
+			t->next = wp_stop;
+		}
+
+		route(&(jp1->point), &(jp2->point), entities, n);
+	}
+
+	t = wp_start;
 	while (t->next != NULL) {
 		t = t->next;
 	}
-
-	t->next = wp_stop;
+	t->next = jp2;
 	return wp_start;
 }
 
