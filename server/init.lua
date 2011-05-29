@@ -10,3 +10,10 @@ function on_autopilot_arrived()
 	moveto(x, y);
 	print("On my way");
 end
+
+
+
+-- For testing the execution time limit: an endless loop
+--while 1 do
+--	print("derping")
+--end
