@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "entities.h"
+#include "luastate.h"
 #include "map.h"
 #include "physics.h"
 
@@ -208,4 +209,23 @@ char* slots_to_string(entity_t* e) {
 	}
 
 	return s;
+}
+
+/* After time dt has passed the ship is moved to the next position listed in
+ * it's flightplan. */
+static inline void move_ship(entity_t *ship) {
+	if(ship->ship_data != NULL) {
+		if(ship->ship_data->flightplan != NULL) {
+			waypoint_t* next = ship->ship_data->flightplan->next;
+			free_waypoint(ship->ship_data->flightplan);
+			ship->ship_data->flightplan = next;
+			if(next) {
+				ship->pos = next->point;
+				ship->v = next->speed;
+			} else {
+				// *Bling* we arrived
+				call_entity_callback(ship, AUTOPILOT_ARRIVED);
+			}
+		}
+	}
 }
