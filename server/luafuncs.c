@@ -6,12 +6,8 @@
 #include "luastate.h"
 #include "entities.h"
 
-/* Kill the interpreter, resetting to an empty ship.
- * This just deliberately creates a lua error, thus
- * causing the error handler to kill the ship. */
-int lua_killself(lua_State* L) {
-	entity_t* e;
-	//int n;
+entity_t *get_self(lua_State *L) {
+	entity_t *e;
 
 	/* Fetch self-pointer */
 	lua_getglobal(L, "self");
@@ -28,6 +24,16 @@ int lua_killself(lua_State* L) {
 		lua_pushstring(L,"Your self-pointer is not pointing at yourself! What are you doing?");
 		lua_error(L);
 	}
+
+	return e;
+}
+
+/* Kill the interpreter, resetting to an empty ship.
+ * This just deliberately creates a lua error, thus
+ * causing the error handler to kill the ship. */
+int lua_killself(lua_State* L) {
+	//entity_t* e = get_self(L);
+	//int n;
 
 	/* Invoke a lua error. */
 	lua_pushstring(L,"invoked killself()");
@@ -64,7 +70,7 @@ int lua_moveto(lua_State* L) {
 			callback = strdup(lua_tostring(L,-1));
 
 			/* Pop it from the stack */
-			lua_pop(L,1);
+			lua_pop(L,2);
 
 			/* Fall through to the 2-argument case */
 		case 2:
@@ -77,35 +83,19 @@ int lua_moveto(lua_State* L) {
 			y = lua_tonumber(L,-1);
 			x = lua_tonumber(L,-2);
 
-			lua_pop(L,2);
+			lua_pop(L,3);
 			break;
 		default:
 			lua_pushstring(L, "Wrong number of arguments to moveto.");
 			lua_error(L);
 	}
 
-	/* Fetch self-pointer */
-	lua_getglobal(L, "self");
-	if(!lua_islightuserdata(L,-1)) {
-		lua_pop(L,1);
-		lua_pushstring(L, "Your self-pointer is no longer an entity pointer! What have you done?");
-		lua_error(L);
-	}
-
-	/* Confirm that it is pointing at the active entity */
-	e = lua_touserdata(L, -1);
-	lua_pop(L,1);
-	if(e != lua_active_entity) {
-		lua_pushstring(L,"Your self-pointer is not pointing at yourself! What are you doing?");
-		lua_error(L);
-	}
+	e = get_self(L);
 
 	/* Now call the moveto-flightplanner */
 	/* TODO: Actually do this. */
 	/* moveto_planner(e, x, y, callback) */
 	/* Until then: just set the speed to arrive at the target location within 5 timesteps. We do, however, not stop yet. */
-	//e->v.x = (x - e->pos.x) / 5.;
-	//e->v.y = (y - e->pos.y) / 5.;
 
 	e->v.v = (((v2d) {x, y}) - e->pos.v) / vector(5).v;
 
@@ -140,7 +130,7 @@ int lua_set_autopilot_to(lua_State* L) {
 			callback = strdup(lua_tostring(L,-1));
 
 			/* Pop it from the stack */
-			lua_pop(L,1);
+			lua_pop(L,2);
 
 			/* Fall through to the 2-argument case */
 		case 2:
@@ -153,28 +143,14 @@ int lua_set_autopilot_to(lua_State* L) {
 			y = lua_tonumber(L,-1);
 			x = lua_tonumber(L,-2);
 
-			lua_pop(L,2);
+			lua_pop(L,3);
 			break;
 		default:
 			lua_pushstring(L, "Wrong number of arguments to set_autopilot_to.");
 			lua_error(L);
 	}
 
-	/* Fetch self-pointer */
-	lua_getglobal(L, "self");
-	if(!lua_islightuserdata(L,-1)) {
-		lua_pop(L,1);
-		lua_pushstring(L, "Your self-pointer is no longer an entity pointer! What have you done?");
-		lua_error(L);
-	}
-
-	/* Confirm that it is pointing at the active entity */
-	e = lua_touserdata(L, -1);
-	lua_pop(L,1);
-	if(e != lua_active_entity) {
-		lua_pushstring(L,"Your self-pointer is not pointing at yourself! What are you doing?");
-		lua_error(L);
-	}
+	e = get_self(L);
 
 	/* Now call the flightplanner */
 	/* TODO: Actually do this. */
@@ -183,6 +159,10 @@ int lua_set_autopilot_to(lua_State* L) {
 	return 0;
 }
 
+/*
+ * Returns the nearest object within the radius if filter matches. 
+ * Returns NULL if no object is found.
+ */
 int lua_find_closest(lua_State *L) {
 	entity_t *e;
 	int n;
@@ -198,24 +178,8 @@ int lua_find_closest(lua_State *L) {
 
 	filter        = (unsigned int) lua_tonumber(L, -1);
 	search_radius = (double) lua_tonumber(L, -2);
-
-	lua_pop(L, 2);
-
-	/* Fetch self-pointer */
-	lua_getglobal(L, "self");
-	if(!lua_islightuserdata(L,-1)) {
-		lua_pop(L,1);
-		lua_pushstring(L, "Your self-pointer is no longer an entity pointer! What have you done?");
-		lua_error(L);
-	}
-
-	/* Confirm that it is pointing at the active entity */
-	e = lua_touserdata(L, -1);
-	lua_pop(L,1);
-	if(e != lua_active_entity) {
-		lua_pushstring(L,"Your self-pointer is not pointing at yourself! What are you doing?");
-		lua_error(L);
-	}
+	lua_pop(L, 3);
+	e = get_self(L);
 
 	lua_pushlightuserdata(L, find_closest(e, search_radius, filter));
 
@@ -238,7 +202,7 @@ int lua_entity_to_string(lua_State* L) {
 
 	/* Pop entity pointer from stack */
 	e = lua_touserdata(L, -1);
-	lua_pop(L,1);
+	lua_pop(L,2);
 
 	if (e == NULL) {
 		lua_pushstring(L, "nil");
