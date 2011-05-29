@@ -6,6 +6,7 @@
 #include "ship.h"
 #include "luastate.h"
 #include "map.h"
+#include "config.h"
 
 #define print_sizeof(TYPE) \
 	printf("sizeof(%-14s) = %4lu\n", #TYPE, sizeof(TYPE));
@@ -84,6 +85,15 @@ int main(int argc, char *argv[]) {
 	int i;
 	entity_t e;
 	entity_t *closest;
+
+	/* Parse Config */
+	if(!init_config_from_file("config.lua")) {
+		exit(1);
+	}
+
+	vector_t v1 = vector(5);
+	entity_t* ship1;
+	ship1 = create_ship(v1, 6);
 
 	e.radius = 1;
 
