@@ -93,6 +93,7 @@ int main(int argc, char *argv[]) {
 
 	vector_t v1 = vector(5);
 	entity_t* ship1;
+	ship1->pos.v = (v2d) {1000,1000};
 	ship1 = create_ship(v1, 6);
 
 	e.radius = 1;

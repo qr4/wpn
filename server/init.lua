@@ -1,8 +1,18 @@
 
+CLUSTER   = 1;
+PLANET    = 2;
+ASTEROID  = 4;
+BASE      = 8;
+SHIP      = 16;
+
 print "Hi, I'm a ship"
 
+s = entity_to_string(self)
+print("Here is some information about myself:\n".. s)
+closest = entitiy_to_string(find_closest(self, ASTEROID))
+print("I'm very close to:\n".. closest)
+
 function on_autopilot_arrived() 
-	
 	print "I arrived somewhere! Uhm, where should I fly?"
 	x = 0.1;
 	y = 0.1;

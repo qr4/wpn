@@ -1,5 +1,7 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include "luafuncs.h"
 #include "luastate.h"
 #include "entities.h"
@@ -217,5 +219,35 @@ int lua_find_closest(lua_State *L) {
 
 	lua_pushlightuserdata(L, find_closest(e, search_radius, filter));
 
+	return 1;
+}
+
+/* Debugging helper function, creating a string description of the given entity */
+int lua_entity_to_string(lua_State* L) {
+	entity_t* e;
+	char* s;
+	char* temp;
+	int n;
+
+	/* Check arguments */
+	n = lua_gettop(L);
+	if(n != 1 || !lua_islightuserdata(L,-1)) {
+		lua_pushstring(L, "entity_to_string expects exactly one entity pointer\n");
+		lua_error(L);
+	}
+
+	/* Pop entity pointer from stack */
+	e = lua_touserdata(L, -1);
+	lua_pop(L,1);
+
+	/* Fill in description */
+	temp = slots_to_string(e);
+	if(asprintf(&s, "{\n\tEntity %lx:\n\tpos: %f,  %f\n\tv: %f, %f\n\ttype: %s\n\tslots: %i\n\tplayer: %i\n\tcontents: [%s]\n}\n",
+			(size_t)e, e->pos.x, e->pos.y, e->v.x, e->v.y, type_string(e->type), e->slots, e->player_id, temp));
+
+	/* Return it */
+	lua_pushstring(L,s);
+	free(temp);
+	free(s);
 	return 1;
 }

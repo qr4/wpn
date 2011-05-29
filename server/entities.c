@@ -101,6 +101,8 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 			e->slot_data->slot[i] = EMPTY;
 		}
 	}
+
+	e->lua=NULL;
 }
 
 void destroy_entity(entity_t *e) {
@@ -116,7 +118,10 @@ void destroy_entity(entity_t *e) {
 
 	type = (e)->type;
 
-	// uncomment if costum free are nescessary
+	if(e->lua) {
+		lua_close(e->lua);
+	}
+
 	switch (type) {
 		case CLUSTER :
 			destroy_entity(e->cluster_data->planet);
@@ -159,4 +164,48 @@ void destroy_entity(entity_t *e) {
 		default :
 			break;
 	}
+}
+
+/* Type-Bitfield to String converter for debugging and lulz
+ * Don't free the return value! */
+const char *type_string(type_t type) {
+	switch (type) {
+		case CLUSTER :
+			return "cluster";
+			break;
+		case BASE :
+			return "base";
+			break;
+		case PLANET :
+			return "planet";
+			break;
+		case ASTEROID :
+			return "asteroid";
+			break;
+		case SHIP :
+			return "ship";
+			break;
+		default :
+			return "";
+			break;
+	}
+}
+
+/* Create a string representation of the contents of this entities'
+ * slots. One byte per Slot. */
+char* slots_to_string(entity_t* e) {
+	int i;
+	const char slot_mapping[] = " LTRXS";
+	char* s;
+	s = malloc(sizeof(char) * e->slots);
+	if(!s) {
+		fprintf(stderr, "Malloc failed in slots_to_string\n");
+		exit(1);
+	}
+
+	for(i=0; i< e->slots; i++) {
+		s[i] = slot_mapping[e->slot_data->slot[i]];
+	}
+
+	return s;
 }
