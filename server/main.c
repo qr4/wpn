@@ -7,6 +7,7 @@
 #include "luastate.h"
 #include "map.h"
 #include "config.h"
+#include "json_output.h"
 
 #define print_sizeof(TYPE) \
 	printf("sizeof(%-14s) = %4lu\n", #TYPE, sizeof(TYPE));
@@ -62,6 +63,7 @@ int main(int argc, char *argv[]) {
 	int i;
 	entity_t e;
 	entity_t *closest;
+	char* temp;
 
 	/* Parse Config */
 	if(!init_config_from_file("config.lua")) {
@@ -69,10 +71,18 @@ int main(int argc, char *argv[]) {
 	}
 
 	init_map();
+	/* Create a testship */
 	vector_t v1 = vector(1000);
 	entity_t* ship1 = malloc(sizeof(entity_t));
 	init_ship(ship1, v1, 6);
 
+	/* Test json-output with the testship */
+	temp = ship_to_json(ship1);
+	printf("In json, this is:\n%s\n", temp);
+	free(temp);
+
+	/* Test freeing of this ship */
+	destroy_entity(ship1);
 
 	e.radius = 1;
 

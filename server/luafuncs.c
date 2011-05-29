@@ -217,8 +217,6 @@ int lua_find_closest(lua_State *L) {
 		lua_error(L);
 	}
 
-	fprintf(stderr, "entity address: %lx\n", e);
-
 	lua_pushlightuserdata(L, find_closest(e, search_radius, filter));
 
 	return 1;

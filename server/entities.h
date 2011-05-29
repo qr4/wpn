@@ -61,7 +61,7 @@ static inline double collision_dist(entity_t *A, entity_t *B) {
  */
 
 
-static void move_ship(entity_t *ship);
+void move_ship(entity_t *ship);
 
 /*
  * Errorcodes for slot transfers
@@ -84,7 +84,10 @@ ETRANSFER swap_slots(entity_t *left, unsigned int pos_left, entity_t *right, uns
  */
 ETRANSFER transfer_slot(entity_t *left, unsigned int pos_left, entity_t *right, unsigned int pos_right);
 
+/* Initialize the insides of an entity datastructure (this does not allocate the memory for the entity_t) */
 void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned int slots);
+
+/* Clean up an entity, to allow it to be subsequently freed */
 void destroy_entity(entity_t *e);
 
 /* Type-Bitfield to String converter for debugging and lulz
