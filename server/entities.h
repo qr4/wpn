@@ -60,10 +60,7 @@ static inline double collision_dist(entity_t *A, entity_t *B) {
  * ship-functions
  */
 
-static inline void move_ship(entity_t *ship) {
-	vector_t dt_vec = vector(dt);
-	ship->pos.v += ship->v.v * dt_vec.v;
-}
+static inline void move_ship(entity_t *ship);
 
 /*
  * Errorcodes for slot transfers
