@@ -14,11 +14,11 @@ typedef enum {
 } slot_t;
 
 typedef enum {
-	CLUSTER,
-	PLANET,
-	ASTEROID,
-	BASE,
-	SHIP,
+	CLUSTER   = 1 << 0,
+	PLANET    = 1 << 1,
+	ASTEROID  = 1 << 2,
+	BASE      = 1 << 3,
+	SHIP      = 1 << 4,
 } type_t;
 
 typedef struct slot_data_t     slot_data_t;

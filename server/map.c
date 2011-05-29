@@ -272,7 +272,7 @@ void get_search_bounds(vector_t pos, double radius, quad_index_t *start, quad_in
 	*end = get_quad_index_by_pos(down_right);
 }
 
-entity_t *find_closest(entity_t *e, double radius) {
+entity_t *find_closest(entity_t *e, const double radius, const unsigned int filter) {
 	quad_index_t start, end;
 	quad_index_t index;
 
@@ -294,17 +294,36 @@ entity_t *find_closest(entity_t *e, double radius) {
 		for (x = start.quad_x ; x <= end.quad_x; x++) {
 			map_quad_t *quad = get_quad_by_index((quad_index_t) {x, y});
 
-			for (i = 0; i < quad->static_objects; i++) {
-				if ((t = collision_dist(e, quad->static_object[i])) < dist && e != quad->static_object[i]) {
-					dist = t;
-					closest = quad->static_object[i];
+			if (filter & CLUSTER) {
+				for (i = 0; i < quad->clusters; i++) {
+					if (filter & quad->cluster[i]->type 
+							&& e != quad->cluster[i]
+							&& (t = collision_dist(e, quad->cluster[i])) < dist) {
+						dist = t;
+						closest = quad->cluster[i];
+					}
 				}
 			}
-			
-			for (i = 0; i < quad->moving_objects; i++) {
-				if ((t = collision_dist(e, quad->moving_object[i])) < dist && e != quad->static_object[i]) {
-					dist = t;
-					closest = quad->moving_object[i];
+
+			if (filter & (ASTEROID | PLANET)) {
+				for (i = 0; i < quad->static_objects; i++) {
+					if (filter & quad->static_object[i]->type 
+							&& e != quad->static_object[i]
+							&& (t = collision_dist(e, quad->static_object[i])) < dist) {
+						dist = t;
+						closest = quad->static_object[i];
+					}
+				}
+			}
+
+			if (filter & SHIP) {
+				for (i = 0; i < quad->moving_objects; i++) {
+					if (filter & quad->moving_object[i]->type 
+							&& e != quad->static_object[i]
+							&& (t = collision_dist(e, quad->moving_object[i])) < dist) {
+						dist = t;
+						closest = quad->moving_object[i];
+					}
 				}
 			}
 		}
