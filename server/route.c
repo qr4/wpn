@@ -5,6 +5,8 @@
 #include "route.h"
 #include "types.h"
 
+extern map_t map;
+
 waypoint_t* go_around(vector_t* A, vector_t* B, entity_t* C, double r) {
 	vector_t X;
 	X.v = A->v + (v2d) {r, r} * (B->v - A->v);
@@ -127,6 +129,6 @@ void autopilot_planner(entity_t* e, double x, double y, char* callback) {
 	vector_t stop;
 	stop.x = x;
 	stop.y = y;
-	e->ship_data->flightplan = plotCourse(&start, &stop, NULL, 0);
+	e->ship_data->flightplan = plotCourse(&start, &stop, map.cluster, map.clusters_x * map.clusters_y);
 	complete_flightplan(e);
 }
