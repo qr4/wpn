@@ -26,4 +26,12 @@ map_quad_t *register_object(entity_t *e);
 void unregister_object(entity_t *e);
 
 entity_t *find_closest(entity_t *e, const double radius, const unsigned int filter);
+
+static inline entity_t *find_closest_by_position(const vector_t pos, const double entity_radius, const double radius, const unsigned int filter) {
+	entity_t tmp;
+	tmp.pos = pos;
+	tmp.radius = entity_radius;
+	return find_closest(&tmp, radius, filter);
+}
+
 #endif  /*MAP_H*/
