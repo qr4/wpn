@@ -27,7 +27,7 @@ char* callback_names[NUM_EVENTS] = {
  * and runs the player-independent bootcode.
  */
 void init_ship_computer(entity_t* s) {
-	
+
 	/* If the ship already has a running program, delete it. */
 	if(s->lua) {
 		lua_close(s->lua);
@@ -77,7 +77,7 @@ void kill_computer(entity_t* s) {
 
 /* Call an entitie's callback function for a given type of event */
 void call_entity_callback(entity_t* e, event_t event) {
-	
+
 	char* function_name;
 
 	/* First: check lua-workyness */
@@ -101,7 +101,7 @@ void call_entity_callback(entity_t* e, event_t event) {
 	}
 
 	/* Call it.*/
-	/* TODO: Pass some relevant arguments to the event? 
+	/* TODO: Pass some relevant arguments to the event?
 	 * alternatively: set information of the craft's environment
 	 * as globals in it's lua state */
 	if(lua_pcall(e->lua, 0,0,0)) {

@@ -58,7 +58,7 @@ void init_map() {
 				distribute_asteroids(working, AVERAGE_ASTEROID_NUMBER + rand()%4 - 2);
 			} else {
 				// Empty cluster
-		 	}
+			}
 		}
 	}
 
@@ -193,7 +193,7 @@ map_quad_t *register_object(entity_t *e) {
 			break;
 	}
 
-	*object_pointer = (entity_t **) realloc (*object_pointer, (*objects + 1) * sizeof(entity_t *)); 
+	*object_pointer = (entity_t **) realloc (*object_pointer, (*objects + 1) * sizeof(entity_t *));
 	(*object_pointer)[(*objects)++] = e;
 
 	return quad;
@@ -252,7 +252,7 @@ void unregister_object(entity_t *e) {
 	if (*objects == 0) return;
 
 	// find position of entity to delete
-	for (i = 0; i < *objects && (*object_pointer)[i] != e; i++); 
+	for (i = 0; i < *objects && (*object_pointer)[i] != e; i++);
 
 	// move last to this position
 	(*object_pointer)[i] = (*object_pointer)[*objects - 1];
@@ -286,8 +286,8 @@ entity_t *find_closest(entity_t *e, double radius) {
 	get_search_bounds(e->pos, radius, &start, &end);
 	index = get_quad_index_by_pos(e->pos);
 
-//	fprintf(stderr, "search goes from (%lu, %lu) to (%lu, %lu) for (%lu, %lu)\n", start.quad_x, start.quad_y, 
-//			end.quad_x, end.quad_y, 
+//	fprintf(stderr, "search goes from (%lu, %lu) to (%lu, %lu) for (%lu, %lu)\n", start.quad_x, start.quad_y,
+//			end.quad_x, end.quad_y,
 //			index.quad_x, index.quad_y);
 
 	for (y = start.quad_y; y <= end.quad_y; y++) {
@@ -300,7 +300,7 @@ entity_t *find_closest(entity_t *e, double radius) {
 					closest = quad->static_object[i];
 				}
 			}
-			
+
 			for (i = 0; i < quad->moving_objects; i++) {
 				if ((t = collision_dist(e, quad->moving_object[i])) < dist && e != quad->static_object[i]) {
 					dist = t;
@@ -309,6 +309,6 @@ entity_t *find_closest(entity_t *e, double radius) {
 			}
 		}
 	}
-	
+
 	return closest;
 }

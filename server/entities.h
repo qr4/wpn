@@ -5,9 +5,7 @@
 #include "vector.h"
 #include "types.h"
 #include "map.h"
-
-#define ASTEROID_RADIUS_TO_SLOTS_RATIO 1
-#define PLANET_SIZE 50
+#include "tuneables.h"
 
 /*
  * mapped vector functions
@@ -15,7 +13,7 @@
 
 
 /*
- * Returns the distance between 2 points squared. 
+ * Returns the distance between 2 points squared.
  * This is faster than dist().
  */
 static inline double quaddist(const entity_t* A, const entity_t* B) {
@@ -23,7 +21,7 @@ static inline double quaddist(const entity_t* A, const entity_t* B) {
 }
 
 /*
- * Returns the distance between 2 points 
+ * Returns the distance between 2 points
  */
 static inline double dist(const entity_t* A, const entity_t* B) {
 	return vector_dist(&A->pos, &B->pos);
@@ -63,8 +61,8 @@ static inline double collision_dist(entity_t *A, entity_t *B) {
  */
 
 static inline void move_ship(entity_t *ship) {
-	vector_t dt = vector(0.05); //replace this by a global 
-	ship->pos.v += ship->v.v * dt.v;
+	vector_t dt_vec = vector(dt);
+	ship->pos.v += ship->v.v * dt_vec.v;
 }
 
 /*
@@ -83,7 +81,7 @@ typedef enum {
 ETRANSFER swap_slots(entity_t *left, unsigned int pos_left, entity_t *right, unsigned int pos_right);
 
 /*
- * Moves one slot from left to right. 
+ * Moves one slot from left to right.
  * Target position has to be empty.
  */
 ETRANSFER transfer_slot(entity_t *left, unsigned int pos_left, entity_t *right, unsigned int pos_right);
