@@ -71,7 +71,7 @@ struct entity_t {
 	unsigned int player_id;
 
 	union {
-		void            *data; 
+		void            *data;
 		slot_data_t     *slot_data;
 		planet_data_t   *planet_data;
 		ship_data_t     *ship_data;
@@ -80,6 +80,26 @@ struct entity_t {
 		base_data_t     *base_data;
 	};
 	lua_State* lua;
+};
+
+typedef struct wp_t waypoint_t;
+
+typedef enum {
+	WP_START,
+	WP_TURN_START,
+	WP_TURN_VIA,
+	WP_TURN_STOP,
+	WP_VIA,
+	WP_STOP
+} wptype;
+
+struct wp_t {
+	vector_t point;
+	vector_t speed;
+	double t;
+	wptype type;
+	vector_t obs;
+	waypoint_t* next;
 };
 
 struct slot_data_t {
@@ -92,6 +112,7 @@ struct planet_data_t {
 
 struct ship_data_t {
 	slot_t *slot;
+	waypoint_t *flightplan;
 };
 
 struct asteroid_data_t {
@@ -107,6 +128,5 @@ struct cluster_data_t {
 struct base_data_t {
 	slot_t *slot;
 };
-
 
 #endif  /*TYPES_H*/

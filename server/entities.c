@@ -4,6 +4,7 @@
 #include "types.h"
 #include "entities.h"
 #include "map.h"
+#include "physics.h"
 
 /*
  * Swaps two slots. *left can be the same as *right
@@ -57,7 +58,7 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 	slots = (slots > 255u) ? 255u : slots;
 	e->type  = type;
 	e->slots = slots;
-	
+
 	switch (type) {
 		case CLUSTER :
 			// init as empty cluster
@@ -80,6 +81,7 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 			break;
 		case SHIP :
 			e->ship_data     = (ship_data_t *)     malloc (sizeof(ship_data_t));
+			e->ship_data->flightplan = NULL;
 			e->v = vector(0);
 			break;
 		default :
@@ -128,7 +130,7 @@ void destroy_entity(entity_t *e) {
 			free(e->cluster_data->asteroid);
 			e->cluster_data->asteroid = NULL;
 			e->cluster_data->asteroids = 0;
-			
+
 			break;
 		case PLANET :
 			break;
@@ -137,6 +139,7 @@ void destroy_entity(entity_t *e) {
 		case BASE :
 			break;
 		case SHIP :
+			free_route(e->ship_data->flightplan);
 			break;
 		default :
 			break;

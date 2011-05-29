@@ -88,16 +88,16 @@ int main(int argc, char *argv[]) {
 	e.radius = 1;
 
 	init_map();
-	
+
 	for (i = 0; i < 100; i++) {
 		e.pos.v = (randv().v + vector(1).v) * vector(2000).v;
 		closest = find_closest(&e, 1000, CLUSTER);
 		printf("Checking (%f, %f)\n", e.pos.x, e.pos.y);
 		if (closest != NULL) {
-			printf("Found %s, at position (%f, %f). Collision distance: %f\n", 
-					type_string(closest->type), 
-					closest->pos.x, 
-					closest->pos.y, 
+			printf("Found %s, at position (%f, %f). Collision distance: %f\n",
+					type_string(closest->type),
+					closest->pos.x,
+					closest->pos.y,
 					collision_dist(&e, closest));
 		} else {
 			printf("Nothing\n");

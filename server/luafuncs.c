@@ -67,7 +67,7 @@ int lua_moveto(lua_State* L) {
 
 			/* Fall through to the 2-argument case */
 		case 2:
-			
+
 			/* Get coordinates */
 			if(!lua_isnumber(L,-1) || !lua_isnumber(L,-2)) {
 				lua_pushstring(L, "coordinates to moveto must me numeric");
@@ -90,7 +90,7 @@ int lua_moveto(lua_State* L) {
 		lua_pushstring(L, "Your self-pointer is no longer an entity pointer! What have you done?");
 		lua_error(L);
 	}
-	
+
 	/* Confirm that it is pointing at the active entity */
 	e = lua_touserdata(L, -1);
 	lua_pop(L,1);
@@ -143,7 +143,7 @@ int lua_set_autopilot_to(lua_State* L) {
 
 			/* Fall through to the 2-argument case */
 		case 2:
-			
+
 			/* Get coordinates */
 			if(!lua_isnumber(L,-1) || !lua_isnumber(L,-2)) {
 				lua_pushstring(L, "coordinates to set_autopilot_to must me numeric");
@@ -166,7 +166,7 @@ int lua_set_autopilot_to(lua_State* L) {
 		lua_pushstring(L, "Your self-pointer is no longer an entity pointer! What have you done?");
 		lua_error(L);
 	}
-	
+
 	/* Confirm that it is pointing at the active entity */
 	e = lua_touserdata(L, -1);
 	lua_pop(L,1);
