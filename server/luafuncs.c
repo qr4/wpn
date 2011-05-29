@@ -33,7 +33,6 @@ int lua_killself(lua_State* L) {
 	return 0;
 }
 
-
 /* Fly straight to the specified coordinates, ignoring any object in the way
  * Arguments: x, y[, on_arrival]
  * where:
@@ -182,3 +181,41 @@ int lua_set_autopilot_to(lua_State* L) {
 	return 0;
 }
 
+int lua_find_closest(lua_State *L) {
+	entity_t *e;
+	int n;
+	double search_radius;
+	unsigned int filter;
+
+	n = lua_gettop(L);
+
+	if (n != 2) {
+		lua_pushstring(L, "Invalid number of arguments for find_closest()!");
+		lua_error(L);
+	}
+
+	filter        = (unsigned int) lua_tonumber(L, -1);
+	search_radius = (double) lua_tonumber(L, -2);
+
+	lua_pop(L, 2);
+
+	/* Fetch self-pointer */
+	lua_getglobal(L, "self");
+	if(!lua_islightuserdata(L,-1)) {
+		lua_pop(L,1);
+		lua_pushstring(L, "Your self-pointer is no longer an entity pointer! What have you done?");
+		lua_error(L);
+	}
+
+	/* Confirm that it is pointing at the active entity */
+	e = lua_touserdata(L, -1);
+	lua_pop(L,1);
+	if(e != lua_active_entity) {
+		lua_pushstring(L,"Your self-pointer is not pointing at yourself! What are you doing?");
+		lua_error(L);
+	}
+
+	lua_pushlightuserdata(L, find_closest(e, search_radius, filter));
+
+	return 1;
+}

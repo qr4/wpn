@@ -20,4 +20,8 @@ extern int lua_moveto(lua_State* L);
  * avoiding planets and asteroid fields */
 extern int lua_set_autopilot_to(lua_State* L);
 
+/* Search the closest entity in the search radius matchin the filter.
+ */
+extern int lua_find_closest(lua_State *L);
+
 #endif /* _LUAFUNCS_H */
