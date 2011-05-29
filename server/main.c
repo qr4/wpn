@@ -68,13 +68,13 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
+	init_map();
 	vector_t v1 = vector(1000);
 	entity_t* ship1 = malloc(sizeof(entity_t));
 	init_ship(ship1, v1, 6);
 
-	e.radius = 1;
 
-	init_map();
+	e.radius = 1;
 
 	for (i = 0; i < 100; i++) {
 		e.pos.v = (randv().v + vector(1).v) * vector(2000).v;

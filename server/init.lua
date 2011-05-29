@@ -9,7 +9,7 @@ print "Hi, I'm a ship"
 
 s = entity_to_string(self)
 print("Here is some information about myself:\n".. s)
-closest = entitiy_to_string(find_closest(self, ASTEROID))
+closest = entity_to_string(find_closest(600, ASTEROID))
 print("I'm very close to:\n".. closest)
 
 function on_autopilot_arrived() 

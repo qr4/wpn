@@ -286,9 +286,12 @@ entity_t *find_closest(entity_t *e, const double radius, const unsigned int filt
 	get_search_bounds(e->pos, radius, &start, &end);
 	index = get_quad_index_by_pos(e->pos);
 
-	fprintf(stderr, "search goes from (%lu, %lu) to (%lu, %lu) for (%lu, %lu)\n", start.quad_x, start.quad_y,
-			end.quad_x, end.quad_y,
-			index.quad_x, index.quad_y);
+//	fprintf(stderr, "entity address: %lx\n", e);
+//	fprintf(stderr, "map size: %lu\n", map.quad_size);
+//	fprintf(stderr, "entity pos: (%f, %f)\n", e->pos.x, e->pos.y);
+//	fprintf(stderr, "search goes from (%lu, %lu) to (%lu, %lu) for (%lu, %lu)\n", start.quad_x, start.quad_y,
+//			end.quad_x, end.quad_y,
+//			index.quad_x, index.quad_y);
 
 	for (y = start.quad_y; y <= end.quad_y; y++) {
 		for (x = start.quad_x ; x <= end.quad_x; x++) {

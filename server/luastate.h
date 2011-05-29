@@ -30,7 +30,7 @@ extern char* callback_names[NUM_EVENTS];
 extern void init_ship_computer(entity_t* s);
 extern void kill_computer(entity_t* s);
 
-extern void call_entity_callback(entity_t* e, event_t event);
+void call_entity_callback(entity_t* e, event_t event);
 
 
 #endif /* _LUASTATE_H */

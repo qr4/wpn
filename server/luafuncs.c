@@ -217,6 +217,8 @@ int lua_find_closest(lua_State *L) {
 		lua_error(L);
 	}
 
+	fprintf(stderr, "entity address: %lx\n", e);
+
 	lua_pushlightuserdata(L, find_closest(e, search_radius, filter));
 
 	return 1;
@@ -240,14 +242,18 @@ int lua_entity_to_string(lua_State* L) {
 	e = lua_touserdata(L, -1);
 	lua_pop(L,1);
 
-	/* Fill in description */
-	temp = slots_to_string(e);
-	if(asprintf(&s, "{\n\tEntity %lx:\n\tpos: %f,  %f\n\tv: %f, %f\n\ttype: %s\n\tslots: %i\n\tplayer: %i\n\tcontents: [%s]\n}\n",
-			(size_t)e, e->pos.x, e->pos.y, e->v.x, e->v.y, type_string(e->type), e->slots, e->player_id, temp));
+	if (e == NULL) {
+		lua_pushstring(L, "nil");
+	} else {
+		/* Fill in description */
+		temp = slots_to_string(e);
+		if(asprintf(&s, "{\n\tEntity %lx:\n\tpos: %f,  %f\n\tv: %f, %f\n\ttype: %s\n\tslots: %i\n\tplayer: %i\n\tcontents: [%s]\n}\n",
+					(size_t)e, e->pos.x, e->pos.y, e->v.x, e->v.y, type_string(e->type), e->slots, e->player_id, temp));
 
-	/* Return it */
-	lua_pushstring(L,s);
-	free(temp);
-	free(s);
+		/* Return it */
+		lua_pushstring(L,s);
+		free(temp);
+		free(s);
+	}
 	return 1;
 }

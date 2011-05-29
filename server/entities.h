@@ -60,7 +60,8 @@ static inline double collision_dist(entity_t *A, entity_t *B) {
  * ship-functions
  */
 
-static inline void move_ship(entity_t *ship);
+
+static void move_ship(entity_t *ship);
 
 /*
  * Errorcodes for slot transfers

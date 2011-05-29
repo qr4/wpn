@@ -25,7 +25,7 @@ extern int lua_set_autopilot_to(lua_State* L);
 extern int lua_find_closest(lua_State *L);
 
 /* Debugging helper function, creating a string description of the given entity */
-int lua_entity_to_string(lua_State* L);
+extern int lua_entity_to_string(lua_State* L);
 
 
 #endif /* _LUAFUNCS_H */
