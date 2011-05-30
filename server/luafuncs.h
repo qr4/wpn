@@ -2,6 +2,7 @@
 #define _LUAFUNCS_H
 
 #include <lua.h>
+#include "entities.h"
 
 /* Functions callable from within lua.
  *
@@ -9,6 +10,7 @@
  * also remember to add them in the init_ship_computer function
  * in luastate.c
  */
+
 
 /* Kill the lua state by throwing an error, sends the spacecraft adrift */
 extern int lua_killself(lua_State* L);
@@ -27,5 +29,7 @@ extern int lua_find_closest(lua_State *L);
 /* Debugging helper function, creating a string description of the given entity */
 extern int lua_entity_to_string(lua_State* L);
 
+/* Registers all lua_functions available through c-api */
+void register_lua_functions(entity_t *s);
 
 #endif /* _LUAFUNCS_H */

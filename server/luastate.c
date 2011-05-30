@@ -77,11 +77,7 @@ void init_ship_computer(entity_t* s) {
 	}
 
 	/* registier lua-callable functions */
-	lua_register(s->lua, "moveto", lua_moveto);
-	lua_register(s->lua, "set_autopilot_to", lua_set_autopilot_to);
-	lua_register(s->lua, "killself", lua_killself);
-	lua_register(s->lua, "find_closest", lua_find_closest);
-	lua_register(s->lua, "entity_to_string", lua_entity_to_string);
+	register_lua_functions(s);
 
 	/* Set the execution time limit */
 	lua_sethook(s->lua, time_exceeded_hook, LUA_MASKCOUNT, config_get_int("lua_max_cycles"));

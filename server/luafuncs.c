@@ -6,7 +6,29 @@
 #include "luastate.h"
 #include "entities.h"
 
-entity_t *get_self(lua_State *L) {
+typedef struct {
+	lua_CFunction c_function;
+	const char lua_function_name[];
+} lua_function_entry;
+
+/* Add all functions that shall be available for the shipcomputers here */
+static const lua_function_entry lua_wrappers[] = {
+//   C-function name,      Lua-function name
+	{lua_moveto,           "moveto"},
+	{lua_set_autopilot_to, "set_autopilot_to"},
+	{lua_killself,         "killself"},
+	{lua_find_closest,     "find_closest"},       
+	{lua_entity_to_string, "entity_to_string"}
+};
+
+void register_lua_functions(entity_t *s) {
+	size_t i;
+	for (i = 0; i < sizeof(lua_wrappers); i++) {
+		lua_register(s->lua, lua_wrappers[i].lua_function_name, lua_wrappers[i].c_function);
+	}
+}
+
+static entity_t *get_self(lua_State *L) {
 	entity_t *e;
 
 	/* Fetch self-pointer */
