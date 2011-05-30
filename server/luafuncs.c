@@ -5,10 +5,11 @@
 #include "luafuncs.h"
 #include "luastate.h"
 #include "entities.h"
+#include "debug.h"
 
 typedef struct {
 	lua_CFunction c_function;
-	const char lua_function_name[];
+	const char lua_function_name[32];
 } lua_function_entry;
 
 /* Add all functions that shall be available for the shipcomputers here */
@@ -23,7 +24,8 @@ static const lua_function_entry lua_wrappers[] = {
 
 void register_lua_functions(entity_t *s) {
 	size_t i;
-	for (i = 0; i < sizeof(lua_wrappers); i++) {
+	for (i = 0; i < sizeof(lua_wrappers) / sizeof(lua_function_entry); i++) {
+		DEBUG("Registering \"%s\" at 0x%lx for 0x%lx\n", lua_wrappers[i].lua_function_name, lua_wrappers[i].c_function, s);
 		lua_register(s->lua, lua_wrappers[i].lua_function_name, lua_wrappers[i].c_function);
 	}
 }

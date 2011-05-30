@@ -9,6 +9,7 @@
 #include "luafuncs.h"
 #include "entities.h"
 #include "config.h"
+#include "debug.h"
 
 /* Currently active lua entity */
 entity_t* lua_active_entity;
@@ -65,7 +66,7 @@ void init_ship_computer(entity_t* s) {
 	/* Initialize a new, blank lua state */
 	s->lua = luaL_newstate();
 	if(s->lua == NULL) {
-		fprintf(stderr, "Creating a new lua state failed for entity %lx\n", (unsigned long) s);
+		ERROR("Creating a new lua state failed for entity %lx\n", (unsigned long) s);
 		exit(1);
 	}
 
@@ -90,8 +91,8 @@ void init_ship_computer(entity_t* s) {
 	/* Load the (player-independent) init code into it */
 	lua_active_entity = s;
 	if(luaL_dofile(s->lua, config_get_string("ship_init_code_file"))) {
-		fprintf(stderr, "Running init-code for entity %lx failed:\n", (unsigned long) s);
-		fprintf(stderr, "%s\n", lua_tostring(s->lua,-1));
+		ERROR("Running init-code for entity %lx failed:\n", (unsigned long) s);
+		ERROR("%s\n", lua_tostring(s->lua,-1));
 		kill_computer(s);
 	}
 
@@ -120,7 +121,7 @@ void call_entity_callback(entity_t* e, event_t event) {
 	}
 
 	if(event >= NUM_EVENTS) {
-		fprintf(stderr, "Attempting to trigger an unknown event: %u\n", event);
+		ERROR("Attempting to trigger an unknown event: %u\n", event);
 		return;
 	}
 

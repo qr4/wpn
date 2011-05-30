@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "map.h"
+#include "debug.h"
 
 double AVERAGE_CLUSTER_DISTANCE = 500;
 double MAXIMUM_CLUSTER_SIZE = 500 / 3;
@@ -286,10 +287,10 @@ entity_t *find_closest(entity_t *e, const double radius, const unsigned int filt
 	get_search_bounds(e->pos, radius, &start, &end);
 	index = get_quad_index_by_pos(e->pos);
 
-//	fprintf(stderr, "entity address: %lx\n", e);
-//	fprintf(stderr, "map size: %lu\n", map.quad_size);
-//	fprintf(stderr, "entity pos: (%f, %f)\n", e->pos.x, e->pos.y);
-//	fprintf(stderr, "search goes from (%lu, %lu) to (%lu, %lu) for (%lu, %lu)\n", start.quad_x, start.quad_y,
+//	ERROR(stderr, "entity address: %lx\n", e);
+//	ERROR(stderr, "map size: %lu\n", map.quad_size);
+//	ERROR(stderr, "entity pos: (%f, %f)\n", e->pos.x, e->pos.y);
+//	ERROR(stderr, "search goes from (%lu, %lu) to (%lu, %lu) for (%lu, %lu)\n", start.quad_x, start.quad_y,
 //			end.quad_x, end.quad_y,
 //			index.quad_x, index.quad_y);
 

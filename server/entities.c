@@ -6,6 +6,7 @@
 #include "map.h"
 #include "physics.h"
 #include "luastate.h"
+#include "debug.h"
 
 /*
  * Swaps two slots. *left can be the same as *right
@@ -90,7 +91,7 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 			e->ship_data->flightplan = NULL;
 			break;
 		default :
-			fprintf(stderr, "%s in %s: Unknown type %d!", __func__, __FILE__, type);
+			ERROR("%s in %s: Unknown type %d!", __func__, __FILE__, type);
 
 			if (slots > 0) {
 				e->slot_data = (slot_data_t *) malloc (sizeof(slot_data_t));
@@ -202,22 +203,26 @@ const char *type_string(type_t type) {
 char* slots_to_string(entity_t* e) {
 	int i;
 	const char slot_mapping[] = " LTRXS";
+	/*
+	 * " ": EMPTY
+	 * "L": LASER  / WEAPON
+	 * "T": THRUST / DRIVE
+	 * "R": ROCK   / ORE
+	 * "X": UNUSEABLE / BLOCKED
+	 * "S": SHIELD
+	 */
+
+	size_t slots = (e == NULL) ? 0 : e->slots;
 	char* s;
 
-	if (e == NULL) {
-		fprintf(stderr, "DINGE!\n");
-		s = malloc(sizeof(char));
-		s[0] = '\0';
-		return s;
-	}
+	s = malloc(sizeof(char) * (slots + 1));
 
-	s = malloc(sizeof(char) * e->slots + 1);
 	if(!s) {
-		fprintf(stderr, "Malloc failed in slots_to_string\n");
+		ERROR("Malloc failed in slots_to_string\n");
 		exit(1);
 	}
 
-	for(i=0; i< e->slots; i++) {
+	for(i = 0; i < slots; i++) {
 		s[i] = slot_mapping[e->slot_data->slot[i]];
 	}
 

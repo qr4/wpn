@@ -8,11 +8,14 @@
 #include "map.h"
 #include "config.h"
 #include "json_output.h"
+#include "debug.h"
 
 #define print_sizeof(TYPE) \
 	printf("sizeof(%-14s) = %4lu\n", #TYPE, sizeof(TYPE));
 
 int main(int argc, char *argv[]) {
+	ERROR("Debug messages turned on!\n");
+
 	//vector_t v1 = vector(5);
 	//vector_t v2 = vector(0);
 	//v2.x = 5;
@@ -80,7 +83,7 @@ int main(int argc, char *argv[]) {
 
 	/* Test json-output with the testship */
 	temp = ship_to_json(ship1);
-	printf("In json, this is:\n%s\n", temp);
+	DEBUG("In json, this is:\n%s\n", temp);
 	free(temp);
 
 	/* Test freeing of this ship */
@@ -91,15 +94,15 @@ int main(int argc, char *argv[]) {
 	for (i = 0; i < 5; i++) {
 		e.pos.v = (randv().v + vector(1).v) * vector(2000).v;
 		closest = find_closest_by_position(e.pos, e.radius, 1000, CLUSTER);
-		printf("Checking (%f, %f)\n", e.pos.x, e.pos.y);
+		DEBUG("Checking (%f, %f)\n", e.pos.x, e.pos.y);
 		if (closest != NULL) {
-			printf("Found %s, at position (%f, %f). Collision distance: %f\n",
+			DEBUG("Found %s, at position (%f, %f). Collision distance: %f\n",
 					type_string(closest->type),
 					closest->pos.x,
 					closest->pos.y,
 					collision_dist(&e, closest));
 		} else {
-			printf("Nothing\n");
+			DEBUG("Nothing\n");
 		}
 	}
 
