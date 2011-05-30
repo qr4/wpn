@@ -74,6 +74,8 @@ int main(int argc, char *argv[]) {
 	/* Create a testship */
 	vector_t v1 = vector(1000);
 	entity_t* ship1 = malloc(sizeof(entity_t));
+	ship1->radius = 1;
+	ship1->player_id = 0;
 	init_ship(ship1, v1, 6);
 
 	/* Test json-output with the testship */
@@ -86,7 +88,7 @@ int main(int argc, char *argv[]) {
 
 	e.radius = 1;
 
-	for (i = 0; i < 100; i++) {
+	for (i = 0; i < 5; i++) {
 		e.pos.v = (randv().v + vector(1).v) * vector(2000).v;
 		closest = find_closest_by_position(e.pos, e.radius, 1000, CLUSTER);
 		printf("Checking (%f, %f)\n", e.pos.x, e.pos.y);
@@ -101,6 +103,8 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	free(ship1);
+	free_config();
 	free_map();
 
 	return EXIT_SUCCESS;

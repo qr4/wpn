@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include "config.h"
 
-lua_State* config_state = 0;
+lua_State* config_state = NULL;
 
 /* Initialize Configuration by reading a config file */
 int init_config_from_file(char* filename) {
@@ -15,6 +15,7 @@ int init_config_from_file(char* filename) {
 	/* warn if we already had a config */
 	if(config_state) {
 		CONFIG_WARNING("Warning: config_state already exists, overriding with new config from %s (possible memleak of old state?)\n", filename);
+		lua_close(config_state);
 	}
 
 	/* Create the lua state */
@@ -76,4 +77,12 @@ const char* config_get_string(char* param_name) {
 
 	return s;
 
+}
+
+/* Free the configuration */
+void free_config() {
+	if (config_state != NULL) {
+		lua_close(config_state);
+		config_state = NULL;
+	}
 }

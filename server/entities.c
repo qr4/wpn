@@ -55,10 +55,15 @@ ETRANSFER transfer_slot(entity_t *left, unsigned int pos_left, entity_t *right, 
 }
 
 void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned int slots) {
-	e->pos.v = pos.v;
+	e->pos = pos;
+	e->v   = vector(0);
 	slots = (slots > 255u) ? 255u : slots;
 	e->type  = type;
 	e->slots = slots;
+	e->data  = NULL;
+
+	e->radius = 1;
+	e->player_id = 0;
 
 	switch (type) {
 		case CLUSTER :
@@ -83,7 +88,6 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 		case SHIP :
 			e->ship_data     = (ship_data_t *)     malloc (sizeof(ship_data_t));
 			e->ship_data->flightplan = NULL;
-			e->v = vector(0);
 			break;
 		default :
 			fprintf(stderr, "%s in %s: Unknown type %d!", __func__, __FILE__, type);
@@ -91,6 +95,7 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 			if (slots > 0) {
 				e->slot_data = (slot_data_t *) malloc (sizeof(slot_data_t));
 			}
+			break;
 	}
 
 	if (slots > 0) {
@@ -101,7 +106,7 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 		for (i = 0; i < slots; i++) {
 			e->slot_data->slot[i] = EMPTY;
 		}
-	}
+	} 
 
 	e->lua=NULL;
 }
@@ -119,7 +124,7 @@ void destroy_entity(entity_t *e) {
 
 	type = (e)->type;
 
-	if(e->lua) {
+	if(e->lua != NULL) {
 		lua_close(e->lua);
 	}
 
@@ -206,7 +211,7 @@ char* slots_to_string(entity_t* e) {
 		return s;
 	}
 
-	s = malloc(sizeof(char) * e->slots);
+	s = malloc(sizeof(char) * e->slots + 1);
 	if(!s) {
 		fprintf(stderr, "Malloc failed in slots_to_string\n");
 		exit(1);
@@ -215,6 +220,8 @@ char* slots_to_string(entity_t* e) {
 	for(i=0; i< e->slots; i++) {
 		s[i] = slot_mapping[e->slot_data->slot[i]];
 	}
+
+	s[i] = '\0';
 
 	return s;
 }
