@@ -74,12 +74,10 @@ typedef union {
 	uint64_t id;
 } entity_id_t;
 
+#define INVALID_ID ((entity_id_t) {.id = ~(0l)})
 
 /* The entity_t datastructure holds all of the actual entity information */
 struct entity_t {
-
-	/* Unique id of this entity */
-	entity_id_t unique_id;
 
 	/* Position and velocity */
 	vector_t pos;
@@ -89,6 +87,9 @@ struct entity_t {
 	type_t type;
 	unsigned int slots;
 	unsigned int player_id;
+
+	/* Unique id of this entity */
+	entity_id_t unique_id;
 
 	union {
 		void            *data;
@@ -140,8 +141,8 @@ struct asteroid_data_t {
 };
 
 struct cluster_data_t {
-	entity_t *planet;
-	entity_t *asteroid;
+	entity_id      planet;
+	entity_id_t *asteroid;
 	unsigned int asteroids;
 };
 
