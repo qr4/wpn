@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 	int i;
 	entity_t e;
 	entity_t *closest;
-	char* temp;
+	//char* temp;
 
 	/* Parse Config */
 	if(!init_config_from_file("config.lua")) {
@@ -38,9 +38,9 @@ int main(int argc, char *argv[]) {
 	entity_id_t ship1 = init_ship(ship_storage, v1, 6);
 
 	/* Test json-output with the testship */
-	temp = ship_to_json(ship1);
-	DEBUG("In json, this is:\n%s\n", temp);
-	free(temp);
+//	temp = ship_to_json(ship1);
+//	DEBUG("In json, this is:\n%s\n", temp);
+//	free(temp);
 
 	/* Test freeing of this ship */
 	//destroy_entity(ship1);
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 
 	for (i = 0; i < 5; i++) {
 		e.pos.v = (randv().v + vector(1).v) * vector(2000).v;
-		closest = find_closest_by_position(e.pos, e.radius, 1000, CLUSTER);
+		closest = find_closest_by_position(e.pos, e.radius, 1000, PLANET);
 		DEBUG("Checking (%f, %f)\n", e.pos.x, e.pos.y);
 		if (closest != NULL) {
 			DEBUG("Found %s, at position (%f, %f). Collision distance: %f\n",

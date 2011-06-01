@@ -34,6 +34,20 @@ typedef struct map_quad_t   map_quad_t;
 typedef struct quad_index_t quad_index_t;
 typedef struct map_t        map_t;
 
+typedef union  entity_id_t  entity_id_t;
+
+/* Entity IDs are 64bit integers, of which the lower
+ * 32 bits denote the array index, and the upper 32
+ * denote the respawn count of this slot */
+union entity_id_t {
+	struct {
+		uint32_t index;
+		uint16_t reincarnation;
+		uint16_t type;
+	};
+	uint64_t id;
+};
+
 struct quad_index_t {
 	size_t quad_x;
 	size_t quad_y;
@@ -41,8 +55,8 @@ struct quad_index_t {
 
 struct map_quad_t {
 	entity_t **cluster;
-	entity_t **static_object;
-	entity_t **moving_object;
+	entity_id_t *static_object;
+	entity_id_t *moving_object;
 	size_t clusters;       // number of clusters in this quad
 	size_t static_objects; // number of static objects (asteroids, planets)
 	size_t moving_objects; // number of moving objects (ships)
@@ -61,18 +75,6 @@ struct map_t {
 	double right_bound;
 	double lower_bound;
 };
-
-/* Entity IDs are 64bit integers, of which the lower
- * 32 bits denote the array index, and the upper 32
- * denote the respawn count of this slot */
-typedef union {
-	struct {
-		uint32_t index;
-		uint16_t reincarnation;
-		uint16_t type;
-	};
-	uint64_t id;
-} entity_id_t;
 
 #define INVALID_ID ((entity_id_t) {.id = ~(0l)})
 
@@ -141,7 +143,7 @@ struct asteroid_data_t {
 };
 
 struct cluster_data_t {
-	entity_id      planet;
+	entity_id_t    planet;
 	entity_id_t *asteroid;
 	unsigned int asteroids;
 };

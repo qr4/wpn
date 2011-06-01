@@ -4,14 +4,13 @@
 /* Create a new, empty entity storage, with the specified starting size and
  * type bitmask added to the entities' ids */
 entity_storage_t* init_entity_storage(const uint32_t n_entries, const uint16_t type) {
-
 	int i;
 
 	/* Allocate space for the storage itself */
 	entity_storage_t* s = malloc(sizeof(entity_storage_t));
 	
 	/* If no default size has been specified, just assume... something */
-	if(n_entries == 0) {
+	if (n_entries == 0) {
 		s->max = 32;
 	} else {
 		s->max = n_entries;
@@ -20,12 +19,12 @@ entity_storage_t* init_entity_storage(const uint32_t n_entries, const uint16_t t
 	/* Allocate space for the entries */
 	s->entities=malloc(sizeof(entity_t) * s->max);
 	s->offsets=malloc(sizeof(uint32_t) * s->max);
+	s->type = type;
 
 	/* Initialize offset indices in a consistent way */
-	for(i=0;i<s->max;i++)
-	{
+	for (i = 0; i < s->max; i++) {
 		s->offsets[i]=i;
-		s->entities[i].unique_id = (entity_id_t){{.index=i, .reincarnation=0, .type=type}};
+		s->entities[i].unique_id = (entity_id_t){{.index=i, .reincarnation=0, .type = s->type}};
 	}
 	
 	s->first_free = 0;
@@ -40,17 +39,15 @@ entity_id_t alloc_entity(entity_storage_t* s) {
 	int i;
 
 	/* Sanity check: Full? */
-	if(s->first_free >= s->max-1) {
-		//fprintf(stderr, "Entity cap reached!\n");
-		//return NULL;
-
+	if (s->first_free >= s->max) {
+		DEBUG("EXPANDING %s\n", type_string(s->type));
 		s->max *= 2;
-		s->offsets = realloc(s->offsets, sizeof(uint32_t) * s->max);
+		s->offsets  = realloc(s->offsets,  sizeof(uint32_t) * s->max);
 		s->entities = realloc(s->entities, sizeof(entity_t) * s->max);
 
-		for(i=s->first_free; i<s->max; i++) {
+		for (i = s->first_free; i < s->max; i++) {
 			s->offsets[i]=i;
-			s->entities[i].unique_id.id=i;
+			s->entities[i].unique_id = (entity_id_t) {{.index = i, .reincarnation = 0, .type = s->type}};
 		}
 		
 
@@ -59,6 +56,12 @@ entity_id_t alloc_entity(entity_storage_t* s) {
 	retval = &(s->entities[s->first_free]);
 
 	s->first_free++;
+
+	DEBUG("Added id: %lu {.index = %u, .reincarnation = %u, .type = %u}\n", 
+			retval->unique_id.id,
+			retval->unique_id.index,
+			retval->unique_id.reincarnation,
+			retval->unique_id.type);
 
 	return retval->unique_id;
 }
@@ -107,7 +110,9 @@ void free_entity(entity_storage_t* s, entity_id_t id) {
 	entity_t *e = get_entity_from_storage_by_id(s, id);
 
 	if(e == NULL) {
-		DEBUG("Attempted to free nonexistent entity with id %i\n", id);
+		if (id.id != INVALID_ID.id) {
+			DEBUG("Attempted to free nonexistent entity with id %lu\n", id);
+		}
 		return;
 	}
 

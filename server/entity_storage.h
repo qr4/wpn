@@ -6,10 +6,11 @@
 typedef struct entity_storage entity_storage_t;
 
 struct entity_storage {
-	int max;
 	entity_t* entities;
 	uint32_t* offsets;
+	uint32_t max;
 	uint32_t first_free;
+	uint16_t type;
 };
 
 /* Create a new, empty entity storage */

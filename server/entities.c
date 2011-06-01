@@ -7,6 +7,8 @@
 #include "physics.h"
 #include "luastate.h"
 #include "debug.h"
+#include "entity_storage.h"
+#include "storages.h"
 
 /*
  * Swaps two slots. *left can be the same as *right
@@ -70,7 +72,7 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 		case CLUSTER :
 			// init as empty cluster
 			e->cluster_data  = (cluster_data_t *)  malloc (sizeof(cluster_data_t));
-			e->cluster_data->planet = NULL;
+			e->cluster_data->planet   = INVALID_ID;
 			e->cluster_data->asteroid = NULL;
 			e->cluster_data->asteroids = 0;
 			e->radius = 0;
@@ -107,7 +109,7 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 		for (i = 0; i < slots; i++) {
 			e->slot_data->slot[i] = EMPTY;
 		}
-	} 
+	}
 
 	e->lua=NULL;
 }
@@ -118,12 +120,13 @@ void destroy_entity(entity_t *e) {
 
 	if (e == NULL) return;
 
-	if (e->slots > 0) {
+	if (e->slot_data != NULL && e->slots > 0) {
 		free(e->slot_data->slot);
 		e->slot_data->slot = NULL;
+		e->slots = 0;
 	}
 
-	type = (e)->type;
+	type = e->type;
 
 	if(e->lua != NULL) {
 		lua_close(e->lua);
@@ -131,15 +134,14 @@ void destroy_entity(entity_t *e) {
 
 	switch (type) {
 		case CLUSTER :
-			destroy_entity(e->cluster_data->planet);
-			free(e->cluster_data->planet);
-			e->cluster_data->planet = NULL;
+			free_entity(planet_storage, e->cluster_data->planet);
 
 			for (i = 0; i < e->cluster_data->asteroids; i++) {
-				destroy_entity(e->cluster_data->asteroid + i);
+				free_entity(asteroid_storage, e->cluster_data->asteroid[i]);
 			}
-
 			free(e->cluster_data->asteroid);
+
+			e->cluster_data->planet   = INVALID_ID;
 			e->cluster_data->asteroid = NULL;
 			e->cluster_data->asteroids = 0;
 
@@ -165,7 +167,7 @@ void destroy_entity(entity_t *e) {
 		case BASE :
 		case SHIP :
 			unregister_object(e);
-			free((e)->data);
+			free(e->data);
 			e->data = NULL;
 			break;
 		default :
