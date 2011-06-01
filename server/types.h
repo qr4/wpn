@@ -68,7 +68,8 @@ struct map_t {
 typedef union {
 	struct {
 		uint32_t index;
-		uint32_t reincarnation;
+		uint16_t reincarnation;
+		uint16_t type;
 	};
 	uint64_t id;
 } entity_id_t;

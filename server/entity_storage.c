@@ -1,25 +1,31 @@
 #include "entity_storage.h"
 #include "debug.h"
 
-/* Create a new, empty entity storage */
-entity_storage_t* init_entity_storage(int n_entries) {
+/* Create a new, empty entity storage, with the specified starting size and
+ * type bitmask added to the entities' ids */
+entity_storage_t* init_entity_storage(const uint32_t n_entries, const uint16_t type) {
 
 	int i;
 
 	/* Allocate space for the storage itself */
 	entity_storage_t* s = malloc(sizeof(entity_storage_t));
 	
-	s->max = n_entries;
+	/* If no default size has been specified, just assume... something */
+	if(n_entries == 0) {
+		s->max = 32;
+	} else {
+		s->max = n_entries;
+	}
 
 	/* Allocate space for the entries */
-	s->entities=malloc(sizeof(entity_t) * n_entries);
-	s->offsets=malloc(sizeof(uint32_t) * n_entries);
+	s->entities=malloc(sizeof(entity_t) * s->max);
+	s->offsets=malloc(sizeof(uint32_t) * s->max);
 
 	/* Initialize offset indices in a consistent way */
-	for(i=0;i<n_entries;i++)
+	for(i=0;i<s->max;i++)
 	{
 		s->offsets[i]=i;
-		s->entities[i].unique_id.id=i;
+		s->entities[i].unique_id = (entity_id_t){{.index=i, .reincarnation=0, .type=type}};
 	}
 	
 	s->first_free = 0;
@@ -58,7 +64,7 @@ entity_id_t alloc_entity(entity_storage_t* s) {
 }
 
 /* Get an entity from its unique id. If no such entity exists, returns NULL */
-entity_t* get_entity_by_id(entity_storage_t* s, entity_id_t id) {
+entity_t* get_entity_from_storage_by_id(entity_storage_t* s, entity_id_t id) {
 
 	uint32_t index = id.index;
 
@@ -98,7 +104,7 @@ void free_entity(entity_storage_t* s, entity_id_t id) {
 	off_t temp;
 	entity_t temp_entity;
 	entity_t *o;
-	entity_t *e = get_entity_by_id(s, id);
+	entity_t *e = get_entity_from_storage_by_id(s, id);
 
 	if(e == NULL) {
 		DEBUG("Attempted to free nonexistent entity with id %i\n", id);

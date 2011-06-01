@@ -5,6 +5,7 @@
 #include "entities.h"
 #include "entity_storage.h"
 #include "json_output.h"
+#include "storages.h"
 
 extern map_t map;
 
@@ -47,7 +48,7 @@ char* ship_to_json(entity_id_t id) {
 	char* retval;
 	entity_t* e;
 
-	e = get_entity_by_id(entities,id);
+	e = get_entity_by_id(id);
 
 	if(!e) {
 		fprintf(stderr, "Trying to json-ize a nullpointer in ship_to_json\n");

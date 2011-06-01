@@ -14,14 +14,14 @@ int init_config_from_file(char* filename) {
 
 	/* warn if we already had a config */
 	if(config_state) {
-		CONFIG_WARNING("Warning: config_state already exists, overriding with new config from %s (possible memleak of old state?)\n", filename);
+		DEBUG("Warning: config_state already exists, overriding with new config from %s (possible memleak of old state?)\n", filename);
 		lua_close(config_state);
 	}
 
 	/* Create the lua state */
 	config_state = luaL_newstate();
 	if(config_state == NULL) {
-		fprintf(stderr, "Creating configuration lua state failed.\n");
+		ERROR("Creating configuration lua state failed.\n");
 		exit(1);
 	}
 
@@ -30,7 +30,7 @@ int init_config_from_file(char* filename) {
 
 	/* Run the file's code */
 	if(luaL_dofile(config_state, filename)) {
-		fprintf(stderr, "Warning: Parsing config file %s failed:\n%s\n",filename, lua_tostring(config_state, -1));
+		ERROR("Warning: Parsing config file %s failed:\n%s\n",filename, lua_tostring(config_state, -1));
 		return 0;
 	}
 
@@ -47,7 +47,7 @@ int config_get_int(char* param_name) {
 	/* If this parameter is no int, return 0 */
 	if(!lua_isnumber(config_state,-1)) {
 		lua_pop(config_state, 1);
-		CONFIG_DEBUG("Config parameter %s is not an int, returning 0\n", param_name);
+		DEBUG("Config parameter %s is not an int, returning 0\n", param_name);
 		return 0;
 	}
 
@@ -67,7 +67,7 @@ const char* config_get_string(char* param_name) {
 	/* If this parameter is no int, return 0 */
 	if(!lua_isstring(config_state,-1)) {
 		lua_pop(config_state, 1);
-		CONFIG_DEBUG("Config parameter %s is not a string, returning \"\"\n", param_name);
+		DEBUG("Config parameter %s is not a string, returning \"\"\n", param_name);
 		return 0;
 	}
 

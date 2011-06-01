@@ -13,13 +13,13 @@ struct entity_storage {
 };
 
 /* Create a new, empty entity storage */
-entity_storage_t* init_entity_storage(int n_entries);
+entity_storage_t* init_entity_storage(const uint32_t n_entries, const uint16_t type);
 
 /* Allocate a new entity from the storage pool */
 entity_id_t alloc_entity(entity_storage_t* s);
 
 /* Get an entity from its unique id. If no such entity exists, returns NULL */
-entity_t* get_entity_by_id(entity_storage_t* s, entity_id_t id);
+entity_t* get_entity_from_storage_by_id(entity_storage_t* s, entity_id_t id);
 
 /* Get the i-th global entity */
 entity_t* get_entity_by_index(entity_storage_t* s, uint32_t i);
@@ -28,9 +28,5 @@ entity_t* get_entity_by_index(entity_storage_t* s, uint32_t i);
 void free_entity(entity_storage_t* s, entity_id_t id);
 
 void cleanup_storage(entity_storage_t* s);
-
-
-/* And now, since we're so cute c-coders, the global array of entities. :) */
-extern entity_storage_t* entities;
 
 #endif /* _ENTITY_STORAGE_H */

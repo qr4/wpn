@@ -9,16 +9,15 @@
 #include "config.h"
 #include "json_output.h"
 #include "entity_storage.h"
+#include "storages.h"
 #include "debug.h"
 
 #define print_sizeof(TYPE) \
 	printf("sizeof(%-14s) = %4lu\n", #TYPE, sizeof(TYPE));
 
-/* Die globale entity-liste */
-entity_storage_t* entities;
-
 int main(int argc, char *argv[]) {
-	ERROR("Debug messages turned on!\n");
+	ERROR("Error messages turned on!\n");
+	DEBUG("Debug messages turned on!\n");
 
 	int i;
 	entity_t e;
@@ -30,17 +29,13 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	/* Create entity storage */
-	entities = init_entity_storage(config_get_int("max_ship_estimation"));
-	if(!entities) {
-		ERROR("Failed to allocate entity storage\n");
-		exit(1);
-	}
+	/* Create entity storages */
+	init_all_storages();
 
 	init_map();
 	/* Create a testship */
 	vector_t v1 = vector(1000);
-	entity_id_t ship1 = init_ship(entities, v1, 6);
+	entity_id_t ship1 = init_ship(ship_storage, v1, 6);
 
 	/* Test json-output with the testship */
 	temp = ship_to_json(ship1);
@@ -49,7 +44,7 @@ int main(int argc, char *argv[]) {
 
 	/* Test freeing of this ship */
 	//destroy_entity(ship1);
-	free_entity(entities,ship1);
+	free_entity(ship_storage,ship1);
 
 	e.radius = 1;
 

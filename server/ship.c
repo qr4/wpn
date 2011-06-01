@@ -3,6 +3,7 @@
 #include "ship.h"
 #include "vector.h"
 #include "entity_storage.h"
+#include "storages.h"
 
 /* Create a new, empty ship */
 entity_id_t init_ship(entity_storage_t* s, vector_t pos, uint8_t size) {
@@ -11,7 +12,7 @@ entity_id_t init_ship(entity_storage_t* s, vector_t pos, uint8_t size) {
 	entity_t* e;
 
 	id = alloc_entity(s);
-	e = get_entity_by_id(s, id);
+	e = get_entity_by_id(id);
 
 	init_entity(e, pos, SHIP, size);
 
