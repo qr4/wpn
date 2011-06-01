@@ -8,6 +8,9 @@
 #include "storages.h"
 
 extern map_t map;
+extern double ASTEROID_DENSITY;
+extern double AVERAGE_ASTEROID_NUMBER;
+
 
 // Joins strings separated by sep until strings contain a NULL element
 // Arguments and return string need to be freed by the caller
@@ -150,12 +153,36 @@ char* planet_to_json(entity_t* e) {
 	return retval;
 }
 
+char* asteroids_to_json() {
+	int no_asteroids = 0;
+	char* retval;
+	char** asteroid_strings = malloc(map.clusters_x * map.clusters_y*sizeof(char*));
+
+	int i;
+	for(i = 0; i < 2 * ASTEROID_DENSITY * AVERAGE_ASTEROID_NUMBER * map.clusters_x * map.clusters_y; i++) {
+		for(i = 0; i < map.cluster->cluster_data->asteroids; i++) {
+			asteroid_strings[no_asteroids] = asteroid_to_json(map.cluster->cluster_data->asteroid + i);
+			no_asteroids++;
+		}
+	}
+
+	if(no_asteroids <= 0) {
+		asprintf(&retval, "asteroids: []\n");
+	} else {
+		asprintf(&retval, "asteroids: [\n%s\n]\n", join(asteroid_strings, "\n"));
+	}
+
+	for(i = 0; i < no_asteroids; i++) {
+		free(asteroid_strings[i]);
+	}
+
+	return retval;
+}
+
 char* planets_to_json() {
 	int no_planets = 0;
 	char* retval;
 	char** planet_strings = malloc(map.clusters_x * map.clusters_y*sizeof(char*));
-
-	//asprintf(&retval, "{\"planets\" ");
 
 	int i;
 	for(i = 0; i < map.clusters_x * map.clusters_y; i++) {
@@ -168,7 +195,7 @@ char* planets_to_json() {
 	if(no_planets <= 0) {
 		asprintf(&retval, "planets: []\n");
 	} else {
-		asprintf(&retval, "planets: [\n%s\n]\n", join(planet_strings, ", \n"));
+		asprintf(&retval, "planets: [\n%s\n]\n", join(planet_strings, "\n"));
 	}
 
 	for(i = 0; i < no_planets; i++) {
@@ -176,4 +203,78 @@ char* planets_to_json() {
 	}
 
 	return retval;
+}
+
+char* ships_to_json() {
+	int no_planets = 0;
+	char* retval;
+	char** planet_strings = malloc(map.clusters_x * map.clusters_y*sizeof(char*));
+
+	int i;
+	for(i = 0; i < map.clusters_x * map.clusters_y; i++) {
+		if(map.cluster->cluster_data->asteroids == 0) { // zero asteroids so it must contain a planet
+			planet_strings[no_planets] = planet_to_json(map.cluster->cluster_data->planet);
+			no_planets++;
+		}
+	}
+
+	if(no_planets <= 0) {
+		asprintf(&retval, "planets: []\n");
+	} else {
+		asprintf(&retval, "planets: [\n%s\n]\n", join(planet_strings, "\n"));
+	}
+
+	for(i = 0; i < no_planets; i++) {
+		free(planet_strings[i]);
+	}
+
+	return retval;
+}
+
+void asteroids_to_network() {
+	char* p = asteroids_to_json();
+	if(p) {
+		//map_printf("%s", p);
+		free(p);
+	} else {
+		fprintf(stderr, "asteroids_to_network says: printing NULL is hard\n");
+		exit(1);
+	}
+}
+
+void planets_to_network() {
+	char* p = planets_to_json();
+	if(p) {
+		//map_printf("%s", p);
+		free(p);
+	} else {
+		fprintf(stderr, "planets_to_network says: printing NULL is hard\n");
+		exit(1);
+	}
+}
+
+void ships_to_network() {
+	char* p = ships_to_json();
+	if(p) {
+		//map_printf("%s", p);
+		free(p);
+	} else {
+		fprintf(stderr, "ships_to_network says: printing NULL is hard\n");
+		exit(1);
+	}
+}
+
+void map_to_network() {
+	/*
+	map_printf("{\n");
+	bbox_to_json();
+	map_printf(",\n");
+	planets_to_network();
+	map_printf(",\n");
+	asteroids_to_network();
+	map_printf(",\n");
+	ships_to_network();
+	map_printf("}\n");
+	map_flush();
+	*/
 }
