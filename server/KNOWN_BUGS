@@ -1,0 +1,2 @@
+
+* Entity IDs are not endian safe
