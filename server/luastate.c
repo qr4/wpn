@@ -12,7 +12,7 @@
 #include "debug.h"
 
 /* Currently active lua entity */
-entity_t* lua_active_entity;
+entity_id_t lua_active_entity;
 
 /* Function names for event-triggered callbacks */
 char* callback_names[NUM_EVENTS] = {
@@ -77,6 +77,8 @@ void init_ship_computer(entity_t* s) {
 		lua_call(s->lua, 1, 0);
 	}
 
+	/* TODO: disallow calling print() from lua */
+
 	/* registier lua-callable functions */
 	register_lua_functions(s);
 
@@ -84,12 +86,12 @@ void init_ship_computer(entity_t* s) {
 	lua_sethook(s->lua, time_exceeded_hook, LUA_MASKCOUNT, config_get_int("lua_max_cycles"));
 
 	/* Set self-pointer of the ship */
-	lua_pushlightuserdata(s->lua, s);
+	lua_pushlightuserdata(s->lua, (void*)(s->unique_id.id));
 	lua_setglobal(s->lua, "self");
 
 
 	/* Load the (player-independent) init code into it */
-	lua_active_entity = s;
+	lua_active_entity = s->unique_id;
 	if(luaL_dofile(s->lua, config_get_string("ship_init_code_file"))) {
 		ERROR("Running init-code for entity %lx failed:\n", (unsigned long) s);
 		ERROR("%s\n", lua_tostring(s->lua,-1));

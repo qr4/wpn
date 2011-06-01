@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 	int i;
 	entity_t e;
 	entity_t *closest;
-	//char* temp;
+	char* temp;
 
 	/* Parse Config */
 	if(!init_config_from_file("config.lua")) {
@@ -38,9 +38,9 @@ int main(int argc, char *argv[]) {
 	entity_id_t ship1 = init_ship(ship_storage, v1, 6);
 
 	/* Test json-output with the testship */
-//	temp = ship_to_json(ship1);
-//	DEBUG("In json, this is:\n%s\n", temp);
-//	free(temp);
+	temp = ship_to_json(get_entity_from_storage_by_id(ship_storage, ship1));
+	DEBUG("In json, this is:\n%s\n", temp);
+	free(temp);
 
 	/* Test freeing of this ship */
 	//destroy_entity(ship1);
