@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "entities.h"
+#include "entity_storage.h"
 #include "json_output.h"
 
 extern map_t map;
@@ -40,10 +41,13 @@ char* join(char** strings, char* sep) {
 
 /* Give the json representation of a ship (with the curly braces included) */
 /* TODO: docked_to currently always contains null */
-char* ship_to_json(entity_t* e) {
+char* ship_to_json(entity_id_t id) {
 
 	char* contents;
 	char* retval;
+	entity_t* e;
+
+	e = get_entity_by_id(entities,id);
 
 	if(!e) {
 		fprintf(stderr, "Trying to json-ize a nullpointer in ship_to_json\n");

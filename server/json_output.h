@@ -6,7 +6,7 @@
 
 /* Functions to create json-strings for ships, asteroids and bases.
  * Output from these functions already includes curlys around them. */
-char* ship_to_json(entity_t* e);
+char* ship_to_json(entity_id_t id);
 char* asteroid_to_json(entity_t* e);
 
 

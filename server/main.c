@@ -8,60 +8,17 @@
 #include "map.h"
 #include "config.h"
 #include "json_output.h"
+#include "entity_storage.h"
 #include "debug.h"
 
 #define print_sizeof(TYPE) \
 	printf("sizeof(%-14s) = %4lu\n", #TYPE, sizeof(TYPE));
 
+/* Die globale entity-liste */
+entity_storage_t* entities;
+
 int main(int argc, char *argv[]) {
 	ERROR("Debug messages turned on!\n");
-
-	//vector_t v1 = vector(5);
-	//vector_t v2 = vector(0);
-	//v2.x = 5;
-	//v1.v += v2.v;
-
-	//printf("v1 x: %f, y: %f\n", v1.x, v1.y);
-	//printf("v2 x: %f, y: %f\n", v2.x, v2.y);
-	//printf("dist(v1, v2): %f\n", vector_dist(&v1, &v2));
-	//print_sizeof(vector_t);
-	//print_sizeof(entity_t);
-
-	//printf("\n\n");
-
-	//entity_t* ship1, *asteroid1;
-	//ship1 = create_ship(v1, 6);
-
-	//asteroid1 = malloc(sizeof(entity_t));
-	//asteroid1->slots = 4;
-	//asteroid1->type = ASTEROID;
-	//asteroid1->radius = 0.5;
-	//asteroid1->pos.x = 5;
-	//asteroid1->pos.y = 2;
-
-	///* Main loop */
-	//int i;
-	//for (i = 0; i < 20; i++) {
-
-	//	/* TODO: Evaluate ship's flight plan */
-
-	//	/* If the ship is resting, tell it that it's arrived somewhere */
-	//	if(ship1->v.x == 0 && ship1->v.y == 0) {
-	//		call_entity_callback(ship1, AUTOPILOT_ARRIVED);
-	//	}
-
-	//	move_ship(ship1);            // move the ship one physicstep further
-
-	//	/* Check distances, call callbacks if required */
-	//	printf("ship x: %.2f, y: %.2f; collision_distance(ship, asteroid): %.2f\n", ship1->pos.x, ship1->pos.y, collision_dist(ship1, asteroid1));
-	//	if(collision_dist(ship1, asteroid1) < 3.) {
-	//		call_entity_callback(ship1, ENTITY_APPROACHING);
-	//	}
-
-	//	/* Check timers, call callbacks if required */
-	//}
-
-	//printf("ship x: %.2f, y: %.2f\n", ship1->pos.x, ship1->pos.y);
 
 	int i;
 	entity_t e;
@@ -73,13 +30,17 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
+	/* Create entity storage */
+	entities = init_entity_storage(config_get_int("max_ship_estimation"));
+	if(!entities) {
+		ERROR("Failed to allocate entity storage\n");
+		exit(1);
+	}
+
 	init_map();
 	/* Create a testship */
 	vector_t v1 = vector(1000);
-	entity_t* ship1 = malloc(sizeof(entity_t));
-	ship1->radius = 1;
-	ship1->player_id = 0;
-	init_ship(ship1, v1, 6);
+	entity_id_t ship1 = init_ship(entities, v1, 6);
 
 	/* Test json-output with the testship */
 	temp = ship_to_json(ship1);
@@ -87,7 +48,8 @@ int main(int argc, char *argv[]) {
 	free(temp);
 
 	/* Test freeing of this ship */
-	destroy_entity(ship1);
+	//destroy_entity(ship1);
+	free_entity(entities,ship1);
 
 	e.radius = 1;
 
@@ -106,7 +68,6 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	free(ship1);
 	free_config();
 	free_map();
 

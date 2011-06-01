@@ -81,6 +81,15 @@ entity_t* get_entity_by_id(entity_storage_t* s, entity_id_t id) {
 	return &(s->entities[s->offsets[index]]);
 }
 
+/* Get the i-th global entity */
+entity_t* get_entity_by_index(entity_storage_t* s, uint32_t i) {
+	if(i >= s->first_free) {
+		return NULL;
+	}
+
+	return &(s->entities[i]);
+}
+
 /* Delete an entity from the storage, freeing its slot */
 void free_entity(entity_storage_t* s, entity_id_t id) {
 
@@ -95,6 +104,9 @@ void free_entity(entity_storage_t* s, entity_id_t id) {
 		DEBUG("Attempted to free nonexistent entity with id %i\n", id);
 		return;
 	}
+
+	/* Clean up the inner organs of this entity */
+	destroy_entity(e);
 
 	/* Get array index of this entity */
 	index = id.index;
