@@ -2,6 +2,7 @@
 #define TYPES_H
 
 #include <lua.h>
+#include <stdint.h>
 #include "vector.h"
 
 typedef enum {
@@ -61,7 +62,25 @@ struct map_t {
 	double lower_bound;
 };
 
+/* Entity IDs are 64bit integers, of which the lower
+ * 32 bits denote the array index, and the upper 32
+ * denote the respawn count of this slot */
+typedef union {
+	struct {
+		uint32_t index;
+		uint32_t reincarnation;
+	};
+	uint64_t id;
+} entity_id_t;
+
+
+/* The entity_t datastructure holds all of the actual entity information */
 struct entity_t {
+
+	/* Unique id of this entity */
+	entity_id_t unique_id;
+
+	/* Position and velocity */
 	vector_t pos;
 	vector_t v;
 
