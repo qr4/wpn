@@ -1,2 +1,4 @@
 
 * Entity IDs are not endian safe
+* Passing entity_id_ts as lightuserdata into lua won't
+  work on non-64bit-platforms

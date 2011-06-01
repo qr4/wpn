@@ -11,7 +11,7 @@
  * they are dealing with is actually the one currently active. Since no third-party-data can be passed to lua-called functions directly, this will have to be acheived through a global variable.
  * (TODO: If multithreaded, this will have to be thread-local)
  */
-extern entity_t* lua_active_entity;
+extern entity_id_t lua_active_entity;
 
 /* Enum of possible events which can trigger callbacks in a ship */
 typedef enum {

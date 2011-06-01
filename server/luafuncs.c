@@ -5,8 +5,10 @@
 #include "luafuncs.h"
 #include "luastate.h"
 #include "entities.h"
+#include "storages.h"
 #include "debug.h"
 
+/* Type of functions which we make available to lua states */
 typedef struct {
 	lua_CFunction c_function;
 	const char lua_function_name[32];
@@ -30,8 +32,8 @@ void register_lua_functions(entity_t *s) {
 	}
 }
 
-static entity_t *get_self(lua_State *L) {
-	entity_t *e;
+static entity_id_t get_self(lua_State *L) {
+	entity_id_t e;
 
 	/* Fetch self-pointer */
 	lua_getglobal(L, "self");
@@ -42,9 +44,9 @@ static entity_t *get_self(lua_State *L) {
 	}
 
 	/* Confirm that it is pointing at the active entity */
-	e = lua_touserdata(L, -1);
+	e.id = (uint64_t) lua_touserdata(L, -1);
 	lua_pop(L,1);
-	if(e != lua_active_entity) {
+	if(e.id != lua_active_entity.id) {
 		lua_pushstring(L,"Your self-pointer is not pointing at yourself! What are you doing?");
 		lua_error(L);
 	}
@@ -77,6 +79,7 @@ int lua_killself(lua_State* L) {
  */
 int lua_moveto(lua_State* L) {
 	entity_t* e;
+	entity_id_t id;
 	int n;
 	double x = 0;
 	double y = 0;
@@ -114,7 +117,8 @@ int lua_moveto(lua_State* L) {
 			lua_error(L);
 	}
 
-	e = get_self(L);
+	id = get_self(L);
+	e = get_entity_by_id(id);
 
 	/* Now call the moveto-flightplanner */
 	/* TODO: Actually do this. */
@@ -138,6 +142,7 @@ int lua_moveto(lua_State* L) {
  */
 int lua_set_autopilot_to(lua_State* L) {
 	entity_t* e;
+	entity_id_t id;
 	int n;
 	double x,y;
 	char* callback=NULL;
@@ -174,7 +179,8 @@ int lua_set_autopilot_to(lua_State* L) {
 			lua_error(L);
 	}
 
-	e = get_self(L);
+	id = get_self(L);
+	e = get_entity_by_id(id);
 
 	/* Now call the flightplanner */
 	/* TODO: Actually do this. */
@@ -189,6 +195,7 @@ int lua_set_autopilot_to(lua_State* L) {
  */
 int lua_find_closest(lua_State *L) {
 	entity_t *e;
+	entity_id_t id;
 	int n;
 	double search_radius;
 	unsigned int filter;
@@ -203,9 +210,10 @@ int lua_find_closest(lua_State *L) {
 	filter        = (unsigned int) lua_tonumber(L, -1);
 	search_radius = (double) lua_tonumber(L, -2);
 	lua_pop(L, 3);
-	e = get_self(L);
+	id = get_self(L);
+	e = get_entity_by_id(id);
 
-	lua_pushlightuserdata(L, find_closest(e, search_radius, filter));
+	lua_pushlightuserdata(L, (void*)(find_closest(e, search_radius, filter)->unique_id.id));
 
 	return 1;
 }
@@ -213,6 +221,7 @@ int lua_find_closest(lua_State *L) {
 /* Debugging helper function, creating a string description of the given entity */
 int lua_entity_to_string(lua_State* L) {
 	entity_t* e;
+	entity_id_t id;
 	char* s;
 	char* temp;
 	int n;
@@ -225,8 +234,9 @@ int lua_entity_to_string(lua_State* L) {
 	}
 
 	/* Pop entity pointer from stack */
-	e = lua_touserdata(L, -1);
+	id.id = (uint64_t) lua_touserdata(L, -1);
 	lua_pop(L,2);
+	e = get_entity_by_id(id);
 
 	if (e == NULL) {
 		lua_pushstring(L, "nil");
