@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 	entity_id_t ship1 = init_ship(ship_storage, v1, 6);
 
 	/* Test json-output with the testship */
-	temp = ship_to_json(ship1);
+	temp = ship_to_json(get_entity_from_storage_by_id(ship_storage, ship1));
 	DEBUG("In json, this is:\n%s\n", temp);
 	free(temp);
 
