@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 #include <sys/mman.h>
 #include <sys/stat.h>        /* For mode constants */
@@ -18,195 +19,131 @@
 #define MAX_CONNECTION 100
 #define MAX_USERS 100
 
-#if 0
-struct info {
-  char* start;    // start malloc
-  size_t size;    // size von malloc
-  size_t unused;  // start + unused zeigen auf die 1. leere zelle
-  char last_char; // terminator
-
-  size_t read_next;    // start + read_next zeigen auf den noch nicht gelesenen bereich
-};
-
-/* fuegt text mit laenge len in info hinzu
- */
-static void append(struct info* info, char* text, int len) {
-
-  // das passt wohl so nicht mehr rein
-  if (len + info->unused > info->size) {
-    if (info->read_next == 0) {
-      // buffer hat keine ungenutzten bereiche mehr -> mehr speicher anfordern
-      size_t new_size = len > info->size ? info->size + len : info->size * 2;
-      char* tmp = (char*)realloc(info->start, new_size);
-      if (tmp == NULL) { perror("realloc"); exit(1); }
-      info->start = tmp;
-      info->size = new_size;
-    } else {
-      // buffer hat noch platz -> diesen nutzen
-      memmove(info->start, info->start + info->read_next, info->unused - info->read_next);
-      info->unused -= info->read_next;
-      info->read_next = 0;
-    }
-  }
-
-  // was passt noch rein
-  len = len + info->unused > info->size ? info->size - info->unused : len;
-
-  memcpy(info->start + info->unused, text, len);
-
-  info->unused += len;
-}
-
-/* gibt einen pointer data auf die naechste ungelesene zeile 
- * (ohne \n bzw. \r) aus info zur??ck. len spezifiziert die laenge in data
- */
-static int read_next_line(struct info* info, char** data, int* len) {
-
-  if (info->read_next == info->unused) {
-    printf("  end of buffer (1)\n");
-    return -1;
-  }
-
-  // komische konstellation wie \n\r als nur einen zeilenumbruch handeln
-  if ( ((info->last_char == '\n') && (info->start[info->read_next] == '\r')) ||
-      ((info->last_char == '\r') && (info->start[info->read_next] == '\n')) ) {
-    info->read_next++;
-  }
-
-  // nach \n bzw. \r suchen
-  for (size_t i = info->read_next; i < info->unused; ++i) {
-    if ( (info->start[i] == '\n') || (info->start[i] == '\r') ) {
-      (*len) = i - info->read_next;
-      (*data) = info->start + info->read_next;
-      info->last_char = info->start[i];
-      info->read_next = i + 1;  // es gilt: i < info->unused -> i + 1 ist nie > info->unused, max ==
-      return 0;
-    }
-  }
-
-  // keinen terminator gefunden
-  if (info->read_next == info->unused) {
-    printf("  end of buffer (2)\n");
-    return -1;
-  } else if (info->read_next < info->unused) {
-    printf("  not terminated\n");
-    (*len) = info->unused - info->read_next;
-    (*data) = info->start + info->read_next;
-    return -2;
-  } else {
-    printf("  was mach ich hier??\n");
-    return -3;
-  }
-}
-
-static int read_block(struct info* info, char* terminator) {
-
-}
-
-
-int main() {
-
-  struct info info;
-
-  info.start = (char*)malloc(DEFAULT_SIZE);
-  if (info.start == NULL) { perror("malloc"); }
-  info.size = DEFAULT_SIZE;
-  info.unused = 0;
-
-  info.read_next = 0;
-
-  append(&info, "hallo\n", 6);
-  append(&info, "hallo\n", 6);
-
-  append(&info, "foo\r\n", 5);
-  append(&info, "\n\r", 2);
-  append(&info, "hallo...", 8);
-  append(&info, "\r", 1);
-  append(&info, "__END__", 7);
-
-  printf("start = >%.*s<\n", (int)info.unused, info.start);
-
-  char* text;
-  int len;
-
-  for (int i = 0; i < 10; ++i) {
-    if (read_next_line(&info, &text, &len) < 0) {
-      printf("nix gefunden...\n");
-    } else {
-      printf(">%.*s<\n", len, text);
-    }
-  }
-
-}
-
-
-#endif
 
 struct userstate {
   char user_name[128];
   int have_auth;
-  void (*fkt)(struct userstate*, int);
+  int (*fkt)(struct userstate*, int);
 
-  char* data_next;  // zeigt auf die kommenden daten
-  char* data_start; // zeigt auf die adresse die von mmap reserviert wurde
-  size_t data_len;  // groesse von dem von mmap reservierten bereich
-  int data_fd;      // fd von mmap
+  // empfangsbuffer-dinge
+  char* data_start;   // malloc
+  size_t data_size;   // groesse vom malloc
+  size_t data_unused; // data_start + data_unused zeigen auf die 1. unbenutzte stelle
+
+  char data_last_char;    // letztes gelesenes zeichen (idr sowas wie '\n' oder '\r')
+  size_t data_read_next;  // data_start + data_read_next zeigen auf das 1. noch nicht bearbeitete zeichen
 };
 
 static struct userstate* us;
 
 
-#if 1
-static int get_line(struct userstate* us, char** data, int *len) {
+static int read_next_line(struct userstate* us, char** data, int* len) {
 
-  (*data) = us->data_next;
-  (*len) = 5;
-  return 0;
+  if (us->data_read_next == us->data_unused) {
+    return -1;  // am ende des buffers angekommen
+  }
 
-#if 0
-  size_t i = us->data_pos;
-  (*len) = 0;
+  // komische konstellation wie \n\r als nur einen zeilenumbruch handeln
+  if ( ((us->data_last_char == '\n') && (us->data_start[us->data_read_next] == '\r')) ||
+      ((us->data_last_char == '\r') && (us->data_start[us->data_read_next] == '\n')) ) {
+    us->data_read_next++;
+  }
 
-  while (1) {
-    if (us->data[i++] == '\n') {
-      us->data_pos = i;
+  // so, nun nach \n bzw \r suchen
+  for (size_t i = us->data_read_next; i < us->data_unused; ++i) {
+    if ( (us->data_start[i] == '\n') || (us->data_start[i] == '\r') ) {
+      (*len) = i - us->data_read_next;
+      (*data) = us->data_start + us->data_read_next;
+      us->data_last_char = us->data_start[i];
+      us->data_read_next = i + 1; // es gilt: i < unused --> i + 1 ist nie > unused, maximal gleich
       return 0;
     }
-
-    if (i == us->data_len) {
-      // kein \n gefunden
-      (*len) = 0;
-      return -1;
-    }
-
-    (*len)++;
   }
-#endif
-}
-#endif
 
-static void _login(struct userstate* us, int write_fd) {
+  return -1;  // keinen terminator gefunden
+}
+
+//
+//
+//
+
+static char _login_string[] = "# Hallo Weltraumreisender,\n"
+  "#\n"
+  "# wenn Du einen neuen Account haben willst, dann gib keinen Loginnamen an.\n"
+  "# (Also jetzt eiinfach nur RETURN druecken.)\n"
+  "# Dann hast Du die Moeglichkeit Dir einen neuen Account anzulegen. Ansonsten\n"
+  "# gib Deinen Usernamen und Dein Passwort ein\n"
+  "100 login: ";
+int _login(struct userstate* us, int write_fd);
+
+static char _new_account_string[] = "# Hallo neuer User. Gib doch mal Deinen Loginnamen an\n"
+  "# Erlaubt sind die Zeichen [a-zA-Z0-9:-+_]. Mehr nicht. Aetsch! Und 3 bis maximal 12 Zeichen!\n"
+  "110 username: ";
+int _new_account(struct userstate* us, int write_fd);
+
+
+int _login(struct userstate* us, int write_fd) {
   char* data;
   int len;
 
-  if (get_line(us, &data, &len) == -1) {
-    log_msg("keine daten...");
-    return; // kein return gefunden
+  if (read_next_line(us, &data, &len) < 0) return 0;  // kein '\n' gefunden
+
+  if (len == 0) {
+    write(write_fd, _new_account_string, sizeof(_new_account_string));
+    us->fkt = _new_account;
+    return 0;
+  }
+
+  if (len > 3) { // sizeof(us[write_fd].user_name)) {
+    const char msg[] = "500 Dein Loginname ist ein wenig lang geraten. Geh wech!\n";
+    write(write_fd, msg, sizeof(msg));
+    return -1;
   }
 
   printf("login name = %.*s\n", len, data);
   write(write_fd, "hallo du knackwurst\n", 20);
+
+  return 0;
 }
 
-static void _new_account(struct userstate* us, int write_fd) {
+int _new_account(struct userstate* us, int write_fd) {
+  char* data;
+  int len;
+  
+  if (read_next_line(us, &data, &len) < 0) return 0;  // kein '\n' gefunden
 
+  if ((len < 3) || (len > 12)) {
+    const char msg[] = "501 Nur 3 bis max. 12 Zeichen. Du Knackwurst. Probiers nochmal\n"
+      "110 username: ";
+    write(write_fd, msg, sizeof(msg));
+    return 0;
+  }
+
+  const char allowed_chars[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:-+_";
+  for (int i = 0; i < len; ++i) {
+    int found = 0;
+    for (int j = 0; j < sizeof(allowed_chars); ++j) {
+      if (data[i] == allowed_chars[j]) {
+        found = 1;
+      }
+    }
+    if (found == 0) {
+      const char msg[] = "502 Nee Du. Lass mal Deine komischen Zeichen stecken. Probiers nochmal\n"
+        "110 username: ";
+      write(write_fd, msg, sizeof(msg));
+      return 0;
+    }
+  }
+
+  write(write_fd, "ok\n", 3);
+
+  return 0;
 }
 
-static void _read(struct userstate* us, int fd, char* in, int len) {
-  printf("read = %s\n", in);
-}
 
-
+//
+//
+//
 
 static void net_client_connect(int fd, fd_set* master, int* fdmax) {
   struct sockaddr_storage remoteaddr;
@@ -239,68 +176,46 @@ static void net_client_connect(int fd, fd_set* master, int* fdmax) {
   us[newfd].user_name[0] = '\0';
   us[newfd].have_auth = 0;
   us[newfd].fkt = _login;
-  us[newfd].data_fd = shm_open(tmp_file, O_CREAT | O_EXCL | O_RDWR, 0700);
-  if (shm_unlink(tmp_file) == -1) { log_perror("shm_unlink"); /* das knallt dann spaeter */ }
-  if (us[newfd].data_fd == -1) { log_perror("warum zum teufel kann ich wpn_tmp nicht anlegen??"); return; }
-  us[newfd].data_len = 1;
-  us[newfd].data_start = mmap(0, us[newfd].data_len, PROT_READ | PROT_WRITE, MAP_SHARED, us[newfd].data_fd, 0);
-  if (us[newfd].data_start == MAP_FAILED) { log_perror("mmap"); /* TODO: jetzt sollte man was tun */ }
-  us[newfd].data_next = us[newfd].data_start;
 
-  const char msg[] = "# Hallo Weltraumreisender,\n"
-    "#\n"
-    "# wenn Du einen neuen Account haben willst, dann gib keinen Loginnamen an.\n"
-    "# (Also jetzt eiinfach nur RETURN druecken.)\n"
-    "# Dann hast Du die Moeglichkeit Dir einen neuen Account anzulegen. Ansonsten\n"
-    "# gib Deinen Usernamen und Dein Passwort ein\n"
-    "100 login: ";
+  const size_t DEFAULT_DATA_SIZE = 4000;
+  free(us[newfd].data_start); // TODO: das hier mal anders regeln - realloc und sowas
+  us[newfd].data_start = (char*)malloc(DEFAULT_DATA_SIZE);
+  if (us[newfd].data_start == NULL) { log_perror("malloc mag mich nicht :-/"); return; }
+  us[newfd].data_size = DEFAULT_DATA_SIZE;
+  us[newfd].data_unused = 0;
+  us[newfd].data_read_next = 0;
 
-  write(newfd, msg, sizeof(msg));
-}
-
-
-static ssize_t fd_copy(int read_fd, int write_fd) {
-  char buffer[512];
-  ssize_t len = 0, r, w;
-
-  do {
-    r = recv(read_fd, buffer, sizeof(buffer), 0);
-    if (r == -1) {
-      log_perror("fd_copy");
-      return 0;
-    }
-
-    len += r;
-
-    if (r > 0) {
-      w = write(write_fd, buffer, r);
-      if (w != r) {
-        if (w == -1) {
-          log_perror("fd_copy");
-        } else {
-          log_msg("fd_copy: anzahl der gelesenen(%d) und der geschriebenen(%d) bytes passen nicht - return 0", r, w);
-        }
-        return 0;
-      }
-    }
-  
-  } while(r == sizeof(buffer));
-
-  return len;
+  write(newfd, _login_string, sizeof(_login_string));
 }
 
 static void net_client_talk(int fd, fd_set* master) {
 
-  size_t old_size = us[fd].data_len;
-  ssize_t len = fd_copy(fd, us[fd].data_fd);
+  size_t free_buffer_size = us[fd].data_size - us[fd].data_unused;
+
+  if (free_buffer_size == 0) {
+    if (us[fd].data_read_next == 0) {
+      // kein platz mehr -> speicher erweitern
+      char* tmp = (char*)realloc(us[fd].data_start, us[fd].data_size * 2);
+      if (tmp == NULL) { log_perror("realloc mag nicht :-\\"); exit(1); }
+      us[fd].data_start = tmp;
+      us[fd].data_size *= 2;
+    } else {
+      // wir koennen ein wenig platz machen in dem wir 
+      // den bereich den wir noch brauchen an den anfang schieben
+      memmove(us[fd].data_start, us[fd].data_start + us[fd].data_read_next, us[fd].data_unused - us[fd].data_read_next);
+      us[fd].data_unused -= us[fd].data_read_next;
+      us[fd].data_read_next = 0;
+    }
+
+    // so, nun nochmal die neue freie groesse berechnen
+    free_buffer_size = us[fd].data_size - us[fd].data_unused;
+  }
+
+  ssize_t len = recv(fd, us[fd].data_start + us[fd].data_unused, free_buffer_size, 0);
 
   if (len == 0) {
     // client mag nicht mehr mit uns reden
     log_msg("<%d> client hang up", fd);
-
-    // sachen aus userstate aufraeumen
-    if (munmap(us[fd].data_start, us[fd].data_len) == -1) { log_perror("net_client_talk"); /* TODO noch was? */ }
-    close(us[fd].data_fd);
 
     // sachen globale kommunikation aufraeumen
     close(fd);
@@ -309,13 +224,14 @@ static void net_client_talk(int fd, fd_set* master) {
   }
 
   // wir sind nun um len bytes groesser -> memory remappen
-  us[fd].data_len += len;
-  char* new_buffer = mremap(us[fd].data_start, old_size, us[fd].data_len, MREMAP_MAYMOVE);
-  if (new_buffer == MAP_FAILED) { log_perror("net_client_talk"); /* TODO */ }
-  us[fd].data_start = new_buffer;
+  us[fd].data_unused += len;
 
   // nun die eigentliche fkt aufrufen
-  us[fd].fkt(&us[fd], fd);
+  if (us[fd].fkt(&us[fd], fd) < 0) {
+    log_msg("return-state sagt verbindung dichtmachen...");
+    close(fd);
+    FD_CLR(fd, master);
+  }
 }
 
 
@@ -326,6 +242,9 @@ int main() {
 
   us = (struct userstate*)malloc(sizeof(struct userstate) * MAX_USERS);
   if (us == NULL) { log_msg("malloc us == NULL: kein platz"); exit(EXIT_FAILURE); }
+  for (int i = 0; i < MAX_USERS; ++i) {
+    us[i].data_start = (char*)malloc(10); // TODO: nur wegen free oben - besser machen
+  }
 
 	int listener = network_bind(PORT, MAX_CONNECTION);
 	if (listener == -1) { log_msg("kann auf port "PORT" nicht binden... exit"); exit(EXIT_FAILURE); }
@@ -372,9 +291,6 @@ int main() {
       } // for
     } // else
   } // while
-
-
-	sleep(100);
 
 }
 
