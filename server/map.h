@@ -31,6 +31,7 @@ static inline entity_t *find_closest_by_position(const vector_t pos, const doubl
 	entity_t tmp;
 	tmp.pos = pos;
 	tmp.radius = entity_radius;
+	tmp.unique_id = INVALID_ID;
 	return find_closest(&tmp, radius, filter);
 }
 

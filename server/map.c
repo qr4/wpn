@@ -30,40 +30,41 @@ map_t map;
 
 void init_map() {
 	srand48(1);
-	size_t x, y;
+	size_t x, y, i;
 	vector_t pos;
+	entity_t *working;
 
 	map.clusters_x = CLUSTERS_X;
 	map.clusters_y = CLUSTERS_Y;
-	map.cluster = (entity_t *) malloc(sizeof(entity_t) * map.clusters_x * map.clusters_y);
+	//map.cluster = (entity_t *) malloc(sizeof(entity_t) * map.clusters_x * map.clusters_y);
 	map.quad_size = AVERAGE_GRID_SIZE;
 
 	// position clusters at initial grid positions, try to avoid x,y values < 0
 	for (y = 0, pos.y = AVERAGE_CLUSTER_DISTANCE; y < map.clusters_y ; y++, pos.y += AVERAGE_CLUSTER_DISTANCE) {
 		for (x = 0, pos.x = AVERAGE_CLUSTER_DISTANCE; x < map.clusters_x; x++, pos.x += AVERAGE_CLUSTER_DISTANCE) {
+			working = get_entity_by_id(alloc_entity(cluster_storage));
 			vector_t cluster_pos = pos;
 			cluster_pos.v += randv().v * vector(MAXIMUM_CLUSTER_SIZE).v;
-			init_entity(map.cluster + y * map.clusters_x + x, cluster_pos, CLUSTER, 0);
+			init_entity(working, cluster_pos, CLUSTER, 0);
 		}
 	}
 
 	// fill with planets / asteroids, set radius
-	for (y = 0; y < map.clusters_y; y++) {
-		for (x = 0; x < map.clusters_x; x++) {
-			entity_t *working = &(map.cluster[map.clusters_x * y + x]);
-			double r = drand48();
+	for (i = 0; (working = get_entity_by_index(cluster_storage, i)) != NULL; i++) {
+		double r = drand48();
 
-			if (r < PLANET_DENSITY) {
-				working->cluster_data->planet = alloc_entity(planet_storage);
-				init_entity(get_entity_by_id(working->cluster_data->planet), working->pos, PLANET, 0);
-				working->radius = get_entity_by_id(working->cluster_data->planet)->radius;
-			} else if (r < PLANET_DENSITY + ASTEROID_DENSITY) {
-				distribute_asteroids(working, AVERAGE_ASTEROID_NUMBER + rand()%4 - 2);
-			} else {
-				// Empty cluster
-			}
+		if (r < PLANET_DENSITY) {
+			working->cluster_data->planet = alloc_entity(planet_storage);
+			init_entity(get_entity_by_id(working->cluster_data->planet), working->pos, PLANET, 0);
+			working->radius = get_entity_by_id(working->cluster_data->planet)->radius;
+		} else if (r < PLANET_DENSITY + ASTEROID_DENSITY) {
+			distribute_asteroids(working, AVERAGE_ASTEROID_NUMBER + rand()%4 - 2);
+		} else {
+			// Empty cluster
 		}
 	}
+
+	map.cluster = cluster_storage->entities;
 
 	// find area of the map
 	set_limits();
@@ -167,13 +168,6 @@ void set_limits() {
 }
 
 void free_map() {
-	size_t i;
-
-	for (i = 0; i < map.clusters_y * map.clusters_x; i++) {
-		destroy_entity(map.cluster + i);
-	}
-
-	free(map.cluster);
 	free(map.quad);
 }
 
@@ -184,9 +178,12 @@ map_quad_t *register_object(entity_t *e) {
 
 	switch (e->type) {
 		case CLUSTER :
-			quad->cluster = (entity_t **) realloc (quad->cluster, (quad->clusters + 1) * sizeof(entity_t *));
-			quad->cluster[quad->clusters++] = e;
-			return quad;
+			object_pointer = &(quad->cluster);
+			objects = &(quad->clusters);
+			break;
+			//quad->cluster = (entity_t **) realloc (quad->cluster, (quad->clusters + 1) * sizeof(entity_t *));
+			//quad->cluster[quad->clusters++] = e;
+			//return quad;
 		case BASE :
 		case PLANET :
 		case ASTEROID :
@@ -240,14 +237,9 @@ void unregister_object(entity_t *e) {
 
 	switch (e->type) {
 		case CLUSTER :
-			//object_pointer = &(quad->cluster);
-			//objects = &(quad->clusters);
-			if (quad->clusters == 0) return;
-			for (i = 0; i < quad->clusters && quad->cluster[i] != e; i++);
-			quad->cluster[i] = quad->cluster[quad->clusters - 1];
-			quad->clusters--;
-			quad->cluster = (entity_t **) realloc (quad->cluster, (quad->clusters * sizeof(entity_t *)));
-			return;
+			object_pointer = &(quad->cluster);
+			objects = &(quad->clusters);
+			break;
 		case BASE :
 		case PLANET :
 		case ASTEROID :
@@ -313,11 +305,11 @@ entity_t *find_closest(entity_t *e, const double radius, const unsigned int filt
 
 			if (filter & CLUSTER) {
 				for (i = 0; i < quad->clusters; i++) {
-					if (filter & quad->cluster[i]->type 
-							&& e != quad->cluster[i]
-							&& (t = collision_dist(e, quad->cluster[i])) < dist) {
+					if (filter & quad->cluster[i].type 
+							&& e->unique_id.id != quad->cluster[i].id
+							&& (t = collision_dist(e, get_entity_by_id(quad->cluster[i]))) < dist) {
 						dist = t;
-						closest = quad->cluster[i];
+						closest = get_entity_by_id(quad->cluster[i]);
 					}
 				}
 			}

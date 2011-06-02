@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 	DEBUG("Debug messages turned on!\n");
 
 	int i;
-	entity_t e;
+	entity_t *e;
 	entity_t *closest;
 	char* temp;
 
@@ -48,14 +48,12 @@ int main(int argc, char *argv[]) {
 
 	/* Test freeing of this ship */
 	//destroy_entity(ship1);
-	free_entity(ship_storage,ship1);
-
-	e.radius = 1;
+	e = get_entity_by_id(ship1);
 
 	for (i = 0; i < 5; i++) {
-		e.pos.v = (randv().v + vector(1).v) * vector(2000).v;
-		closest = find_closest_by_position(e.pos, e.radius, 1000, PLANET);
-		DEBUG("Checking (%f, %f)\n", e.pos.x, e.pos.y);
+		e->pos.v = (randv().v + vector(1).v) * vector(2000).v;
+		closest = find_closest_by_position(e->pos, e->radius, 1000, PLANET);
+		DEBUG("Checking (%f, %f)\n", e->pos.x, e->pos.y);
 		if (closest != NULL) {
 			DEBUG("Found %s, at position (%f, %f). Collision distance: %f\n",
 					type_string(closest->type),
@@ -67,7 +65,10 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	free_entity(ship_storage,ship1);
+
 	free_config();
+	free_all_storages();
 	free_map();
 
 	return EXIT_SUCCESS;

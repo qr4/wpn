@@ -54,7 +54,7 @@ struct quad_index_t {
 };
 
 struct map_quad_t {
-	entity_t **cluster;
+	entity_id_t *cluster;
 	entity_id_t *static_object;
 	entity_id_t *moving_object;
 	size_t clusters;       // number of clusters in this quad
@@ -63,7 +63,7 @@ struct map_quad_t {
 };
 
 struct map_t {
-	entity_t *cluster;
+	entity_t     *cluster;
 	map_quad_t   *quad;
 	size_t clusters_x;
 	size_t clusters_y;
