@@ -5,8 +5,13 @@
 #include "physics.h"
 #include "route.h"
 #include "types.h"
+#include "entities.h"
+#include "entity_storage.h"
+#include "storages.h"
 
-extern map_t map;
+extern entity_storage_t* asteroid_storage;
+extern entity_storage_t* planet_storage;
+extern map_t map; // cluster
 
 waypoint_t* go_around(vector_t* A, vector_t* B, entity_t* C, double r) {
 	vector_t X;
@@ -19,17 +24,17 @@ waypoint_t* go_around(vector_t* A, vector_t* B, entity_t* C, double r) {
 	return wp;
 }
 
-waypoint_t* route(vector_t* start, vector_t* stop, entity_t* entities, int n_points) {
+waypoint_t* route(vector_t* start, vector_t* stop) {
 	int i;
 
 	int i_min = -1;
 	double r_min = 1;
 
-	for(i = 0; i < n_points; i++) {
-		double r = vector_dividing_ratio(start, stop, &(entities[i].pos));
+	for(i = 0; i < map.clusters_x * map.clusters_y; i++) {
+		double r = vector_dividing_ratio(start, stop, &(map.cluster[i].pos));
 		if (r > 0 && r < 1) {
-			double d = vector_dist_to_line(start, stop, &(entities[i].pos));
-			if (fabs(d) < entities[i].radius) {
+			double d = vector_dist_to_line(start, stop, &(map.cluster[i].pos));
+			if (fabs(d) < map.cluster[i].radius) {
 				if(fabs(r-0.5) < fabs(r_min-0.5)) {
 					i_min = i;
 					r_min = r;
@@ -39,9 +44,9 @@ waypoint_t* route(vector_t* start, vector_t* stop, entity_t* entities, int n_poi
 	}
 
 	if(i_min >= 0) {
-		waypoint_t* wp = go_around(start, stop, &(entities[i_min]), r_min);
+		waypoint_t* wp = go_around(start, stop, map.cluster + i_min, r_min);
 
-		waypoint_t* part1 = route(start, &(wp->point), entities, n_points);
+		waypoint_t* part1 = route(start, &(wp->point));
 		if(part1 == NULL) {
 			part1 = wp;
 		} else {
@@ -51,7 +56,7 @@ waypoint_t* route(vector_t* start, vector_t* stop, entity_t* entities, int n_poi
 			}
 			t->next = wp;
 		}
-		waypoint_t* part2 = route(&(wp->point), stop, entities, n_points);
+		waypoint_t* part2 = route(&(wp->point), stop);
 		if(part2 != 0) {
 			waypoint_t* t = part1;
 			while(t->next != NULL) {
@@ -67,13 +72,88 @@ waypoint_t* route(vector_t* start, vector_t* stop, entity_t* entities, int n_poi
 
 waypoint_t* intra_cluster_route(vector_t* start, vector_t* stop, entity_t* cluster) {
 	if(cluster->cluster_data->asteroids == 0) {
-		return route(start, stop, cluster->cluster_data->planet, 1);
+		// Single planet in cluster
+		entity_t* planet = get_entity_from_storage_by_id(planet_storage, cluster->cluster_data->planet);
+		double r = vector_dividing_ratio(start, stop, &(planet->pos));
+		if (r > 0 && r < 1) {
+			double d = vector_dist_to_line(start, stop, &(planet->pos));
+			if (fabs(d) < planet->radius) {
+				waypoint_t* wp = go_around(start, stop, planet, r);
+
+				waypoint_t* part1 = intra_cluster_route(start, &(wp->point), cluster);
+				if(part1 == NULL) {
+					part1 = wp;
+				} else {
+					waypoint_t* t = part1;
+					while(t->next != NULL) {
+							t = t->next;
+					}
+					t->next = wp;
+				}
+				waypoint_t* part2 = intra_cluster_route(&(wp->point), stop, cluster);
+				if(part2 != 0) {
+					waypoint_t* t = part1;
+					while(t->next != NULL) {
+						t = t->next;
+					}
+					t->next = part2;
+				}
+				return part1;
+			} else {
+				return NULL;
+			}
+		} else {
+			return NULL;
+		}
 	} else {
-		return route(start, stop, cluster->cluster_data->asteroid, cluster->cluster_data->asteroids);
+		// Routing in astroid cluster
+		int i_min = -1;
+		double r_min = 1;
+		int i;
+		for(i = 0; i < cluster->cluster_data->asteroids; i++) {
+			entity_t* asteroid = get_entity_from_storage_by_id(asteroid_storage, cluster->cluster_data->asteroid[i]);
+			double r = vector_dividing_ratio(start, stop, &(asteroid->pos));
+			if (r > 0 && r < 1) {
+				double d = vector_dist_to_line(start, stop, &(asteroid->pos));
+				if (fabs(d) < map.cluster[i].radius) {
+					if(fabs(r-0.5) < fabs(r_min-0.5)) {
+						i_min = i;
+						r_min = r;
+					}
+				}
+			}
+		}
+
+		if(i_min >= 0) {
+			entity_t* asteroid = get_entity_from_storage_by_id(asteroid_storage, cluster->cluster_data->asteroid[i_min]);
+			waypoint_t* wp = go_around(start, stop, asteroid, r_min);
+
+			waypoint_t* part1 = intra_cluster_route(start, &(wp->point), cluster);
+			if(part1 == NULL) {
+				part1 = wp;
+			} else {
+				waypoint_t* t = part1;
+				while(t->next != NULL) {
+					t = t->next;
+				}
+				t->next = wp;
+			}
+			waypoint_t* part2 = intra_cluster_route(&(wp->point), stop, cluster);
+			if(part2 != 0) {
+				waypoint_t* t = part1;
+				while(t->next != NULL) {
+					t = t->next;
+				}
+				t->next = part2;
+			}
+			return part1;
+		} else {
+			return NULL;
+		}
 	}
 }
 
-waypoint_t* plotCourse(vector_t* start, vector_t* stop, entity_t* entities, int n) {
+waypoint_t* plotCourse(vector_t* start, vector_t* stop) {
 	waypoint_t* wp_start = malloc(sizeof(waypoint_t));
 	waypoint_t* wp_stop = malloc(sizeof(waypoint_t));
 	waypoint_t* jp1 = wp_start;
@@ -93,7 +173,7 @@ waypoint_t* plotCourse(vector_t* start, vector_t* stop, entity_t* entities, int 
 
 	if(e_start == NULL && e_stop == NULL) {
 		// inter cluster flight
-		wp_start->next = route(start, stop, entities, n * n);
+		wp_start->next = route(start, stop);
 	} else if(e_start != NULL && e_stop != NULL && e_start->pos.x == e_stop->pos.x && e_start->pos.y == e_stop->pos.y) {
 		// flight within a cluster
 		wp_start->next = intra_cluster_route(start, stop, e_start);
@@ -121,7 +201,7 @@ waypoint_t* plotCourse(vector_t* start, vector_t* stop, entity_t* entities, int 
 			t->next = wp_stop;
 		}
 
-		route(&(jp1->point), &(jp2->point), entities, n);
+		route(&(jp1->point), &(jp2->point));
 	}
 
 	t = wp_start;
@@ -178,6 +258,6 @@ void autopilot_planner(entity_t* e, double x, double y, char* callback) {
 	vector_t stop;
 	stop.x = x;
 	stop.y = y;
-	e->ship_data->flightplan = plotCourse(&start, &stop, map.cluster, map.clusters_x * map.clusters_y);
+	e->ship_data->flightplan = plotCourse(&start, &stop);
 	complete_flightplan(e);
 }
