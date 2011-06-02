@@ -25,12 +25,10 @@ waypoint_t* go_around(vector_t* A, vector_t* B, entity_t* C, double r) {
 }
 
 waypoint_t* route(vector_t* start, vector_t* stop) {
-	int i;
-
 	int i_min = -1;
 	double r_min = 1;
 
-	for(i = 0; i < map.clusters_x * map.clusters_y; i++) {
+	for(int i = 0; i < map.clusters_x * map.clusters_y; i++) {
 		double r = vector_dividing_ratio(start, stop, &(map.cluster[i].pos));
 		if (r > 0 && r < 1) {
 			double d = vector_dist_to_line(start, stop, &(map.cluster[i].pos));
@@ -109,8 +107,7 @@ waypoint_t* intra_cluster_route(vector_t* start, vector_t* stop, entity_t* clust
 		// Routing in astroid cluster
 		int i_min = -1;
 		double r_min = 1;
-		int i;
-		for(i = 0; i < cluster->cluster_data->asteroids; i++) {
+		for(int i = 0; i < cluster->cluster_data->asteroids; i++) {
 			entity_t* asteroid = get_entity_from_storage_by_id(asteroid_storage, cluster->cluster_data->asteroid[i]);
 			double r = vector_dividing_ratio(start, stop, &(asteroid->pos));
 			if (r > 0 && r < 1) {

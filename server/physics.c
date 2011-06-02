@@ -9,7 +9,6 @@
 // Berechnet die Masse eines Schiffes aus der Leermasse und der Anzahl der nichtleeren Klötze
 double get_mass(entity_t* s) {
 	double m = 0;
-	int i;
 
 	if(!s) {
 		fprintf(stderr, "Very funny, calling get_mass with s = NULL\n");
@@ -34,7 +33,7 @@ double get_mass(entity_t* s) {
 		exit(1);
 	}
 
-	for(i = 0; i < s->slots; i++) {
+	for(int i = 0; i < s->slots; i++) {
 		if(s->ship_data->slot[i] != EMPTY) {
 			m += m0_klotz;
 		}
@@ -46,7 +45,6 @@ double get_mass(entity_t* s) {
 // Berechnet den Schub eines Schiffes aus der Anzahl der thruster
 double get_thrust(entity_t* s) {
 	double F = 0;
-	int i;
 
 	if(!s) {
 		fprintf(stderr, "Very funny, calling get_thrust with s = NULL\n");
@@ -59,7 +57,7 @@ double get_thrust(entity_t* s) {
 		exit(1);
 	}
 
-	for(i = 0; i < s->slots; i++) {
+	for(int i = 0; i < s->slots; i++) {
 		if(s->ship_data->slot[i] == DRIVE) {
 			F += F_thruster;
 		}
@@ -173,10 +171,9 @@ void coast(waypoint_t* wp0, waypoint_t* wp1) {
 
 	double dist = hypot(wp1->point.x - wp0->point.x, wp1->point.y - wp0->point.y);
 	double t_coast = dist / hypot(wp0->speed.x, wp0->speed.y);
-	double t;
 
 	waypoint_t* wpx = wp0;
-	for(t = ceil(wp0->t / dt)*dt; t < wp0->t + t_coast; t += dt) {
+	for(double t = ceil(wp0->t / dt)*dt; t < wp0->t + t_coast; t += dt) {
 		double delta_t = t - wp0->t;
 		waypoint_t* wpy = create_waypoint(wp0->point.x + wp0->speed.x * delta_t, wp0->point.y + wp0->speed.y * delta_t, wp0->speed.x, wp0->speed.y, t, WP_VIA);
 		wpx->next = wpy;
@@ -207,11 +204,10 @@ void _straight_minimal_time(waypoint_t* wp0, waypoint_t* wp1, double a) {
 	double det = sqrt(2*(v0 * v0 + v1 * v1 + 2 * a * dist));
 	double t_midway = (0.5 * det - v0) / a;
 	double t_end = (det - v0 - v1) / a;
-	double t;
 
 	if(t_midway > -epsilon && t_end > -epsilon && t_end - t_midway > -epsilon) { // Manchmal hasse ich Fließkommagenauigkeit
 		waypoint_t* wpx = wp0;
-		for(t = ceil(wp0->t / dt)*dt; t < wp0->t + t_end; t += dt) {
+		for(double t = ceil(wp0->t / dt)*dt; t < wp0->t + t_end; t += dt) {
 			if(t <= wp0->t + t_midway) {
 				double delta_t = t - wp0->t;
 				waypoint_t* wpy = create_waypoint(wp0->point.x + wp0->speed.x * delta_t + 0.5 * a * distx * delta_t * delta_t / dist, wp0->point.y + wp0->speed.y * delta_t + 0.5 * a * disty * delta_t * delta_t / dist, wp0->speed.x + a * distx * delta_t / dist, wp0->speed.y + a * disty * delta_t / dist, t, WP_VIA);
@@ -294,9 +290,8 @@ void swing_by(waypoint_t* wp0, vector_t obstacle, waypoint_t* wp1, double a) {
 		return;
 	}
 
-	double t;
 	waypoint_t* wpx = wp0;
-	for(t = ceil(wp0->t / dt)*dt; t < wp0->t + t_rotate; t += dt) {
+	for(double t = ceil(wp0->t / dt)*dt; t < wp0->t + t_rotate; t += dt) {
 		double delta_t = t - wp0->t;
 		double s = sin(turn_rate*delta_t);
 		double c = cos(turn_rate*delta_t);
