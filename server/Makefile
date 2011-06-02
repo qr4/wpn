@@ -1,19 +1,15 @@
 CC = gcc
-FLAGS = -Wall -g3 -O2 -march=native -mtune=native -pipe `pkg-config lua5.1 --cflags` -std=gnu99
-CLIBS =
-LDFLAGS = -lm -lrt `pkg-config lua5.1 --libs` -Wl,-O1 -Wl,--as-needed
+CFLAGS = -Wall -g3 -O2 -march=native -mtune=native -pipe `pkg-config5.1 lua --cflags` -std=gnu99
+LDFLAGS = -lm -lrt `pkg-config5.1 lua --libs` -Wl,-O1 -Wl,--as-needed
 OBJ = main.o entities.o vector.o map.o ship.o luastate.o luafuncs.o physics.o config.o entity_storage.o storages.o json_output.o route.o
 
-all: main
-
-main: $(OBJ)
-	$(CC) $(FLAGS) $(LDFLAGS) -o $@ $(OBJ)
+all: $(OBJ)
 
 %.o: %.c %.h
-	$(CC) $(FLAGS) $(CLIBS) -c $<
+	$(CC) $(CFLAGS) -c $<
 
 %.o: %.c
-	$(CC) $(FLAGS) $(CLIBS) -c $<
+	$(CC) $(CFLAGS) -c $<
 
 .PHONY : clean debug
 clean:

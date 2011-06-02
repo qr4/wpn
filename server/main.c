@@ -11,6 +11,7 @@
 #include "entity_storage.h"
 #include "storages.h"
 #include "debug.h"
+#include "../net/net.h"
 
 #define print_sizeof(TYPE) \
 	printf("sizeof(%-14s) = %4lu\n", #TYPE, sizeof(TYPE));
@@ -28,6 +29,9 @@ int main(int argc, char *argv[]) {
 	if(!init_config_from_file("config.lua")) {
 		exit(1);
 	}
+
+	/* Start networking code */
+	net_init();
 
 	/* Create entity storages */
 	init_all_storages();

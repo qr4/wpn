@@ -48,6 +48,14 @@ struct net_map_info {
   struct net_client* nc;  // status-infos der verbundenen clients
 };
 
+
+/*
+void net_client_connect(int fd, fd_set* master, int* fdmax, struct timeval* tv);
+void net_client_talk(int fd, fd_set* master);
+void net_timer(struct timeval* tv);
+int net_pipe(int fd, struct timeval* tv);
+void net_client_loop(int pipe_fd, int net_fd);
+*/
+void net_init();
+
 #endif
-
-

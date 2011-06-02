@@ -7,6 +7,7 @@
 #include "entity_storage.h"
 #include "json_output.h"
 #include "storages.h"
+#include "../net/net.h"
 
 extern entity_storage_t* asteroid_storage;
 extern entity_storage_t* base_storage;
@@ -245,7 +246,7 @@ char* ships_to_json() {
 void asteroids_to_network() {
 	char* p = asteroids_to_json();
 	if(p) {
-		//map_printf("%s", p);
+		map_printf("%s", p);
 		free(p);
 	} else {
 		fprintf(stderr, "asteroids_to_network says: printing NULL is hard\n");
@@ -256,7 +257,7 @@ void asteroids_to_network() {
 void bases_to_network() {
 	char* p = bases_to_json();
 	if(p) {
-		//map_printf("%s", p);
+		map_printf("%s", p);
 		free(p);
 	} else {
 		fprintf(stderr, "bases_to_network says: printing NULL is hard\n");
@@ -267,7 +268,7 @@ void bases_to_network() {
 void planets_to_network() {
 	char* p = planets_to_json();
 	if(p) {
-		//map_printf("%s", p);
+		map_printf("%s", p);
 		free(p);
 	} else {
 		fprintf(stderr, "planets_to_network says: printing NULL is hard\n");
@@ -278,7 +279,7 @@ void planets_to_network() {
 void ships_to_network() {
 	char* p = ships_to_json();
 	if(p) {
-		//map_printf("%s", p);
+		map_printf("%s", p);
 		free(p);
 	} else {
 		fprintf(stderr, "ships_to_network says: printing NULL is hard\n");
@@ -287,16 +288,16 @@ void ships_to_network() {
 }
 
 void map_to_network() {
-	//map_printf("{\n");
+	map_printf("{\n");
 	bbox_to_json();
-	//map_printf(",\n");
+	map_printf(",\n");
 	asteroids_to_network();
-	//map_printf(",\n");
+	map_printf(",\n");
 	bases_to_network();
-	//map_printf(",\n");
+	map_printf(",\n");
 	planets_to_network();
-	//map_printf(",\n");
+	map_printf(",\n");
 	ships_to_network();
-	//map_printf("}\n");
-	//map_flush();
+	map_printf("}\n");
+	map_flush();
 }
