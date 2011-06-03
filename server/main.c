@@ -63,6 +63,8 @@ int main(int argc, char *argv[]) {
 		} else {
 			DEBUG("Nothing\n");
 		}
+
+		map_to_network();
 	}
 
 	free_entity(ship_storage,ship1);
