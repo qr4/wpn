@@ -1,4 +1,10 @@
+// 
+// code by twist<at>nerd2nerd.org
+//
+
 #define _GNU_SOURCE
+
+#include <openssl/sha.h>    // fuer pw hashing
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,23 +12,43 @@
 #include <string.h>
 
 #include <sys/mman.h>
-#include <sys/stat.h>        /* For mode constants */
-#include <fcntl.h>           /* For O_* constants */
+#include <sys/stat.h>       /* For mode constants */
+#include <fcntl.h>          /* For O_* constants */
+
+
+#include <errno.h>          // E* error-zeux
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>         // stat
+
+#include <sys/stat.h>
+#include <sys/types.h>      // mkdir
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>          // open
 
 #include <sys/mman.h>
 
 #include <logging.h>
 
 #include "network.h"
+#include "pstr.h"
 
 #define PORT "8080"
 #define MAX_CONNECTION 100
 #define MAX_USERS 100
 
+#define HOME "/opt/wpn/"
+#define USER_HOME "/opt/wpn/user"
+
+//
+// user-info-status-dinge
+//
 
 struct userstate {
   char user_name[128];
-  int have_auth;
   int (*fkt)(struct userstate*, int);
 
   // empfangsbuffer-dinge
@@ -63,24 +89,133 @@ static int read_next_line(struct userstate* us, char** data, int* len) {
   return -1;  // keinen terminator gefunden
 }
 
+
+// schaut unter USER_HOME/$name nach ob es ein verzeichnis (oder eine andere datei) gibt 
+// 1 = ja, 0 = nein
+int have_user(char* name, int len) {
+
+  struct pstr path = { .size = 256, .used = sizeof(USER_HOME), .str = USER_HOME "/" };
+
+  pstr_append(&path, name, len);
+
+  struct stat sb;
+
+  if (stat(path.str, &sb) == -1) {
+    if (errno != ENOENT) {
+      log_perror("stat");
+    }
+    return 0;
+  }
+
+  if ((sb.st_mode & S_IFMT) != S_IFDIR) {
+    log_msg("path %s is not a directory - why??", path.str);
+  }
+
+  return 1;
+}
+
+// legt einen neuen user unter USER_HOME/$name mit password $pw an
+int add_user(char *name, int len_name, char *pw, int len_pw) {
+
+  struct pstr path = { .size = 256, .used = sizeof(USER_HOME), .str = USER_HOME "/" };
+  pstr_append(&path, name, len_name);
+
+  if (mkdir(path.str, 0700) == -1) {
+    log_perror("mkdir");
+    return -1;
+  }
+
+  SHA_CTX c;
+  unsigned char sha1_pw[SHA_DIGEST_LENGTH];
+  SHA1_Init(&c);
+  SHA1_Update(&c, pw, len_pw);
+  SHA1_Final(sha1_pw, &c);
+
+  printf("pw = %.*s\n", SHA_DIGEST_LENGTH, sha1_pw);
+
+  pstr_append(&path, "/passwd", 7);
+  path.str[path.size] = '\0';
+
+  printf("path = >%s<\n", path.str);
+
+  int fd = open(path.str, O_CREAT | O_EXCL | O_WRONLY, 0700);
+  if (fd == -1) {
+    log_perror("pw-file open");
+    return -1;
+  }
+
+  write(fd, sha1_pw, SHA_DIGEST_LENGTH);
+
+  close(fd);
+}
+
 //
 //
 //
 
-static char _login_string[] = "# Hallo Weltraumreisender,\n"
-  "#\n"
-  "# wenn Du einen neuen Account haben willst, dann gib keinen Loginnamen an.\n"
-  "# (Also jetzt eiinfach nur RETURN druecken.)\n"
-  "# Dann hast Du die Moeglichkeit Dir einen neuen Account anzulegen. Ansonsten\n"
-  "# gib Deinen Usernamen und Dein Passwort ein\n"
-  "100 login: ";
 int _login(struct userstate* us, int write_fd);
+int _new_account_name(struct userstate* us, int write_fd);
+int _new_account_pw1(struct userstate* us, int write_fd);
+int _new_account_pw2(struct userstate* us, int write_fd);
 
-static char _new_account_string[] = "# Hallo neuer User. Gib doch mal Deinen Loginnamen an\n"
-  "# Erlaubt sind die Zeichen [a-zA-Z0-9:-+_]. Mehr nicht. Aetsch! Und 3 bis maximal 12 Zeichen!\n"
-  "110 username: ";
-int _new_account(struct userstate* us, int write_fd);
+enum state { LOGIN, NEW_ACCOUNT_NAME, NEW_ACCOUNT_PW1, NEW_ACCOUNT_PW2 };
 
+struct automaton {
+  const char* msg;
+  int (*fkt)(struct userstate*, int);
+  enum state state;
+} a[] = {
+  {
+    .msg = "# Hallo Weltraumreisender,\n"
+      "#\n"
+      "# wenn Du einen neuen Account haben willst, dann gib keinen Loginnamen an.\n"
+      "# (Also jetzt eiinfach nur RETURN druecken.)\n"
+      "# Dann hast Du die Moeglichkeit Dir einen neuen Account anzulegen. Ansonsten\n"
+      "# gib Deinen Usernamen und Dein Passwort ein\n"
+      "100 login: ",
+    .fkt = _login,
+    .state = LOGIN
+  },
+  {
+    .msg = "# Hallo neuer User. Gib doch mal Deinen Loginnamen an\n"
+      "# Erlaubt sind die Zeichen [a-zA-Z0-9:-+_]. Mehr nicht. Aetsch! Und 3 bis maximal 12 Zeichen!\n"
+      "110 username: ",
+    .fkt = _new_account_name,
+    .state = NEW_ACCOUNT_NAME
+  },
+  {
+    .msg = "# Okay. Dann verrate mir doch bitte noch dein Passwort.\n"
+      "# Laenge muss zwischen 6 und sagen wir mal 42 Zeichen liegen.\n"
+      "111 passwort: ",
+    .fkt = _new_account_pw1,
+    .state = NEW_ACCOUNT_PW1
+  },
+  {
+    .msg = "# Okay. Noch einmal - nur zur Sicherheit.\n"
+      "112 passwort: ",
+    .fkt = _new_account_pw2,
+    .state = NEW_ACCOUNT_PW2
+  }
+};
+
+static int set_state(enum state s, struct userstate* us, int write_fd) {
+  for (int i = 0; i < sizeof(a) / sizeof(struct automaton); ++i) {
+    if (a[i].state == s) {
+      us->fkt = a[i].fkt;
+      int ret = write(write_fd, a[i].msg, strlen(a[i].msg));
+      if (ret == -1) {
+        log_perror("write to client");
+      }
+      return ret < 0 ? ret : 0;
+    }
+  }
+  log_msg("was mach ich hier. wieso habe ich keine passende fkt gefunden?? state s = %d", s);
+  return -1;
+}
+
+//
+//
+//
 
 int _login(struct userstate* us, int write_fd) {
   char* data;
@@ -89,9 +224,7 @@ int _login(struct userstate* us, int write_fd) {
   if (read_next_line(us, &data, &len) < 0) return 0;  // kein '\n' gefunden
 
   if (len == 0) {
-    write(write_fd, _new_account_string, sizeof(_new_account_string));
-    us->fkt = _new_account;
-    return 0;
+    return set_state(NEW_ACCOUNT_NAME, us, write_fd);
   }
 
   if (len > 3) { // sizeof(us[write_fd].user_name)) {
@@ -106,7 +239,7 @@ int _login(struct userstate* us, int write_fd) {
   return 0;
 }
 
-int _new_account(struct userstate* us, int write_fd) {
+int _new_account_name(struct userstate* us, int write_fd) {
   char* data;
   int len;
   
@@ -135,11 +268,45 @@ int _new_account(struct userstate* us, int write_fd) {
     }
   }
 
-  write(write_fd, "ok\n", 3);
+  if (have_user(data, len)) {
+    const char msg[] = "503 Sorry. Aber den User gibts schon. Probiers nochmal\n"
+      "110 username: ";
+    write(write_fd, msg, sizeof(msg));
+    return 0;
+  }
+ 
+  memcpy(us->user_name, data, len);
+  us->user_name[len + 1] = '\0';
+
+  return set_state(NEW_ACCOUNT_PW1, us, write_fd);
+}
+
+int _new_account_pw1(struct userstate* us, int write_fd) {
+  char* data;
+  int len;
+
+  if (read_next_line(us, &data, &len) < 0) return 0;  // kein '\n' gefunden
+
+  if (len < 6) {
+    const char msg[] = "504 Dein Passwort ist zu kurz.\n"
+      "111 passwort: ";
+    write(write_fd, msg, sizeof(msg));
+    return 0;
+  }
+
+  return set_state(NEW_ACCOUNT_PW2, us, write_fd);
+}
+
+int _new_account_pw2(struct userstate* us, int write_fd) {
+  char* data;
+  int len;
+
+  if (read_next_line(us, &data, &len) < 0) return 0;  // kein '\n' gefunden
+
+  add_user(us->user_name, strlen(us->user_name), data, len);
 
   return 0;
 }
-
 
 //
 //
@@ -174,8 +341,6 @@ static void net_client_connect(int fd, fd_set* master, int* fdmax) {
   const char tmp_file[] = "wpn_tmp";
 
   us[newfd].user_name[0] = '\0';
-  us[newfd].have_auth = 0;
-  us[newfd].fkt = _login;
 
   const size_t DEFAULT_DATA_SIZE = 4000;
   free(us[newfd].data_start); // TODO: das hier mal anders regeln - realloc und sowas
@@ -185,7 +350,7 @@ static void net_client_connect(int fd, fd_set* master, int* fdmax) {
   us[newfd].data_unused = 0;
   us[newfd].data_read_next = 0;
 
-  write(newfd, _login_string, sizeof(_login_string));
+  set_state(LOGIN, &us[newfd], newfd);
 }
 
 static void net_client_talk(int fd, fd_set* master) {
