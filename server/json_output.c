@@ -27,6 +27,7 @@ char* join(char** strings, char* sep) {
 		stringno++;
 	}
 
+
 	buflen += (stringno - 1) * strlen(sep);
 	buflen += 1; //NULL Byte
 
@@ -34,6 +35,8 @@ char* join(char** strings, char* sep) {
 		fprintf(stderr, "Allocating composite string failed\n");
 		exit(1);
 	}
+
+	memset(retval, 0, buflen);
 
 	for(i = 0; i < stringno; i++) {
 		strcat(retval, strings[i]);
@@ -146,17 +149,20 @@ char* ship_to_json(entity_t* e) {
 char* asteroids_to_json() {
 	int num_asteroids = asteroid_storage->first_free;
 	char* retval;
-	char** asteroid_strings = malloc(num_asteroids);
+	char** asteroid_strings = malloc((num_asteroids+1)*sizeof(char*));
 
 	int i;
-	for(i = 0; i < num_asteroids; i++) {
+	for(i = 0; i < num_asteroids+1; i++) {
 		asteroid_strings[i] = asteroid_to_json(get_entity_by_index(asteroid_storage, i));
 	}
+	asteroid_strings[num_asteroids] = NULL;
 
 	if(num_asteroids <= 0) {
 		asprintf(&retval, "asteroids: []\n");
 	} else {
-		asprintf(&retval, "asteroids: [\n%s\n]\n", join(asteroid_strings, "\n"));
+		char* p = join(asteroid_strings, "\n");
+		asprintf(&retval, "asteroids: [\n%s\n]\n", p);
+		free(p);
 	}
 
 	for(i = 0; i < num_asteroids; i++) {
@@ -171,17 +177,20 @@ char* asteroids_to_json() {
 char* bases_to_json() {
 	int num_bases = base_storage->first_free;
 	char* retval;
-	char** base_strings = malloc(num_bases);
+	char** base_strings = malloc((num_bases+1)*sizeof(char*));
 
 	int i;
 	for(i = 0; i < num_bases; i++) {
 		base_strings[i] = base_to_json(get_entity_by_index(base_storage, i));
 	}
+	base_strings[num_bases] = NULL;
 
 	if(num_bases <= 0) {
 		asprintf(&retval, "bases: []\n");
 	} else {
-		asprintf(&retval, "bases: [\n%s\n]\n", join(base_strings, "\n"));
+		char* p = join(base_strings, "\n");
+		asprintf(&retval, "bases: [\n%s\n]\n", p);
+		free(p);
 	}
 
 	for(i = 0; i < num_bases; i++) {
@@ -196,17 +205,20 @@ char* bases_to_json() {
 char* planets_to_json() {
 	int num_planets = planet_storage->first_free;
 	char* retval;
-	char** planet_strings = malloc(num_planets);
+	char** planet_strings = malloc((num_planets+1)*sizeof(char*));
 
 	int i;
 	for(i = 0; i < num_planets; i++) {
 		planet_strings[i] = planet_to_json(get_entity_by_index(planet_storage, i));
 	}
+	planet_strings[num_planets] = NULL;
 
 	if(num_planets <= 0) {
 		asprintf(&retval, "planets: []\n");
 	} else {
-		asprintf(&retval, "planets: [\n%s\n]\n", join(planet_strings, "\n"));
+		char* p = join(planet_strings, "\n");
+		asprintf(&retval, "planets: [\n%s\n]\n", p);
+		free(p);
 	}
 
 	for(i = 0; i < num_planets; i++) {
@@ -221,17 +233,20 @@ char* planets_to_json() {
 char* ships_to_json() {
 	int num_ships = ship_storage->first_free;
 	char* retval;
-	char** ship_strings = malloc(num_ships);
+	char** ship_strings = malloc((num_ships+1)*sizeof(char*));
 
 	int i;
 	for(i = 0; i < num_ships; i++) {
 		ship_strings[i] = ship_to_json(get_entity_by_index(ship_storage, i));
 	}
+	ship_strings[num_ships] = NULL;
 
 	if(num_ships <= 0) {
 		asprintf(&retval, "ships: []\n");
 	} else {
-		asprintf(&retval, "ships: [\n%s\n]\n", join(ship_strings, "\n"));
+		char* p = join(ship_strings, "\n");
+		asprintf(&retval, "ships: [\n%s\n]\n", p);
+		free(p);
 	}
 
 	for(i = 0; i < num_ships; i++) {
@@ -265,6 +280,17 @@ void bases_to_network() {
 	}
 }
 
+void bbox_to_network() {
+	char* p = bbox_to_json();
+	if(p) {
+		map_printf("%s", p);
+		free(p);
+	} else {
+		fprintf(stderr, "bbox_to_network says: printing NULL is hard\n");
+		exit(1);
+	}
+}
+
 void planets_to_network() {
 	char* p = planets_to_json();
 	if(p) {
@@ -289,7 +315,7 @@ void ships_to_network() {
 
 void map_to_network() {
 	map_printf("{\n");
-	bbox_to_json();
+	bbox_to_network();
 	map_printf(",\n");
 	asteroids_to_network();
 	map_printf(",\n");
@@ -300,4 +326,5 @@ void map_to_network() {
 	ships_to_network();
 	map_printf("}\n");
 	map_flush();
+	fprintf(stderr, "Here you go\n");
 }
