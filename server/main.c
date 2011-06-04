@@ -76,7 +76,6 @@ int main(int argc, char *argv[]) {
 				ship_storage->entities[i].ship_data->timer_value = -1;
 
 				/* Call it's handler */
-				DEBUG("Calling event handler!\n");
 				call_entity_callback(&(ship_storage->entities[i]), ship_storage->entities[i].ship_data->timer_event);
 			}
 		}

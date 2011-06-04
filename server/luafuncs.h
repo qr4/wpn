@@ -32,6 +32,9 @@ extern int lua_entity_to_string(lua_State* L);
 /* Register a timer to re-enter execution after the specified number of ticks */
 int lua_set_timer(lua_State* L);
 
+/* Get the player id of an entity (or yourself) */
+int lua_get_player(lua_State* L);
+
 /* Registers all lua_functions available through c-api */
 void register_lua_functions(entity_t *s);
 
