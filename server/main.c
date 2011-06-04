@@ -47,11 +47,12 @@ int main(int argc, char *argv[]) {
 	DEBUG("In json, this is:\n%s\n", temp);
 	free(temp);
 
-	/* Test freeing of this ship */
-	//destroy_entity(ship1);
 	e = get_entity_by_id(ship1);
 
-	for (int i = 0; i < 5; i++) {
+	/* Main simulation loop */
+	for (uint64_t timestep=0;;timestep++) {
+
+		/* Legacy Debugging Code, still left in */
 		e->pos.v = (randv().v + vector(1).v) * vector(2000).v;
 		closest = find_closest_by_position(e->pos, e->radius, 1000, PLANET);
 		DEBUG("Checking (%f, %f)\n", e->pos.x, e->pos.y);
@@ -65,8 +66,58 @@ int main(int argc, char *argv[]) {
 			DEBUG("Nothing\n");
 		}
 
+		/* Iterate through all sentient entities (ships and bases) and determine if
+		 * any timer-based callbacks should be triggered (like completed actions or
+		 * expired explicit timers) */
+		for(int i=0; i<ship_storage->first_free; i++) {
+			if(ship_storage->entities[i].ship_data->timer_value == 0) {
+
+				/* Set the timer to -1 (== disabled) */
+				ship_storage->entities[i].ship_data->timer_value = -1;
+
+				/* Call it's handler */
+				DEBUG("Calling event handler!\n");
+				call_entity_callback(&(ship_storage->entities[i]), ship_storage->entities[i].ship_data->timer_event);
+			}
+		}
+		for(int i=0; i<base_storage->first_free; i++) {
+			if(base_storage->entities[i].base_data->timer_value == 0) {
+
+				/* Set the timer to -1 (== disabled) */
+				base_storage->entities[i].base_data->timer_value = -1;
+
+				/* Call it's handler */
+				call_entity_callback(&(base_storage->entities[i]), base_storage->entities[i].base_data->timer_event);
+			}
+		}
+
+		/* Decrement timers */
+		for(int i=0; i<ship_storage->first_free; i++) {
+			if(ship_storage->entities[i].ship_data->timer_value >= 0) {
+				ship_storage->entities[i].ship_data->timer_value--;
+			}
+		}
+		for(int i=0; i<base_storage->first_free; i++) {
+			if(base_storage->entities[i].base_data->timer_value >= 0) {
+				base_storage->entities[i].base_data->timer_value--;
+			}
+		}
+
+		/* Likewise, notify all ships whose autopilots have arrived at their
+		 * destinations */
+		/* TODO: Implement autopilot arrival notification */
+
+		/* Move ships by one physics-step */
+		/* TODO: implement physics here. */
+
+		/* Look for any collisions or proximity-triggers in spacecraft */
+		/* TODO: Implement collisions */
+
+		/* Push Map-Data out to clients */
 		map_to_network();
-		sleep(1);
+
+		/* FIXME: This is just debug-Waiting. */
+    sleep(1);
 	}
 
 	free_entity(ship_storage,ship1);

@@ -22,6 +22,22 @@ typedef enum {
 	SHIP      = 1 << 4,
 } type_t;
 
+/* Enum of possible events which can trigger callbacks in a ship */
+/* (Corresponding lua function names are define in luastate.c) */
+typedef enum {
+	AUTOPILOT_ARRIVED,  // The autopilot has finished it's flight plan
+	ENTITY_APPROACHING, // Another entity has appeared within sensor radius
+	SHOT_AT,            // You are being shot at
+	WEAPONS_READY,      // After firing, the weapons have recharged and are back on-line
+	BEING_DOCKED,       // You are being docked
+	DOCKING_COMPLETE,   // The docking operation you requested has completed
+	TRANSFER_COMPLETE,  // Transfer of a slot has completed.
+	BUILD_COMPLETE,  // Production of a new ship completed (for bases)
+	TIMER_EXPIRED,      // A fixed timer has expired
+
+	NUM_EVENTS
+} event_t;
+
 typedef struct slot_data_t     slot_data_t;
 typedef struct planet_data_t   planet_data_t;
 typedef struct ship_data_t     ship_data_t;
@@ -38,7 +54,7 @@ typedef union  entity_id_t  entity_id_t;
 
 /* Entity IDs are 64bit integers, of which the lower
  * 32 bits denote the array index, and the upper 32
- * denote the respawn count of this slot */
+ * denote the type and respawn count of this slot */
 union entity_id_t {
 	struct {
 		uint32_t index;
@@ -135,6 +151,13 @@ struct planet_data_t {
 
 struct ship_data_t {
 	slot_t *slot;
+
+	/* Number of ticks until this ships' lua state is re-woken */
+	int timer_value;
+
+	/* Event to trigger when the timer reaches zero */
+	event_t timer_event;
+
 	waypoint_t *flightplan;
 };
 
@@ -150,6 +173,12 @@ struct cluster_data_t {
 
 struct base_data_t {
 	slot_t *slot;
+
+	/* Number of ticks until this bases lua state is re-woken */
+	int timer_value;
+
+	/* Event to trigger when the timer reaches zero */
+	event_t timer_event;
 };
 
 #endif  /*TYPES_H*/

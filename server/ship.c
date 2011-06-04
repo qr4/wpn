@@ -26,6 +26,10 @@ entity_id_t init_ship(entity_storage_t* s, vector_t pos, uint8_t size) {
 	//for(i=0; i<size; i++) {
 	//	this->content[i] = ' ';
 	//}
+
+	/* No event to start with */
+	e->ship_data->timer_value=-1;
+
 	init_ship_computer(e);
 
 	return id;

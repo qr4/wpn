@@ -10,6 +10,7 @@
 #include "entities.h"
 #include "config.h"
 #include "debug.h"
+#include "types.h"
 
 /* Currently active lua entity */
 entity_id_t lua_active_entity;
@@ -19,7 +20,11 @@ char* callback_names[NUM_EVENTS] = {
 	/* AUTOPILOT_ARRIVED */ "on_autopilot_arrived",
 	/* ENTITY_APPROACHING */ "on_entity_approaching",
 	/* SHOT_AT */ "on_shot_at",
+	/* WEAPONS_READY */ "on_weapons_ready",
 	/* BEING_DOCKED */ "on_being_docked",
+	/* DOCKING_COMPLETE */ "on_docking_complete",
+	/* TRANSFER_COMPLETE */ "on_transfer_complete",
+	/* BUILD_COMPLETE */ "on_build_complete",
 	/* TIMER_EXPIRED */ "on_timer_expired",
 };
 
@@ -76,8 +81,6 @@ void init_ship_computer(entity_t* s) {
 		lua_pushstring(s->lua, lib->name);
 		lua_call(s->lua, 1, 0);
 	}
-
-	/* TODO: disallow calling print() from lua */
 
 	/* registier lua-callable functions */
 	register_lua_functions(s);

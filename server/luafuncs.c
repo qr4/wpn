@@ -21,7 +21,8 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_set_autopilot_to, "set_autopilot_to"},
 	{lua_killself,         "killself"},
 	{lua_find_closest,     "find_closest"},       
-	{lua_entity_to_string, "entity_to_string"}
+	{lua_entity_to_string, "entity_to_string"},
+	{lua_set_timer,        "set_timer"}
 };
 
 void register_lua_functions(entity_t *s) {
@@ -292,7 +293,7 @@ int lua_entity_to_string(lua_State* L) {
 	} else {
 		/* Fill in description */
 		temp = slots_to_string(e);
-		if(asprintf(&s, "{\n\tEntity %lx:\n\tpos: %f,  %f\n\tv: %f, %f\n\ttype: %s\n\tslots: %i\n\tplayer: %i\n\tcontents: [%s]\n}\n",
+		if(asprintf(&s, "{\n\tEntity %li:\n\tpos: %f,  %f\n\tv: %f, %f\n\ttype: %s\n\tslots: %i\n\tplayer: %i\n\tcontents: [%s]\n}\n",
 					(size_t)e, e->pos.x, e->pos.y, e->v.x, e->v.y, type_string(e->type), e->slots, e->player_id, temp));
 
 		/* Return it */
@@ -300,5 +301,53 @@ int lua_entity_to_string(lua_State* L) {
 		free(temp);
 		free(s);
 	}
+	return 1;
+}
+
+
+/* Register a timer to re-enter execution after the specified number of ticks */
+int lua_set_timer(lua_State* L) {
+	entity_id_t id;
+	entity_t* e;
+	int n;
+
+	n = lua_gettop(L);
+	if(n!=1 || !lua_isnumber(L,-1)) {
+		lua_pushstring(L, "set_timer expects exactly one integer (number of ticks to wait");
+		lua_error(L);
+	}
+
+	/* Get number of ticks to wait */
+	n = lua_tonumber(L,-1);
+	lua_pop(L,1);
+
+	/* Negative timer-values mean: don't wait at all */
+	if(n < 0) {
+		n = 0;
+	}
+
+	/* Get entity-pointer */
+	id=get_self(L);
+	e = get_entity_by_id(id);
+
+	if(!e) {
+		/* Err... what? How can this entity be a null-pointer? */
+		ERROR("Entity with lua-state %x resolves to a NULL-Pointer.\n", L);
+		return 0;
+	}
+
+	if(e->ship_data->timer_value != -1) {
+		/* Another timer is already ticking for this entity, so we don't set one.
+		 * Return 0 to inform the ship.*/
+		lua_pushnumber(L,0);
+		return 1;
+	}
+
+	/* Setup the actual timer */
+	e->ship_data->timer_value = n;
+	e->ship_data->timer_event = TIMER_EXPIRED;
+
+	/* Return 1 */
+	lua_pushnumber(L,1);
 	return 1;
 }

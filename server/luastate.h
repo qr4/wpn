@@ -13,17 +13,6 @@
  */
 extern entity_id_t lua_active_entity;
 
-/* Enum of possible events which can trigger callbacks in a ship */
-typedef enum {
-	AUTOPILOT_ARRIVED,  // The autopilot has finished it's flight plan
-	ENTITY_APPROACHING, // Another entity has appeared within sensor radius
-	SHOT_AT,            // You are being shot at
-	BEING_DOCKED,       // You are being docked
-	TIMER_EXPIRED,      // A fixed timer has expired
-
-	NUM_EVENTS
-} event_t;
-
 /* lua callback-function names (defined in luastate.c) */
 extern char* callback_names[NUM_EVENTS];
 
