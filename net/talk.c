@@ -50,6 +50,8 @@
 struct userstate {
   char user_name[128];
   int (*fkt)(struct userstate*, int);
+  char* tmp;
+  size_t tmp_size;
 
   // empfangsbuffer-dinge
   char* data_start;   // malloc
@@ -131,12 +133,8 @@ int add_user(char *name, int len_name, char *pw, int len_pw) {
   SHA1_Update(&c, pw, len_pw);
   SHA1_Final(sha1_pw, &c);
 
-  printf("pw = %.*s\n", SHA_DIGEST_LENGTH, sha1_pw);
-
   pstr_append(&path, "/passwd", 7);
   path.str[path.size] = '\0';
-
-  printf("path = >%s<\n", path.str);
 
   int fd = open(path.str, O_CREAT | O_EXCL | O_WRONLY, 0700);
   if (fd == -1) {
@@ -145,8 +143,9 @@ int add_user(char *name, int len_name, char *pw, int len_pw) {
   }
 
   write(fd, sha1_pw, SHA_DIGEST_LENGTH);
-
   close(fd);
+
+  return 0;
 }
 
 //
@@ -157,8 +156,9 @@ int _login(struct userstate* us, int write_fd);
 int _new_account_name(struct userstate* us, int write_fd);
 int _new_account_pw1(struct userstate* us, int write_fd);
 int _new_account_pw2(struct userstate* us, int write_fd);
+int _set_user_info(struct userstate* us, int write_fd);
 
-enum state { LOGIN, NEW_ACCOUNT_NAME, NEW_ACCOUNT_PW1, NEW_ACCOUNT_PW2 };
+enum state { LOGIN, NEW_ACCOUNT_NAME, NEW_ACCOUNT_PW1, NEW_ACCOUNT_PW2, SET_USER_INFO };
 
 struct automaton {
   const char* msg;
@@ -195,6 +195,15 @@ struct automaton {
       "112 passwort: ",
     .fkt = _new_account_pw2,
     .state = NEW_ACCOUNT_PW2
+  },
+  {
+    .msg = "# Hier kannst Du noch Informationen angeben, die Du uns mitteilen moechtest.\n"
+      "# Z.B. E-Mail-Adresse, wo sitzt Du damit wir Dich schuetteln koennen wenn Du was boeses\n"
+      "# machst, oder einfach nur: GEILES SPIEL WAS IHR DA GEBAUT HABT!! Ueber sowas freuen wir\n"
+      "# uns natuerlich auch :-)\n"
+      "120 info: ",
+    .fkt = _set_user_info,
+    .state = SET_USER_INFO
   }
 };
 
@@ -294,6 +303,9 @@ int _new_account_pw1(struct userstate* us, int write_fd) {
     return 0;
   }
 
+  memcpy(us->tmp, data, len);
+  us->tmp[len] = '\0';
+
   return set_state(NEW_ACCOUNT_PW2, us, write_fd);
 }
 
@@ -303,9 +315,24 @@ int _new_account_pw2(struct userstate* us, int write_fd) {
 
   if (read_next_line(us, &data, &len) < 0) return 0;  // kein '\n' gefunden
 
-  add_user(us->user_name, strlen(us->user_name), data, len);
+  printf("--> %s\n", us->tmp);
+
+  if ( (strlen(us->tmp) != len) || (strncmp(us->tmp, data, len)) ) {
+    const char msg[] = "505 Die eingegebenen Passwoerter stimmen nicht ueberein. Nochmal!\n";
+    write(write_fd, msg, sizeof(msg));
+    return set_state(NEW_ACCOUNT_PW1, us, write_fd);
+  }
+
+  if (add_user(us->user_name, strlen(us->user_name), data, len) == -1) {
+    log_msg("ooops. kann user/pw nicht anlegen");
+    return -1;
+  }
 
   return 0;
+}
+
+int _set_user_info(struct userstate* us, int write_fd) {
+
 }
 
 //
@@ -409,6 +436,9 @@ int main() {
   if (us == NULL) { log_msg("malloc us == NULL: kein platz"); exit(EXIT_FAILURE); }
   for (int i = 0; i < MAX_USERS; ++i) {
     us[i].data_start = (char*)malloc(10); // TODO: nur wegen free oben - besser machen
+    us[i].tmp = (char*)malloc(4000);
+    if (us[i].tmp == NULL) { log_perror("malloc"); exit(1); }
+    us[i].tmp_size = 4000;
   }
 
 	int listener = network_bind(PORT, MAX_CONNECTION);
