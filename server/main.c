@@ -24,15 +24,12 @@ int main(int argc, char *argv[]) {
     log_open("test_net_main.log");
     log_msg("---------------- new start");
 
-	int i;
 	entity_t *e;
 	entity_t *closest;
 	char* temp;
 
 	/* Parse Config */
-	if(!init_config_from_file("config.lua")) {
-		exit(1);
-	}
+	config(argc, argv);
 
 	/* Start networking code */
 	net_init();
@@ -54,7 +51,7 @@ int main(int argc, char *argv[]) {
 	//destroy_entity(ship1);
 	e = get_entity_by_id(ship1);
 
-	for (i = 0; i < 5; i++) {
+	for (int i = 0; i < 5; i++) {
 		e->pos.v = (randv().v + vector(1).v) * vector(2000).v;
 		closest = find_closest_by_position(e->pos, e->radius, 1000, PLANET);
 		DEBUG("Checking (%f, %f)\n", e->pos.x, e->pos.y);
@@ -69,15 +66,14 @@ int main(int argc, char *argv[]) {
 		}
 
 		map_to_network();
-
-    sleep(5);
+		sleep(1);
 	}
 
 	free_entity(ship_storage,ship1);
 
-	free_config();
 	free_all_storages();
 	free_map();
+	free_config();
 
 	return EXIT_SUCCESS;
 }
