@@ -67,6 +67,55 @@ int lua_killself(lua_State* L) {
 	return 0;
 }
 
+/* Stop the ship as soon as possible. If we lost all thrust that might mean lithobreaking
+ * Arguments: [on_arrival]
+ * where:
+ * 				on_arrival: name of the callback to invoke on arrival (optional)
+ * 	Return value: none.
+ *
+ * 	TODO: pass the callback as a string, or as an anonymous function?
+ */
+int lua_stop(lua_State* L) {
+	entity_t* e;
+	entity_id_t id;
+	int n;
+	char* callback=NULL;
+
+	/* Check number of arguments */
+	n = lua_gettop(L);
+	switch(n) {
+		case 1:
+			/* Get callback name */
+			if(!lua_isstring(L,-1)) {
+				lua_pushstring(L, "argument to stop must be a function name");
+				lua_error(L);
+			}
+			callback = strdup(lua_tostring(L,-1));
+
+			/* Pop it from the stack */
+			lua_pop(L,0);
+
+			/* Fall through to the 0-argument case */
+		case 0:
+			break;
+		default:
+			lua_pushstring(L, "Wrong number of arguments to stop.");
+			lua_error(L);
+	}
+
+	id = get_self(L);
+	e = get_entity_by_id(id);
+
+	/* Now call the moveto-flightplanner */
+	/* TODO: Actually do this. */
+	/* stop_planner(e, x, y, callback) */
+	/* Until then: just set the speed to zero */
+
+	e->v.v = (v2d) {0, 0};
+
+	return 0;
+}
+
 /* Fly straight to the specified coordinates, ignoring any object in the way
  * Arguments: x, y[, on_arrival]
  * where:

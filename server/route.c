@@ -7,6 +7,7 @@
 #include "types.h"
 #include "entities.h"
 #include "entity_storage.h"
+#include "physics.h"
 #include "storages.h"
 
 extern entity_storage_t* asteroid_storage;
@@ -237,6 +238,72 @@ void moveto_planner(entity_t* e, double x, double y, char* callback) {
 
 	e->ship_data->flightplan = wp_start;
 	complete_flightplan(e);
+}
+
+// To be called from Lua code
+void stop_planner(entity_t* e, char* callback) {
+	if(e->type != SHIP) {
+		fprintf(stderr, "We don't do moveto planing for non-ship entities\n");
+		exit(1);
+	}
+	if(e->ship_data->flightplan == NULL) {
+		return;
+	}
+
+	vector_t start;
+	start.v = e->pos.v;
+	vector_t vel;
+	vel.v = e->ship_data->flightplan->speed.v;
+	double a = get_acceleration(e);
+
+	free_route(e->ship_data->flightplan);
+	e->ship_data->flightplan = NULL;
+
+	if(a > 0) {
+		double speed = hypot(vel.x, vel.y);
+		double stopping_distance = speed/(2*a);
+		vector_t stop;
+		stop.x = start.x + stopping_distance * vel.x / speed;
+		stop.y = start.y + stopping_distance * vel.y / speed;
+
+		waypoint_t* wp_start = malloc(sizeof(waypoint_t));
+		waypoint_t* wp_stop = malloc(sizeof(waypoint_t));
+		wp_start->point = start;
+		wp_start->type = WP_START;
+		wp_start->next = wp_stop;
+		wp_stop->point = stop;
+		wp_stop->type = WP_STOP;
+		wp_stop->next = NULL;
+
+		e->ship_data->flightplan = wp_start;
+		complete_flightplan(e);
+	} else {
+		// Oh boy you are so fucked
+		waypoint_t* wp_start = malloc(sizeof(waypoint_t));
+		waypoint_t* wp_stop = wp_start;
+		wp_start->type = WP_VIA;
+		wp_start->point = start;
+		wp_start->next = NULL;
+
+		vector_t end_pos;
+		end_pos.v = start.v;
+		for(int i = 0; i < 10000; i++) {
+			end_pos.x += vel.x * dt;
+			end_pos.y += vel.y * dt;
+
+			waypoint_t* wp_tmp = malloc(sizeof(waypoint_t));
+			wp_tmp->point = end_pos;
+			wp_tmp->type = WP_VIA;
+			wp_tmp->next = NULL;
+			wp_stop->next = wp_tmp;
+			wp_stop = wp_tmp;
+
+			if(find_closest_by_position(e->pos, e->radius, 100, ASTEROID|PLANET) < 0) {
+				break;
+			}
+		}
+		e->ship_data->flightplan = wp_start;
+	}
 }
 
 // To be called from Lua code
