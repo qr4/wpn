@@ -20,6 +20,10 @@ int main(int argc, char *argv[]) {
 	ERROR("Error messages turned on!\n");
 	DEBUG("Debug messages turned on!\n");
 
+    /* init logging */
+    log_open("test_net_main.log");
+    log_msg("---------------- new start");
+
 	int i;
 	entity_t *e;
 	entity_t *closest;
@@ -65,6 +69,8 @@ int main(int argc, char *argv[]) {
 		}
 
 		map_to_network();
+
+    sleep(5);
 	}
 
 	free_entity(ship_storage,ship1);
