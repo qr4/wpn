@@ -160,7 +160,9 @@ char* asteroids_to_json() {
 	if(num_asteroids <= 0) {
 		asprintf(&retval, "asteroids: []\n");
 	} else {
-		asprintf(&retval, "asteroids: [\n%s\n]\n", join(asteroid_strings, "\n"));
+		char* p = join(asteroid_strings, "\n");
+		asprintf(&retval, "asteroids: [\n%s\n]\n", p);
+		free(p);
 	}
 
 	for(i = 0; i < num_asteroids; i++) {
@@ -186,7 +188,9 @@ char* bases_to_json() {
 	if(num_bases <= 0) {
 		asprintf(&retval, "bases: []\n");
 	} else {
-		asprintf(&retval, "bases: [\n%s\n]\n", join(base_strings, "\n"));
+		char* p = join(base_strings, "\n");
+		asprintf(&retval, "bases: [\n%s\n]\n", p);
+		free(p);
 	}
 
 	for(i = 0; i < num_bases; i++) {
@@ -212,7 +216,9 @@ char* planets_to_json() {
 	if(num_planets <= 0) {
 		asprintf(&retval, "planets: []\n");
 	} else {
-		asprintf(&retval, "planets: [\n%s\n]\n", join(planet_strings, "\n"));
+		char* p = join(planet_strings, "\n");
+		asprintf(&retval, "planets: [\n%s\n]\n", p);
+		free(p);
 	}
 
 	for(i = 0; i < num_planets; i++) {
@@ -238,14 +244,16 @@ char* ships_to_json() {
 	if(num_ships <= 0) {
 		asprintf(&retval, "ships: []\n");
 	} else {
-		asprintf(&retval, "ships: [\n%s\n]\n", join(ship_strings, "\n"));
+		char* p = join(ship_strings, "\n");
+		asprintf(&retval, "ships: [\n%s\n]\n", p);
+		free(p);
 	}
 
 	for(i = 0; i < num_ships; i++) {
 		free(ship_strings[i]);
 	}
 
-	//free(ship_strings);
+	free(ship_strings);
 
 	return retval;
 }
@@ -268,6 +276,17 @@ void bases_to_network() {
 		free(p);
 	} else {
 		fprintf(stderr, "bases_to_network says: printing NULL is hard\n");
+		exit(1);
+	}
+}
+
+void bbox_to_network() {
+	char* p = bbox_to_json();
+	if(p) {
+		map_printf("%s", p);
+		free(p);
+	} else {
+		fprintf(stderr, "bbox_to_network says: printing NULL is hard\n");
 		exit(1);
 	}
 }
@@ -296,7 +315,7 @@ void ships_to_network() {
 
 void map_to_network() {
 	map_printf("{\n");
-	bbox_to_json();
+	bbox_to_network();
 	map_printf(",\n");
 	asteroids_to_network();
 	map_printf(",\n");
