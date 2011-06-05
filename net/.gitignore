@@ -1,0 +1,9 @@
+net
+talk
+gameserver
+*.o
+.*.sw*
+main
+gmon.out
+*.s
+.vim_session
