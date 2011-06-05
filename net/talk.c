@@ -50,6 +50,8 @@
 struct userstate {
   char user_name[128];
   int (*fkt)(struct userstate*, int);
+
+  // zwischenpuffer-dinge (z.B. pw, user-info, ...)
   char* tmp;
   size_t tmp_size;
 
@@ -201,7 +203,7 @@ struct automaton {
       "# Z.B. E-Mail-Adresse, wo sitzt Du damit wir Dich schuetteln koennen wenn Du was boeses\n"
       "# machst, oder einfach nur: GEILES SPIEL WAS IHR DA GEBAUT HABT!! Ueber sowas freuen wir\n"
       "# uns natuerlich auch :-)\n"
-      "120 info: ",
+      "120 (2x <RETURN> wenn ferig mit der Eingabe) info: ",
     .fkt = _set_user_info,
     .state = SET_USER_INFO
   }
@@ -315,8 +317,6 @@ int _new_account_pw2(struct userstate* us, int write_fd) {
 
   if (read_next_line(us, &data, &len) < 0) return 0;  // kein '\n' gefunden
 
-  printf("--> %s\n", us->tmp);
-
   if ( (strlen(us->tmp) != len) || (strncmp(us->tmp, data, len)) ) {
     const char msg[] = "505 Die eingegebenen Passwoerter stimmen nicht ueberein. Nochmal!\n";
     write(write_fd, msg, sizeof(msg));
@@ -332,6 +332,11 @@ int _new_account_pw2(struct userstate* us, int write_fd) {
 }
 
 int _set_user_info(struct userstate* us, int write_fd) {
+  char* data;
+  int len;
+
+  if (read_next_line(us, &data, &len) < 0) return 0;  // kein '\n' gefunden
+
 
 }
 
