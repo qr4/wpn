@@ -51,8 +51,9 @@ int config(int argc, char *argv[]) {
 				init_filename = strdup(optarg);
 				break;
 			case 'h' :
-				fprintf(stderr, "Syntax: %s [-c configfile] [-i initcode] [-h] [-l \"lua code\"...]\n");
-				fprintf(stderr, "Where:\n  -c specifies the path of the configfile to use\n"
+				fprintf(stderr, 
+						"Syntax: %s [-c configfile] [-i initcode] [-h] [-l \"lua code\"...]\n"
+						"Where:\n  -c specifies the path of the configfile to use\n"
 						"  -i specifies the path of the player-independent spaceship-bios code\n"
 						"  -l allows the execution of arbitrary lua code in the config file context\n"
 						"  -h prints this help.\n", argv[0]);

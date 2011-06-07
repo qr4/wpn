@@ -1,3 +1,4 @@
+*.log
 gameserver
 *.o
 .*.sw*
