@@ -23,6 +23,8 @@ closest = entity_to_string(find_closest(600, PLANET))
 print("I'm very close to:\n".. closest)
 
 print("And that guy belongs to player number "..get_player(find_closest(600,PLANET)));
+x,y = get_position(find_closest(600,PLANET));
+print("Also, his position is ".. x .. " " .. y);
 
 -- For testing the execution time limit: an endless loop
 --while 1 do

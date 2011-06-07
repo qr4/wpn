@@ -23,7 +23,8 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_find_closest,     "find_closest"},       
 	{lua_entity_to_string, "entity_to_string"},
 	{lua_set_timer,        "set_timer"},
-	{lua_get_player,       "get_player"}
+	{lua_get_player,       "get_player"},
+	{lua_get_position,     "get_position"}
 };
 
 void register_lua_functions(entity_t *s) {
@@ -359,6 +360,7 @@ int lua_get_player(lua_State* L) {
 	entity_t* e;
 	int n;
 
+	/* TODO: Check that the target entity is within scanner range */
 	n = lua_gettop(L);
 	switch(n) {
 		case 0: /* No argument -> get own player ID */
@@ -388,4 +390,45 @@ int lua_get_player(lua_State* L) {
 			lua_error(L);
 			return 0;
 	}
+}
+
+/* Get the position (x- and y-coordinate) of an entity (or yourself) */
+int lua_get_position(lua_State* L) {
+	entity_id_t id;
+	entity_t* e;
+	int n;
+
+	/* TODO: Check that the target entity is within scanner range */
+	n = lua_gettop(L);
+	switch(n) {
+		case 0: /* No argument -> get own position */
+			id = get_self(L);
+			e = get_entity_by_id(id);
+			lua_pushnumber(L,e->pos.x);
+			lua_pushnumber(L,e->pos.y);
+			return 2;
+		case 1: /* One argument -> get ID of target */
+			if(!lua_islightuserdata(L,-1)) {
+				lua_pushstring(L, "Argument to get_position was not an entity pointer!");
+				lua_error(L);
+			}
+
+			id.id = (uint64_t) lua_touserdata(L,-1);
+			lua_pop(L,1);
+
+			e = get_entity_by_id(id);
+			if(e == NULL) {
+				/* Return nil if the entity doesn't exist */
+				return 0;
+			} else {
+				lua_pushnumber(L,e->pos.x);
+				lua_pushnumber(L,e->pos.y);
+				return 2;
+			}
+		default :
+			lua_pushstring(L, "get_position expects exactly one entity argument");
+			lua_error(L);
+			return 0;
+	}
+
 }
