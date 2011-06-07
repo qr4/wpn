@@ -12,3 +12,8 @@ ship_init_code_file = "init.lua"
 -- and are just a hint for memory allocation
 max_ship_estimation = 8192
 max_base_estimation = 32
+
+-- Range Limits:
+weapon_range = 20
+docking_range = 1
+scanner_range = 50

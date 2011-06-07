@@ -141,6 +141,24 @@ int config_get_int(char* param_name) {
 	return i;
 }
 
+double config_get_double(char* param_name) {
+
+	int d;
+	lua_getglobal(config_state, param_name);
+
+	/* If this parameter is no int, return 0 */
+	if(!lua_isnumber(config_state,-1)) {
+		lua_pop(config_state, 1);
+		DEBUG("Config parameter %s is not an int, returning 0\n", param_name);
+		return 0;
+	}
+
+	/* Otherwise, return it's value */
+	d = lua_tonumber(config_state, -1);
+	lua_pop(config_state, 1);
+
+	return d;
+}
 
 /* Get a string value from the config */
 const char* config_get_string(char* param_name) {

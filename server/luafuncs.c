@@ -7,6 +7,7 @@
 #include "entities.h"
 #include "storages.h"
 #include "debug.h"
+#include "config.h"
 
 /* Type of functions which we make available to lua states */
 typedef struct {
@@ -356,17 +357,19 @@ int lua_set_timer(lua_State* L) {
 
 /* Get the player id of an entity (or yourself) */
 int lua_get_player(lua_State* L) {
-	entity_id_t id;
-	entity_t* e;
+	entity_id_t id, self;
+	entity_t *e, *eself;
 	int n;
 
-	/* TODO: Check that the target entity is within scanner range */
 	n = lua_gettop(L);
+
+	/* Get self entity */
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
 	switch(n) {
 		case 0: /* No argument -> get own player ID */
-			id = get_self(L);
-			e = get_entity_by_id(id);
-			lua_pushnumber(L,e->player_id);
+			lua_pushnumber(L,eself->player_id);
 			return 1;
 		case 1: /* One argument -> get ID of target */
 			if(!lua_islightuserdata(L,-1)) {
@@ -382,8 +385,13 @@ int lua_get_player(lua_State* L) {
 				/* Return nil if the entity doesn't exist */
 				return 0;
 			} else {
-				lua_pushnumber(L,e->player_id);
-				return 1;
+				/* Check that the target entity is within scanner range */
+				if(dist(eself, e) < config_get_double("scanner_range")) {
+					lua_pushnumber(L,e->player_id);
+					return 1;
+				} else {
+					return 0;
+				}
 			}
 		default :
 			lua_pushstring(L, "get_player expects exactly one entity argument");
@@ -394,18 +402,20 @@ int lua_get_player(lua_State* L) {
 
 /* Get the position (x- and y-coordinate) of an entity (or yourself) */
 int lua_get_position(lua_State* L) {
-	entity_id_t id;
-	entity_t* e;
+	entity_id_t id, self;
+	entity_t *e, *eself;
 	int n;
 
-	/* TODO: Check that the target entity is within scanner range */
 	n = lua_gettop(L);
+
+	/* Set self entity */
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
 	switch(n) {
 		case 0: /* No argument -> get own position */
-			id = get_self(L);
-			e = get_entity_by_id(id);
-			lua_pushnumber(L,e->pos.x);
-			lua_pushnumber(L,e->pos.y);
+			lua_pushnumber(L,eself->pos.x);
+			lua_pushnumber(L,eself->pos.y);
 			return 2;
 		case 1: /* One argument -> get ID of target */
 			if(!lua_islightuserdata(L,-1)) {
@@ -421,9 +431,14 @@ int lua_get_position(lua_State* L) {
 				/* Return nil if the entity doesn't exist */
 				return 0;
 			} else {
-				lua_pushnumber(L,e->pos.x);
-				lua_pushnumber(L,e->pos.y);
-				return 2;
+				/* Check that the target entity is within scanner range */
+				if(dist(eself, e) < config_get_double("scanner_range")) {
+					lua_pushnumber(L,e->pos.x);
+					lua_pushnumber(L,e->pos.y);
+					return 2;
+				} else {
+					return 0;
+				}
 			}
 		default :
 			lua_pushstring(L, "get_position expects exactly one entity argument");

@@ -15,6 +15,7 @@ extern OPTIONS_T OPTIONS;
 int config(int argc, char *argv[]);
 int init_config_from_file(char* filename);
 int config_get_int(char* param_name);
+double config_get_double(char* param_name);
 const char* config_get_string(char* param_name);
 void free_config();
 
