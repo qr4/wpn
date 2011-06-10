@@ -152,6 +152,9 @@ struct planet_data_t {
 struct ship_data_t {
 	slot_t *slot;
 
+	/* If docked: ID of the docking partner */
+	entity_id_t docked_to;
+
 	/* Number of ticks until this ships' lua state is re-woken */
 	int timer_value;
 
@@ -163,6 +166,9 @@ struct ship_data_t {
 
 struct asteroid_data_t {
 	slot_t *slot;
+
+	/* If docked: ID of the docking partner */
+	entity_id_t docked_to;
 };
 
 struct cluster_data_t {
@@ -173,6 +179,10 @@ struct cluster_data_t {
 
 struct base_data_t {
 	slot_t *slot;
+
+	/* If docked: ID of the docking partner */
+	/* TODO: Shouldn't bases allow multiple docking partners? */
+	entity_id_t docked_to;
 
 	/* Number of ticks until this bases lua state is re-woken */
 	int timer_value;

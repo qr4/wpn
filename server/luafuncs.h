@@ -28,6 +28,9 @@ extern int lua_set_autopilot_to(lua_State* L);
 /* Register a timer to re-enter execution after the specified number of ticks */
 int lua_set_timer(lua_State* L);
 
+/* Dock with another entity */
+int lua_dock(lua_State* L);
+
 
 /* --- QUERIES - with which entities get information about their surroundings */
 /* Search the closest entity in the search radius matchin the filter.

@@ -84,13 +84,18 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 		case ASTEROID :
 			e->asteroid_data = (asteroid_data_t *) malloc (sizeof(asteroid_data_t));
 			e->radius = ASTEROID_RADIUS_TO_SLOTS_RATIO * slots;
+			e->asteroid_data->docked_to = INVALID_ID;
 			break;
 		case BASE :
 			e->base_data     = (base_data_t *)     malloc (sizeof(base_data_t));
+			e->base_data->timer_value = 0;
+			e->base_data->docked_to = INVALID_ID;
 			break;
 		case SHIP :
 			e->ship_data     = (ship_data_t *)     malloc (sizeof(ship_data_t));
 			e->ship_data->flightplan = NULL;
+			e->ship_data->timer_value = 0;
+			e->ship_data->docked_to = INVALID_ID;
 			break;
 		default :
 			ERROR("%s in %s: Unknown type %d!", __func__, __FILE__, type);

@@ -25,7 +25,8 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_entity_to_string, "entity_to_string"},
 	{lua_set_timer,        "set_timer"},
 	{lua_get_player,       "get_player"},
-	{lua_get_position,     "get_position"}
+	{lua_get_position,     "get_position"},
+	{lua_dock,             "dock"}
 };
 
 void register_lua_functions(entity_t *s) {
@@ -173,6 +174,11 @@ int lua_moveto(lua_State* L) {
 	id = get_self(L);
 	e = get_entity_by_id(id);
 
+	/* If we are docked, or if we are a base, we can't move. */
+	if(e->ship_data->docked_to.id != INVALID_ID.id || e->type == BASE) {
+		return 0;
+	}
+
 	/* Now call the moveto-flightplanner */
 	/* TODO: Actually do this. */
 	/* moveto_planner(e, x, y, callback) */
@@ -235,11 +241,82 @@ int lua_set_autopilot_to(lua_State* L) {
 	id = get_self(L);
 	e = get_entity_by_id(id);
 
+	/* If we are docked, or if we are a base, we can't move. */
+	if(e->ship_data->docked_to.id != INVALID_ID.id || e->type == BASE) {
+		return 0;
+	}
+
 	/* Now call the flightplanner */
 	/* TODO: Actually do this. */
 	/* autopilot_planner(e, x, y, callback) */
 
 	return 0;
+}
+
+/* Dock with another entity */
+int lua_dock(lua_State* L) {
+	entity_id_t id, self;
+	entity_t *e, *eself;
+	int n;
+
+	n = lua_gettop(L);
+
+	if(n!=1 || !lua_islightuserdata(L,-1)) {
+		lua_pushstring(L, "lua_dock must be called with exactly one entity argument");
+		lua_error(L);
+	}
+
+	/* Get self entity */
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	/* Get the docking target */
+	id.id = (uint64_t) lua_touserdata(L,-1);
+	lua_pop(L,1);
+	e = get_entity_by_id(id);
+
+	DEBUG("Attempting dock...");
+
+	/* Check that we are targetting something dockable */
+	if(e->type & ~(SHIP|BASE|ASTEROID)) {
+		DEBUG("Not dockable!\n");
+		return 0;
+	}
+
+	/* Check that neither we, nor our target are currently docked to someone else */
+	if(eself->ship_data->docked_to.id != INVALID_ID.id || e->ship_data->docked_to.id != INVALID_ID.id) {
+		DEBUG("Already docked!\n");
+		return 0;
+	}
+
+	/* Check that we are not currently waiting for some other action to complete */
+	if(eself->ship_data->timer_value != -1) {
+		DEBUG("Currently waiting for timer!\n");
+		return 0;
+	}
+
+	/* Check that we're within docking range */
+	if(dist(eself,e) > config_get_double("docking_range")) {
+		DEBUG("Out of range!\n");
+		return 0;
+	}
+
+	/* TODO: Check for speed difference */
+
+	/* Perform the actual docking */
+	eself->ship_data->docked_to.id = id.id;
+	e->ship_data->docked_to.id = self.id;
+
+	/* Set up timer to inform the client once docking is complete */
+	e->ship_data->timer_value = config_get_int("docking_duration");
+	e->ship_data->timer_event = DOCKING_COMPLETE;
+
+	/* TODO: Inform the other entity that it is being docked */
+
+	/* Return one in order to denote successful initialization of docking process */
+	fprintf(stderr, "Success!\n");
+	lua_pushnumber(L,1);
+	return 1;
 }
 
 /*
@@ -252,6 +329,7 @@ int lua_find_closest(lua_State *L) {
 	int n;
 	double search_radius;
 	unsigned int filter;
+	entity_t* closest;
 
 	n = lua_gettop(L);
 
@@ -266,9 +344,15 @@ int lua_find_closest(lua_State *L) {
 	id = get_self(L);
 	e = get_entity_by_id(id);
 
-	lua_pushlightuserdata(L, (void*)(find_closest(e, search_radius, filter)->unique_id.id));
+	closest = find_closest(e, search_radius, filter);
 
-	return 1;
+	if(closest != NULL) {
+		lua_pushlightuserdata(L, (void*)(closest->unique_id.id));
+
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
 /* Debugging helper function, creating a string description of the given entity */

@@ -17,3 +17,6 @@ max_base_estimation = 32
 weapon_range = 20
 docking_range = 1
 scanner_range = 50
+
+-- Durations for a number of actions (measured in ticks)
+docking_duration = 10
