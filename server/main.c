@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 #include "vector.h"
 #include "entities.h"
@@ -40,6 +41,9 @@ int main(int argc, char *argv[]) {
 	entity_t *e;
 	entity_t *closest;
 	char* temp;
+	struct timeval t;
+	struct timeval t_prev;
+	struct timeval t_diff;
 
 	/* Parse Config */
 	config(argc, argv);
@@ -75,6 +79,9 @@ int main(int argc, char *argv[]) {
 	e->ship_data->slot[0] = DRIVE;
 
 	map_to_network();
+
+	/* Get initial time */
+	gettimeofday(&t_prev, NULL);
 
 	/* Main simulation loop */
 	for (uint64_t timestep=0;;timestep++) {
@@ -175,8 +182,15 @@ int main(int argc, char *argv[]) {
 		/* Push Map-Data out to clients */
 		//map_to_network();
 
-		/* FIXME: This is just debug-Waiting. */
-		//sleep(1);
+		/* Wait until we reach our frametime-limit */
+		gettimeofday(&t, NULL);
+		timersub(&t, &t_prev, &t_diff);
+		while(t_diff.tv_sec < 1 && t_diff.tv_usec < config_get_int("frametime")) {
+			usleep(1000);
+			gettimeofday(&t, NULL);
+			timersub(&t, &t_prev, &t_diff);
+		}
+		t_prev = t;
 	}
 
 	free_entity(ship_storage,ship1);
