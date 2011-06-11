@@ -3,8 +3,17 @@
 #include <stdlib.h>
 #include "physics.h"
 #include "types.h"
-#include "tuneables.h"
 #include "vector.h"
+
+extern double dt;
+extern double vmax;
+extern double m0_small;
+extern double m0_medium;
+extern double m0_large;
+extern double m0_huge;
+extern double m0_klotz;
+extern double F_thruster;
+extern double epsilon;
 
 // Berechnet die Masse eines Schiffes aus der Leermasse und der Anzahl der nichtleeren Klötze
 double get_mass(entity_t* s) {

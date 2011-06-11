@@ -17,6 +17,18 @@
 #define print_sizeof(TYPE) \
 	printf("sizeof(%-14s) = %4lu\n", #TYPE, sizeof(TYPE));
 
+double dt = 0.5;
+double vmax = 25;
+double m0_small = 1;
+double m0_medium = 2;
+double m0_large = 4;
+double m0_huge = 8;
+double m0_klotz = 1;
+double F_thruster = 20;
+double epsilon = 1e-10;
+double asteroid_radius_to_slots_ratio = 1;
+double planet_size = 50;
+
 int main(int argc, char *argv[]) {
 	ERROR("Error messages turned on!\n");
 	DEBUG("Debug messages turned on!\n");
@@ -31,6 +43,17 @@ int main(int argc, char *argv[]) {
 
 	/* Parse Config */
 	config(argc, argv);
+	dt = config_get_double("dt");
+	vmax = config_get_double("vmax");
+	m0_small = config_get_double("m0_small");
+	m0_medium = config_get_double("m0_medium");
+	m0_large = config_get_double("m0_large");
+	m0_huge = config_get_double("m0_huge");
+	m0_klotz = config_get_double("m0_klotz");
+	F_thruster = config_get_double("F_thruster");
+	epsilon = config_get_double("epsilon");
+	asteroid_radius_to_slots_ratio = config_get_double("asteroid_radius_to_slots_ratio");
+	planet_size = config_get_double("planet_size");
 
 	/* Start networking code */
 	net_init();

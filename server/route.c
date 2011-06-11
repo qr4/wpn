@@ -14,6 +14,8 @@ extern entity_storage_t* asteroid_storage;
 extern entity_storage_t* planet_storage;
 extern map_t map; // cluster
 
+extern double dt;
+
 waypoint_t* go_around(vector_t* A, vector_t* B, entity_t* C, double r) {
 	vector_t X;
 	X.v = A->v + (v2d) {r, r} * (B->v - A->v);

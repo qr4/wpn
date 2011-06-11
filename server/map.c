@@ -6,6 +6,8 @@
 #include "storages.h"
 #include "debug.h"
 
+extern double asteroid_radius_to_slots_ratio;
+
 double AVERAGE_CLUSTER_DISTANCE = 500;
 double MAXIMUM_CLUSTER_SIZE = 500 / 3;
 
@@ -93,7 +95,7 @@ void distribute_asteroids(entity_t *cluster, const unsigned int n) {
 				asteroid->unique_id.type);
 
 		asteroid->slots  = drand48() * 3 + 1;
-		asteroid->radius = ASTEROID_RADIUS_TO_SLOTS_RATIO * asteroid->slots;
+		asteroid->radius = asteroid_radius_to_slots_ratio * asteroid->slots;
 
 		asteroid->pos.v = cluster->pos.v + randv().v * vector(MAXIMUM_CLUSTER_SIZE).v;
 
