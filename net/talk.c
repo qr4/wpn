@@ -42,63 +42,42 @@
 
 #define HOME "/opt/wpn/"
 #define USER_HOME "/opt/wpn/user"
+#define CONFIG_HOME "/opt/wpn/etc"
 
 //
 // user-info-status-dinge
 //
 
 struct userstate {
-  char user_name[128];
-  int (*fkt)(struct userstate*, int);
+  struct pstr user;   // name des users
+  unsigned int id;    // id des users
 
-  // zwischenpuffer-dinge (z.B. pw, user-info, ...)
-  char* tmp;
-  size_t tmp_size;
+  int (*fkt)(struct userstate*, int);   // funktion die aufgerufen werden soll
 
   // empfangsbuffer-dinge
-  char* data_start;   // malloc
-  size_t data_size;   // groesse vom malloc
-  size_t data_unused; // data_start + data_unused zeigen auf die 1. unbenutzte stelle
+  struct dstr net_data;
 
-  char data_last_char;    // letztes gelesenes zeichen (idr sowas wie '\n' oder '\r')
-  size_t data_read_next;  // data_start + data_read_next zeigen auf das 1. noch nicht bearbeitete zeichen
+  // zwischenpuffer-dinge (z.B. pw, user-info, ...)
+  struct dstr tmp;
 };
 
 static struct userstate* us;
 
-
-static int read_next_line(struct userstate* us, char** data, int* len) {
-
-  if (us->data_read_next == us->data_unused) {
-    return -1;  // am ende des buffers angekommen
+ssize_t net_write(int fd, const void* buf, size_t count) {
+  ssize_t ret = write(fd, buf, count);
+  if (ret == -1) {
+    log_perror("net_write");
+  } else if (ret != count) {
+    log_msg("oops fd %d hat nicht alle daten bekommen; soll = %d, ist = %d", fd, count, ret);
   }
-
-  // komische konstellation wie \n\r als nur einen zeilenumbruch handeln
-  if ( ((us->data_last_char == '\n') && (us->data_start[us->data_read_next] == '\r')) ||
-      ((us->data_last_char == '\r') && (us->data_start[us->data_read_next] == '\n')) ) {
-    us->data_read_next++;
-  }
-
-  // so, nun nach \n bzw \r suchen
-  for (size_t i = us->data_read_next; i < us->data_unused; ++i) {
-    if ( (us->data_start[i] == '\n') || (us->data_start[i] == '\r') ) {
-      (*len) = i - us->data_read_next;
-      (*data) = us->data_start + us->data_read_next;
-      us->data_last_char = us->data_start[i];
-      us->data_read_next = i + 1; // es gilt: i < unused --> i + 1 ist nie > unused, maximal gleich
-      return 0;
-    }
-  }
-
-  return -1;  // keinen terminator gefunden
+  return ret;
 }
 
 
 // schaut unter USER_HOME/$name nach ob es ein verzeichnis (oder eine andere datei) gibt 
 // 1 = ja, 0 = nein
 int have_user(char* name, int len) {
-
-  struct pstr path = { .size = 256, .used = sizeof(USER_HOME), .str = USER_HOME "/" };
+  struct pstr path = { .used = sizeof(USER_HOME), .str = USER_HOME "/" };
 
   pstr_append(&path, name, len);
 
@@ -121,33 +100,91 @@ int have_user(char* name, int len) {
 // legt einen neuen user unter USER_HOME/$name mit password $pw an
 int add_user(char *name, int len_name, char *pw, int len_pw) {
 
-  struct pstr path = { .size = 256, .used = sizeof(USER_HOME), .str = USER_HOME "/" };
-  pstr_append(&path, name, len_name);
+  struct pstr home = { .used = sizeof(USER_HOME), .str = USER_HOME "/" };
+  struct pstr file;
+  int ret = 0;
 
-  if (mkdir(path.str, 0700) == -1) {
+  pstr_append(&home, name, len_name);
+
+  if (mkdir(pstr_as_cstr(&home), 0700) == -1) {
     log_perror("mkdir");
     return -1;
   }
+  
+  if (ret == 0) {
+    // passwd schreiben
+    pstr_set(&file, &home);
+    pstr_append(&file, "/passwd", 7);
 
-  SHA_CTX c;
-  unsigned char sha1_pw[SHA_DIGEST_LENGTH];
-  SHA1_Init(&c);
-  SHA1_Update(&c, pw, len_pw);
-  SHA1_Final(sha1_pw, &c);
+    SHA_CTX c;
+    unsigned char sha1_pw[SHA_DIGEST_LENGTH];
+    SHA1_Init(&c);
+    SHA1_Update(&c, pw, len_pw);
+    SHA1_Final(sha1_pw, &c);
 
-  pstr_append(&path, "/passwd", 7);
-  path.str[path.size] = '\0';
+    int fd = open(pstr_as_cstr(&file), O_CREAT | O_EXCL | O_WRONLY, 0700);
+    if (fd == -1) { log_perror("pw-file open"); return -1; }
 
-  int fd = open(path.str, O_CREAT | O_EXCL | O_WRONLY, 0700);
-  if (fd == -1) {
-    log_perror("pw-file open");
-    return -1;
+    if (write(fd, sha1_pw, SHA_DIGEST_LENGTH) != SHA_DIGEST_LENGTH) {
+      log_msg("write schreibt nicht alles von SHA_DIGEST_LENGTH; user: %.*s", len_name, name);
+      ret = -1;
+    }
+    close(fd);
   }
 
-  write(fd, sha1_pw, SHA_DIGEST_LENGTH);
-  close(fd);
+  int next_id = -1;
+  if (ret == 0) {
+    int fd = open(CONFIG_HOME "/last_id", O_CREAT | O_RDWR, 0700);
+    if (fd == -1) { log_perror("last_id"); return -1; }
 
-  return 0;
+    char id[16];
+    ssize_t count = read(fd, id, sizeof(id));
+    if (count == -1) {
+      // -1 = boese
+      log_perror("read last_id geht nicht");
+      ret = -1;
+    } else if (count == 0) {
+      // datei gibt es wohl noch nicht
+      next_id = 100;
+    } else {
+      errno = 0;
+      next_id = strtol(id, (char **) NULL, 10);
+      if (errno != 0) {
+        log_perror(CONFIG_HOME "/last_id convertieren fehlgeschlagen.");
+        ret = -1;
+      }
+      next_id++;
+    }
+
+    if (lseek(fd, 0, SEEK_SET) == -1) { log_perror("lseek"); ret = -1; }
+    snprintf(id, sizeof(id), "%d\n", next_id);
+    if (write(fd, id, strlen(id)) != strlen(id)) {
+      log_msg("update last_id geht nicht. last_id = %d", next_id);
+      ret = -1;
+    }
+
+    close(fd);
+  }
+
+  if (ret == 0) {
+    // user id schreiben
+    pstr_set(&file, &home);
+    pstr_append(&file, "/id", 3);
+
+    int fd = open(pstr_as_cstr(&file), O_CREAT | O_EXCL | O_WRONLY, 0700);
+    if (fd == -1) { log_perror("id-file open"); return -1; }
+
+    char id[16];
+    snprintf(id, sizeof(id), "%d\n", next_id);
+
+    if (write(fd, id, strlen(id)) != strlen(id)) {
+      log_msg("write mag id nicht schreiben. id = %s", id);
+      ret = -1;
+    }
+    close(fd);
+  }
+
+  return ret;
 }
 
 //
@@ -159,8 +196,9 @@ int _new_account_name(struct userstate* us, int write_fd);
 int _new_account_pw1(struct userstate* us, int write_fd);
 int _new_account_pw2(struct userstate* us, int write_fd);
 int _set_user_info(struct userstate* us, int write_fd);
+int _check_password(struct userstate* us, int write_fd);
 
-enum state { LOGIN, NEW_ACCOUNT_NAME, NEW_ACCOUNT_PW1, NEW_ACCOUNT_PW2, SET_USER_INFO };
+enum state { LOGIN, NEW_ACCOUNT_NAME, NEW_ACCOUNT_PW1, NEW_ACCOUNT_PW2, SET_USER_INFO, CHECK_PASSWORD };
 
 struct automaton {
   const char* msg;
@@ -206,6 +244,11 @@ struct automaton {
       "120 (2x <RETURN> wenn ferig mit der Eingabe) info: ",
     .fkt = _set_user_info,
     .state = SET_USER_INFO
+  },
+  {
+    .msg = "150 passwort: ",
+    .fkt = _check_password,
+    .state = CHECK_PASSWORD
   }
 };
 
@@ -232,34 +275,33 @@ int _login(struct userstate* us, int write_fd) {
   char* data;
   int len;
 
-  if (read_next_line(us, &data, &len) < 0) return 0;  // kein '\n' gefunden
+  if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
 
   if (len == 0) {
     return set_state(NEW_ACCOUNT_NAME, us, write_fd);
   }
 
-  if (len > 3) { // sizeof(us[write_fd].user_name)) {
+  if (len > 12) {
     const char msg[] = "500 Dein Loginname ist ein wenig lang geraten. Geh wech!\n";
-    write(write_fd, msg, sizeof(msg));
+    net_write(write_fd, msg, sizeof(msg));
     return -1;
   }
 
-  printf("login name = %.*s\n", len, data);
-  write(write_fd, "hallo du knackwurst\n", 20);
+  pstr_set_cstr(&us->user, data, len);
 
-  return 0;
+  return set_state(CHECK_PASSWORD, us, write_fd);;
 }
 
 int _new_account_name(struct userstate* us, int write_fd) {
   char* data;
   int len;
   
-  if (read_next_line(us, &data, &len) < 0) return 0;  // kein '\n' gefunden
+  if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
 
   if ((len < 3) || (len > 12)) {
     const char msg[] = "501 Nur 3 bis max. 12 Zeichen. Du Knackwurst. Probiers nochmal\n"
       "110 username: ";
-    write(write_fd, msg, sizeof(msg));
+    net_write(write_fd, msg, sizeof(msg));
     return 0;
   }
 
@@ -274,7 +316,7 @@ int _new_account_name(struct userstate* us, int write_fd) {
     if (found == 0) {
       const char msg[] = "502 Nee Du. Lass mal Deine komischen Zeichen stecken. Probiers nochmal\n"
         "110 username: ";
-      write(write_fd, msg, sizeof(msg));
+      net_write(write_fd, msg, sizeof(msg));
       return 0;
     }
   }
@@ -282,12 +324,11 @@ int _new_account_name(struct userstate* us, int write_fd) {
   if (have_user(data, len)) {
     const char msg[] = "503 Sorry. Aber den User gibts schon. Probiers nochmal\n"
       "110 username: ";
-    write(write_fd, msg, sizeof(msg));
+    net_write(write_fd, msg, sizeof(msg));
     return 0;
   }
  
-  memcpy(us->user_name, data, len);
-  us->user_name[len + 1] = '\0';
+  pstr_set_cstr(&us->user, data, len);
 
   return set_state(NEW_ACCOUNT_PW1, us, write_fd);
 }
@@ -296,17 +337,16 @@ int _new_account_pw1(struct userstate* us, int write_fd) {
   char* data;
   int len;
 
-  if (read_next_line(us, &data, &len) < 0) return 0;  // kein '\n' gefunden
+  if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
 
   if (len < 6) {
     const char msg[] = "504 Dein Passwort ist zu kurz.\n"
       "111 passwort: ";
-    write(write_fd, msg, sizeof(msg));
+    net_write(write_fd, msg, sizeof(msg));
     return 0;
   }
 
-  memcpy(us->tmp, data, len);
-  us->tmp[len] = '\0';
+  dstr_set(&us->tmp, data, len);
 
   return set_state(NEW_ACCOUNT_PW2, us, write_fd);
 }
@@ -315,29 +355,68 @@ int _new_account_pw2(struct userstate* us, int write_fd) {
   char* data;
   int len;
 
-  if (read_next_line(us, &data, &len) < 0) return 0;  // kein '\n' gefunden
+  if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
 
-  if ( (strlen(us->tmp) != len) || (strncmp(us->tmp, data, len)) ) {
+  if ( (dstr_len(&us->tmp) != len) || (strncmp(dstr_as_cstr(&us->tmp), data, len)) ) {
     const char msg[] = "505 Die eingegebenen Passwoerter stimmen nicht ueberein. Nochmal!\n";
-    write(write_fd, msg, sizeof(msg));
+    net_write(write_fd, msg, sizeof(msg));
     return set_state(NEW_ACCOUNT_PW1, us, write_fd);
   }
 
-  if (add_user(us->user_name, strlen(us->user_name), data, len) == -1) {
+  if (add_user(pstr_as_cstr(&us->user), pstr_len(&us->user), data, len) == -1) {
     log_msg("ooops. kann user/pw nicht anlegen");
     return -1;
   }
 
-  return 0;
+  return set_state(SET_USER_INFO, us, write_fd);;
 }
 
 int _set_user_info(struct userstate* us, int write_fd) {
   char* data;
   int len;
 
-  if (read_next_line(us, &data, &len) < 0) return 0;  // kein '\n' gefunden
+  if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
 
+  net_write(write_fd, "wurst!", 6);
 
+  return 0;
+}
+
+int _check_password(struct userstate* us, int write_fd) {
+  char* data;
+  int len;
+
+  if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
+#if 0
+  struct pstr path = { .used = sizeof(USER_HOME), .str = USER_HOME "/" };
+  pstr_append(&path, name, len_name);
+
+  if (mkdir(path.str, 0700) == -1) {
+    log_perror("mkdir");
+    return -1;
+  }
+
+  SHA_CTX c;
+  unsigned char sha1_pw[SHA_DIGEST_LENGTH];
+  SHA1_Init(&c);
+  SHA1_Update(&c, pw, len_pw);
+  SHA1_Final(sha1_pw, &c);
+
+  pstr_append(&path, "/passwd", 7);
+  path.str[path.size] = '\0';
+
+  int fd = open(path.str, O_CREAT | O_EXCL | O_WRONLY, 0700);
+  if (fd == -1) {
+    log_perror("pw-file open");
+    return -1;
+  }
+
+  if (write(fd, sha1_pw, SHA_DIGEST_LENGTH) != SHA_DIGEST_LENGTH) {
+    log_msg("write schreibt nicht alles von SHA_DIGEST_LENGTH; user: %.*s", len_name, name);
+  }
+  close(fd);
+#endif
+  return 0;
 }
 
 //
@@ -370,45 +449,17 @@ static void net_client_connect(int fd, fd_set* master, int* fdmax) {
     newfd,
     inet_ntop(remoteaddr.ss_family, get_in_addr((struct sockaddr*)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
 
-  const char tmp_file[] = "wpn_tmp";
-
-  us[newfd].user_name[0] = '\0';
-
-  const size_t DEFAULT_DATA_SIZE = 4000;
-  free(us[newfd].data_start); // TODO: das hier mal anders regeln - realloc und sowas
-  us[newfd].data_start = (char*)malloc(DEFAULT_DATA_SIZE);
-  if (us[newfd].data_start == NULL) { log_perror("malloc mag mich nicht :-/"); return; }
-  us[newfd].data_size = DEFAULT_DATA_SIZE;
-  us[newfd].data_unused = 0;
-  us[newfd].data_read_next = 0;
+  dstr_clear(&us[newfd].net_data);
 
   set_state(LOGIN, &us[newfd], newfd);
 }
 
+
 static void net_client_talk(int fd, fd_set* master) {
 
-  size_t free_buffer_size = us[fd].data_size - us[fd].data_unused;
-
-  if (free_buffer_size == 0) {
-    if (us[fd].data_read_next == 0) {
-      // kein platz mehr -> speicher erweitern
-      char* tmp = (char*)realloc(us[fd].data_start, us[fd].data_size * 2);
-      if (tmp == NULL) { log_perror("realloc mag nicht :-\\"); exit(1); }
-      us[fd].data_start = tmp;
-      us[fd].data_size *= 2;
-    } else {
-      // wir koennen ein wenig platz machen in dem wir 
-      // den bereich den wir noch brauchen an den anfang schieben
-      memmove(us[fd].data_start, us[fd].data_start + us[fd].data_read_next, us[fd].data_unused - us[fd].data_read_next);
-      us[fd].data_unused -= us[fd].data_read_next;
-      us[fd].data_read_next = 0;
-    }
-
-    // so, nun nochmal die neue freie groesse berechnen
-    free_buffer_size = us[fd].data_size - us[fd].data_unused;
-  }
-
-  ssize_t len = recv(fd, us[fd].data_start + us[fd].data_unused, free_buffer_size, 0);
+  // TODO irgendwie besser mit pstr verheiraten
+  char buffer[4000];
+  ssize_t len = recv(fd, buffer, sizeof(buffer), 0);
 
   if (len == 0) {
     // client mag nicht mehr mit uns reden
@@ -420,8 +471,8 @@ static void net_client_talk(int fd, fd_set* master) {
     return;
   }
 
-  // wir sind nun um len bytes groesser -> memory remappen
-  us[fd].data_unused += len;
+  // die empfangenen daten in den puffer schieben
+  if (dstr_append(&us[fd].net_data, buffer, len) < 0) { log_perror("dstr_append"); exit(1); }
 
   // nun die eigentliche fkt aufrufen
   if (us[fd].fkt(&us[fd], fd) < 0) {
@@ -440,10 +491,8 @@ int main() {
   us = (struct userstate*)malloc(sizeof(struct userstate) * MAX_USERS);
   if (us == NULL) { log_msg("malloc us == NULL: kein platz"); exit(EXIT_FAILURE); }
   for (int i = 0; i < MAX_USERS; ++i) {
-    us[i].data_start = (char*)malloc(10); // TODO: nur wegen free oben - besser machen
-    us[i].tmp = (char*)malloc(4000);
-    if (us[i].tmp == NULL) { log_perror("malloc"); exit(1); }
-    us[i].tmp_size = 4000;
+    if (dstr_malloc(&us[i].net_data) < 0) { log_perror("pstr_malloc"); exit(1); }
+    if (dstr_malloc(&us[i].tmp) < 0) { log_perror("pstr_malloc"); exit(1); }
   }
 
 	int listener = network_bind(PORT, MAX_CONNECTION);

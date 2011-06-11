@@ -11,12 +11,17 @@
 #define PSTR_DSTR_DEFAULT_SIZE 4000
 
 struct pstr {
-  size_t size;
+//  size_t size;
   size_t used;
-  char str[256];
+  char str[512];
 };
 
+void pstr_clear(struct pstr* p);
+char* pstr_as_cstr(struct pstr* p);
+void pstr_set(struct pstr* dest, struct pstr* src);
+int pstr_set_cstr(struct pstr* p, char* src, int src_len);
 int pstr_append(struct pstr* dest, char* src, int src_len);
+int pstr_len(struct pstr* p);
 
 
 // nutzdaten: #
@@ -32,12 +37,14 @@ struct dstr {
   char last_char; // letztes gelesenes zeichen - brauchen wir fuer zeilenumbrucherkennung
 };
 
-int pstr_malloc(struct dstr* p);
-void pstr_free(struct dstr* p);
-void pstr_clear(struct dstr* p);
+int dstr_malloc(struct dstr* p);
+void dstr_free(struct dstr* p);
+void dstr_clear(struct dstr* p);
 char* dstr_as_cstr(struct dstr* p);
+int dstr_set(struct dstr* p, char* src, size_t src_len);
 int dstr_append(struct dstr* p, char* src, size_t src_len);
 int dstr_append_cstr(struct dstr* p, char* src);
+int dstr_len(struct dstr* p);
 int dstr_read_line(struct dstr* p, char** data, int* len);
 
 
