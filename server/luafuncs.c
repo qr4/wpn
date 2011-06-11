@@ -37,6 +37,7 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_get_distance,     "get_distance"},
 	{lua_get_docking_partner, "get_docking_partner"},
 	{lua_busy,             "busy"},
+	{lua_get_slots,        "get_slots"},
 };
 
 void register_lua_functions(entity_t *s) {
@@ -740,4 +741,59 @@ int lua_busy(lua_State* L) {
 		lua_pushboolean(L,1);
 		return 1;
 	}
+}
+
+/* Return the content of another (or your own) entities' slots */
+int lua_get_slots(lua_State* L) {
+	entity_id_t id, self;
+	entity_t *e, *eself;
+	int n;
+
+	n = lua_gettop(L);
+
+	/* Set self entity */
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	switch(n) {
+		case 0:
+			/* Get your own contents */
+			id = self;
+			e = eself;
+			break;
+		case 1:
+			/* Get contents of someone else */
+			if(!lua_islightuserdata(L,-1)) {
+				lua_pushstring(L, "Argument to get_slots is not an entity!");
+				lua_error(L);
+			}
+
+			id.id = (uint64_t) lua_touserdata(L,-1);
+			lua_pop(L,1);
+
+			e = get_entity_by_id(id);
+
+			/* If this entity doesn't exist -> return */
+			if(!e) {
+				return 0;
+			}
+
+			/* Check that entity is within scanner range */
+			if(dist(eself, e) > config_get_double("scanner_range")) {
+				return 0;
+			}
+
+			break;
+		case 2:
+			lua_pushstring(L, "get_slots expects no, or one entity argument");
+			lua_error(L);
+	}
+
+	/* Push each of the slot contents on the stack */
+	for(n = 0; n<e->slots; n++) {
+		lua_pushnumber(L, e->slot_data->slot[n]);
+	}
+
+	/* Return the number of slots, thus forming a valid lua list */
+	return n;
 }

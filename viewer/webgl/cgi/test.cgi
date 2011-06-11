@@ -6,7 +6,7 @@
 
 print "Content-type: text/plain\n\n";
 
-open(GITTER, "DISPLAY=:0 ~/programme/gpn-game/gitter/main|") || die "hualp.";
+open(GITTER, "nc localhost 8080|") || die "hualp.";
 
 while(<GITTER>) {
 	print;
