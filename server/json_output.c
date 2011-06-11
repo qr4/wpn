@@ -152,7 +152,7 @@ char* asteroids_to_json() {
 	char** asteroid_strings = malloc((num_asteroids+1)*sizeof(char*));
 
 	int i;
-	for(i = 0; i < num_asteroids+1; i++) {
+	for(i = 0; i < num_asteroids; i++) {
 		asteroid_strings[i] = asteroid_to_json(get_entity_by_index(asteroid_storage, i));
 	}
 	asteroid_strings[num_asteroids] = NULL;
