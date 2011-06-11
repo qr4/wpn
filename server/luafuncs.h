@@ -34,6 +34,9 @@ int lua_dock(lua_State* L);
 /* Undock again */
 int lua_undock(lua_State* L);
 
+/* Transfer (swap) slots to/from the docking partner */
+int lua_transfer_slot(lua_State* L);
+
 /* --- QUERIES - with which entities get information about their surroundings */
 /* Search the closest entity in the search radius matchin the filter.
  */

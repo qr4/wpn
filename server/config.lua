@@ -21,6 +21,7 @@ scanner_range = 50
 -- Durations for a number of actions (measured in ticks)
 docking_duration = 3
 undocking_duration = 3
+transfer_duration = 3
 
 -- Tunables of the physics engine
 dt = 0.5

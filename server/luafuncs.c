@@ -27,6 +27,7 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_set_timer,        "set_timer"},
 	{lua_dock,             "dock"},
 	{lua_undock,           "undock"},
+	{lua_transfer_slot,    "transfer_slot"},
 
 	/* Queries */
 	{lua_entity_to_string, "entity_to_string"},
@@ -362,6 +363,12 @@ int lua_undock(lua_State* L) {
 		return 0;
 	}
 
+	/* Check that we are not currently waiting for some other action to complete */
+	if(eself->ship_data->timer_value != -1) {
+		DEBUG("Can't undock: currently waiting for timer!\n");
+		return 0;
+	}
+
 	/* Remove the dockedness. */
 	eself->ship_data->docked_to.id = INVALID_ID.id;
 	e->ship_data->docked_to.id = INVALID_ID.id;
@@ -656,4 +663,61 @@ int lua_get_distance(lua_State* L) {
 			return 0;
 		}
 	}
+}
+
+/* Transfer a slot from / to the docked partner */
+/* Arguments are: local_slot and remote_slot.
+ * Only works when docked. */
+int lua_transfer_slot(lua_State* L) {
+	entity_id_t self;
+	entity_t *e, *eself;
+	int n;
+	int local_slot, remote_slot;
+
+	n = lua_gettop(L);
+
+	if(n != 2 || !lua_isnumber(L,-1) || !lua_isnumber(L,-2)) {
+		lua_pushstring(L, "transfer_slot() requires exactly two number arguments.");
+		lua_error(L);
+	}
+
+	local_slot = lua_tonumber(L,1);
+	remote_slot = lua_tonumber(L,2);
+	lua_pop(L,2);
+
+	/* get self */
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	/* Check whether we're docked */
+	if(eself->ship_data->docked_to.id == INVALID_ID.id) {
+		return 0;
+	}
+
+	/* Check that we are not currently waiting for some other action to complete */
+	if(eself->ship_data->timer_value != -1) {
+		DEBUG("Not transferring: currently waiting for timer!\n");
+		return 0;
+	}
+
+	e = get_entity_by_id(eself->ship_data->docked_to);
+	if(!e) {
+		/* Looks like our docking partner has exploded. Poor guy. */
+		return 0;
+	}
+
+	/* Swap the slots */
+	if(swap_slots(eself, local_slot, e, remote_slot) != OK) {
+
+		/* Somethings has gone wrong. */
+		return 0;
+	}
+
+	/* Now the little robognomes on board are busy carrying over the chests. */
+	eself->ship_data->timer_value = config_get_int("transfer_duration");
+	eself->ship_data->timer_event = TRANSFER_COMPLETE;
+
+	/* Return 1 to indicate successful initiation of transfer */
+	lua_pushnumber(L,1);
+	return 1;
 }
