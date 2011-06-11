@@ -52,7 +52,7 @@ char* join(char** strings, char* sep) {
 char* bbox_to_json(void) {
 	char* retval;
 
-	asprintf(&retval, "{\"xmin\": %f, \"xmax\": %f, \"ymin\": %f, \"ymax\": %f }", map.left_bound, map.right_bound, map.upper_bound, map.lower_bound);
+	asprintf(&retval, "\"bounding-box\": {\"xmin\": %f, \"xmax\": %f, \"ymin\": %f, \"ymax\": %f }", map.left_bound, map.right_bound, map.upper_bound, map.lower_bound);
 
 	return retval;
 }
@@ -166,10 +166,10 @@ char* asteroids_to_json() {
 	asteroid_strings[num_asteroids] = NULL;
 
 	if(num_asteroids <= 0) {
-		asprintf(&retval, "asteroids: []\n");
+		asprintf(&retval, "\"asteroids\": []\n");
 	} else {
-		char* p = join(asteroid_strings, "\n");
-		asprintf(&retval, "asteroids: [\n%s\n]\n", p);
+		char* p = join(asteroid_strings, ",\n");
+		asprintf(&retval, "\"asteroids\": [\n%s\n]\n", p);
 		free(p);
 	}
 
@@ -194,10 +194,10 @@ char* bases_to_json() {
 	base_strings[num_bases] = NULL;
 
 	if(num_bases <= 0) {
-		asprintf(&retval, "bases: []\n");
+		asprintf(&retval, "\"bases\": []\n");
 	} else {
-		char* p = join(base_strings, "\n");
-		asprintf(&retval, "bases: [\n%s\n]\n", p);
+		char* p = join(base_strings, ",\n");
+		asprintf(&retval, "\"bases\": [\n%s\n]\n", p);
 		free(p);
 	}
 
@@ -222,10 +222,10 @@ char* planets_to_json() {
 	planet_strings[num_planets] = NULL;
 
 	if(num_planets <= 0) {
-		asprintf(&retval, "planets: []\n");
+		asprintf(&retval, "\"planets\": []\n");
 	} else {
-		char* p = join(planet_strings, "\n");
-		asprintf(&retval, "planets: [\n%s\n]\n", p);
+		char* p = join(planet_strings, ",\n");
+		asprintf(&retval, "\"planets\": [\n%s\n]\n", p);
 		free(p);
 	}
 
@@ -250,10 +250,10 @@ char* ships_to_json() {
 	ship_strings[num_ships] = NULL;
 
 	if(num_ships <= 0) {
-		asprintf(&retval, "ships: []\n");
+		asprintf(&retval, "\"ships\": []\n");
 	} else {
-		char* p = join(ship_strings, "\n");
-		asprintf(&retval, "ships: [\n%s\n]\n", p);
+		char* p = join(ship_strings, ",\n");
+		asprintf(&retval, "\"ships\": [\n%s\n]\n", p);
 		free(p);
 	}
 
@@ -326,10 +326,10 @@ void ship_updates_to_network(char** updated_ships, int updates) {
 	updated_ships[updates] = NULL;
 
 	if(updates <= 0) {
-		asprintf(&joined_updates, "ships: []\n");
+		asprintf(&joined_updates, "\"ships\": []\n");
 	} else {
-		char* p = join(updated_ships, "\n");
-		asprintf(&joined_updates, "ships: [\n%s\n]\n", p);
+		char* p = join(updated_ships, ",\n");
+		asprintf(&joined_updates, "\"ships\": [\n%s\n]\n", p);
 		free(p);
 	}
 
@@ -339,13 +339,13 @@ void ship_updates_to_network(char** updated_ships, int updates) {
 
 	free(updated_ships);
 
-	update_printf("{ \"update\":\n%s}\n\n", joined_updates);
+	update_printf("{ \"update\":\n{ %s}\n}\n\n", joined_updates);
 	update_flush();
 	free(joined_updates);
 }
 
 void map_to_network() {
-	map_printf("{\n");
+	map_printf("{ \"world\":\n{ ");
 	bbox_to_network();
 	map_printf(",\n");
 	asteroids_to_network();
@@ -355,6 +355,6 @@ void map_to_network() {
 	planets_to_network();
 	map_printf(",\n");
 	ships_to_network();
-	map_printf("}\n\n");
+	map_printf("}\n}\n\n");
 	map_flush();
 }
