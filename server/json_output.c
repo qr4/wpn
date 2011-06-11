@@ -158,6 +158,10 @@ char* asteroids_to_json() {
 	int num_asteroids = asteroid_storage->first_free;
 	char* retval;
 	char** asteroid_strings = malloc((num_asteroids+1)*sizeof(char*));
+	if(!asteroid_strings) {
+		fprintf(stderr, "No space left for asteroids descripitons\n");
+		exit(1);
+	}
 
 	int i;
 	for(i = 0; i < num_asteroids; i++) {
@@ -186,6 +190,10 @@ char* bases_to_json() {
 	int num_bases = base_storage->first_free;
 	char* retval;
 	char** base_strings = malloc((num_bases+1)*sizeof(char*));
+	if(!base_strings) {
+		fprintf(stderr, "No space left for base descripitons\n");
+		exit(1);
+	}
 
 	int i;
 	for(i = 0; i < num_bases; i++) {
@@ -214,6 +222,10 @@ char* planets_to_json() {
 	int num_planets = planet_storage->first_free;
 	char* retval;
 	char** planet_strings = malloc((num_planets+1)*sizeof(char*));
+	if(!planet_strings) {
+		fprintf(stderr, "No space left for planet descripitons\n");
+		exit(1);
+	}
 
 	int i;
 	for(i = 0; i < num_planets; i++) {
@@ -242,6 +254,10 @@ char* ships_to_json() {
 	int num_ships = ship_storage->first_free;
 	char* retval;
 	char** ship_strings = malloc((num_ships+1)*sizeof(char*));
+	if(!ship_strings) {
+		fprintf(stderr, "No space left for ship descripitons\n");
+		exit(1);
+	}
 
 	int i;
 	for(i = 0; i < num_ships; i++) {

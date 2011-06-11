@@ -154,6 +154,10 @@ int main(int argc, char *argv[]) {
 
 		/* Move ships by one physics-step */
 		char** updated_ships = malloc((ship_storage->first_free + 1)*sizeof(char*));
+		if(!updated_ships) {
+			fprintf(stderr, "Not enough ram for ship updates\n");
+			exit(1);
+		}
 		int updates = 0;
 		for(int i=0; i<ship_storage->first_free; i++) {
 			if(ship_storage->entities[i].ship_data->flightplan != NULL) {
