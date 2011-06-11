@@ -14,7 +14,8 @@ function on_autopilot_arrived()
 	x = math.random(20000)
 	y = math.random(20000)
 	print("Going to "..x..", "..y)
-	set_autopilot_to(x, y)
+	-- set_autopilot_to(x,y)
+	moveto(x, y)
 end
 
 

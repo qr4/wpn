@@ -144,6 +144,9 @@ void call_entity_callback(entity_t* e, event_t event) {
 	/* Make this entity "active" */
 	lua_active_entity = e->unique_id;
 
+	/* Set the execution time limit */
+	lua_sethook(e->lua, time_exceeded_hook, LUA_MASKCOUNT, config_get_int("lua_max_cycles"));
+
 	/* Call it.*/
 	/* TODO: Pass some relevant arguments to the event?
 	 * alternatively: set information of the craft's environment
