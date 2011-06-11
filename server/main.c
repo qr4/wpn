@@ -143,6 +143,8 @@ int main(int argc, char *argv[]) {
 		/* TODO: Implement proximity warnings */
 
 		/* Move ships by one physics-step */
+		char** updated_ships = malloc((ship_storage->first_free + 1)*sizeof(char*));
+		int updates = 0;
 		for(int i=0; i<ship_storage->first_free; i++) {
 			if(ship_storage->entities[i].ship_data->flightplan != NULL) {
 				waypoint_t* next = ship_storage->entities[i].ship_data->flightplan->next;
@@ -157,8 +159,12 @@ int main(int argc, char *argv[]) {
 				}
 
 				ship_storage->entities[i].v.v = next->speed.v;
+				updated_ships[updates] = ship_to_json(&(ship_storage->entities[i]));
+				updates++;
 			}
 		}
+		// Send JSON to network and free strings
+		ship_updates_to_network(updated_ships, updates);
 
 		/* Look for any collisions in spacecraft */
 		/* TODO: Implement collisions */

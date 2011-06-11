@@ -321,6 +321,29 @@ void ships_to_network() {
 	}
 }
 
+void ship_updates_to_network(char** updated_ships, int updates) {
+	char* joined_updates;
+	updated_ships[updates] = NULL;
+
+	if(updates <= 0) {
+		asprintf(&joined_updates, "ships: []\n");
+	} else {
+		char* p = join(updated_ships, "\n");
+		asprintf(&joined_updates, "ships: [\n%s\n]\n", p);
+		free(p);
+	}
+
+	for(int i = 0; i < updates; i++) {
+		free(updated_ships[i]);
+	}
+
+	free(updated_ships);
+
+	update_printf("{ \"update\":\n%s}\n\n", joined_updates);
+	update_flush();
+	free(joined_updates);
+}
+
 void map_to_network() {
 	map_printf("{\n");
 	bbox_to_network();
@@ -332,6 +355,6 @@ void map_to_network() {
 	planets_to_network();
 	map_printf(",\n");
 	ships_to_network();
-	map_printf("}\n");
+	map_printf("}\n\n");
 	map_flush();
 }
