@@ -52,7 +52,7 @@ char* join(char** strings, char* sep) {
 char* bbox_to_json(void) {
 	char* retval;
 
-	asprintf(&retval, "{\"xmin\": %f, \"xmax\": %f, \"ymin\": %f, \"ymax\": %f }", map.left_bound, map.right_bound, map.upper_bound, map.lower_bound);
+	asprintf(&retval, "\"bounding-box\": {\"xmin\": %f, \"xmax\": %f, \"ymin\": %f, \"ymax\": %f }", map.left_bound, map.right_bound, map.upper_bound, map.lower_bound);
 
 	return retval;
 }
@@ -81,7 +81,6 @@ char* asteroid_to_json(entity_t* e) {
 }
 
 /* Returns the json representation of the given base (with curvy braces included) */
-/* TODO: docked_to currently always contains null */
 char* base_to_json(entity_t* e) {
 	char* contents;
 	char* retval;
@@ -96,8 +95,13 @@ char* base_to_json(entity_t* e) {
 
 	contents = slots_to_string(e);
 
-	asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": %i, \"size\": %i, \"contents\": \"%s\", \"docked_to\":null}",
+	if(e->base_data->docked_to.id == INVALID_ID.id) {
+		asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": %i, \"size\": %i, \"contents\": \"%s\", \"docked_to\":null}",
 			(uint64_t)e, e->pos.x, e->pos.y, e->player_id, e->slots, contents);
+	} else {
+		asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": %i, \"size\": %i, \"contents\": \"%s\", \"docked_to\": %lu}",
+			(uint64_t)e, e->pos.x, e->pos.y, e->player_id, e->slots, contents, e->base_data->docked_to.id);
+	}
 
 	free(contents);
 
@@ -123,7 +127,6 @@ char* planet_to_json(entity_t* e) {
 }
 
 /* Give the json representation of a ship (with the curly braces included) */
-/* TODO: docked_to currently always contains null */
 char* ship_to_json(entity_t* e) {
 	char* contents;
 	char* retval;
@@ -138,8 +141,13 @@ char* ship_to_json(entity_t* e) {
 
 	contents = slots_to_string(e);
 
-	asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": %i, \"size\": %i, \"contents\": \"%s\", \"docked_to\":null}",
+	if(e->ship_data->docked_to.id == INVALID_ID.id) {
+		asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": %i, \"size\": %i, \"contents\": \"%s\", \"docked_to\":null}",
 			(uint64_t)e, e->pos.x, e->pos.y, e->player_id, e->slots, contents);
+	} else {
+		asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": %i, \"size\": %i, \"contents\": \"%s\", \"docked_to\": %lu}",
+			(uint64_t)e, e->pos.x, e->pos.y, e->player_id, e->slots, contents, e->ship_data->docked_to.id);
+	}
 
 	free(contents);
 
@@ -158,10 +166,10 @@ char* asteroids_to_json() {
 	asteroid_strings[num_asteroids] = NULL;
 
 	if(num_asteroids <= 0) {
-		asprintf(&retval, "asteroids: []\n");
+		asprintf(&retval, "\"asteroids\": []\n");
 	} else {
-		char* p = join(asteroid_strings, "\n");
-		asprintf(&retval, "asteroids: [\n%s\n]\n", p);
+		char* p = join(asteroid_strings, ",\n");
+		asprintf(&retval, "\"asteroids\": [\n%s\n]\n", p);
 		free(p);
 	}
 
@@ -186,10 +194,10 @@ char* bases_to_json() {
 	base_strings[num_bases] = NULL;
 
 	if(num_bases <= 0) {
-		asprintf(&retval, "bases: []\n");
+		asprintf(&retval, "\"bases\": []\n");
 	} else {
-		char* p = join(base_strings, "\n");
-		asprintf(&retval, "bases: [\n%s\n]\n", p);
+		char* p = join(base_strings, ",\n");
+		asprintf(&retval, "\"bases\": [\n%s\n]\n", p);
 		free(p);
 	}
 
@@ -214,10 +222,10 @@ char* planets_to_json() {
 	planet_strings[num_planets] = NULL;
 
 	if(num_planets <= 0) {
-		asprintf(&retval, "planets: []\n");
+		asprintf(&retval, "\"planets\": []\n");
 	} else {
-		char* p = join(planet_strings, "\n");
-		asprintf(&retval, "planets: [\n%s\n]\n", p);
+		char* p = join(planet_strings, ",\n");
+		asprintf(&retval, "\"planets\": [\n%s\n]\n", p);
 		free(p);
 	}
 
@@ -242,10 +250,10 @@ char* ships_to_json() {
 	ship_strings[num_ships] = NULL;
 
 	if(num_ships <= 0) {
-		asprintf(&retval, "ships: []\n");
+		asprintf(&retval, "\"ships\": []\n");
 	} else {
-		char* p = join(ship_strings, "\n");
-		asprintf(&retval, "ships: [\n%s\n]\n", p);
+		char* p = join(ship_strings, ",\n");
+		asprintf(&retval, "\"ships\": [\n%s\n]\n", p);
 		free(p);
 	}
 
@@ -313,8 +321,31 @@ void ships_to_network() {
 	}
 }
 
+void ship_updates_to_network(char** updated_ships, int updates) {
+	char* joined_updates;
+	updated_ships[updates] = NULL;
+
+	if(updates <= 0) {
+		asprintf(&joined_updates, "\"ships\": []\n");
+	} else {
+		char* p = join(updated_ships, ",\n");
+		asprintf(&joined_updates, "\"ships\": [\n%s\n]\n", p);
+		free(p);
+	}
+
+	for(int i = 0; i < updates; i++) {
+		free(updated_ships[i]);
+	}
+
+	free(updated_ships);
+
+	update_printf("{ \"update\":\n{ %s}\n}\n\n", joined_updates);
+	update_flush();
+	free(joined_updates);
+}
+
 void map_to_network() {
-	map_printf("{\n");
+	map_printf("{ \"world\":\n{ ");
 	bbox_to_network();
 	map_printf(",\n");
 	asteroids_to_network();
@@ -324,7 +355,6 @@ void map_to_network() {
 	planets_to_network();
 	map_printf(",\n");
 	ships_to_network();
-	map_printf("}\n");
+	map_printf("}\n}\n\n");
 	map_flush();
-	fprintf(stderr, "Here you go\n");
 }

@@ -6,6 +6,8 @@
 #include "storages.h"
 #include "debug.h"
 
+extern double asteroid_radius_to_slots_ratio;
+
 double AVERAGE_CLUSTER_DISTANCE = 500;
 double MAXIMUM_CLUSTER_SIZE = 500 / 3;
 
@@ -93,7 +95,7 @@ void distribute_asteroids(entity_t *cluster, const unsigned int n) {
 				asteroid->unique_id.type);
 
 		asteroid->slots  = drand48() * 3 + 1;
-		asteroid->radius = ASTEROID_RADIUS_TO_SLOTS_RATIO * asteroid->slots;
+		asteroid->radius = asteroid_radius_to_slots_ratio * asteroid->slots;
 
 		asteroid->pos.v = cluster->pos.v + randv().v * vector(MAXIMUM_CLUSTER_SIZE).v;
 
@@ -204,6 +206,12 @@ map_quad_t *register_object(entity_t *e) {
 
 	return quad;
 }
+
+map_quad_t* update_quad_object(entity_t *e) {
+	unregister_object(e);
+	return register_object(e);
+}
+
 
 void build_quads() {
 	entity_t *cluster;
@@ -328,7 +336,7 @@ entity_t *find_closest(entity_t *e, const double radius, const unsigned int filt
 			if (filter & SHIP) {
 				for (i = 0; i < quad->moving_objects; i++) {
 					if (filter & quad->moving_object[i].type 
-							&& e->unique_id.id != quad->static_object[i].id
+							&& e->unique_id.id != quad->moving_object[i].id
 							&& (t = collision_dist(e, get_entity_by_id(quad->moving_object[i]))) < dist) {
 						dist = t;
 						closest = get_entity_by_id(quad->moving_object[i]);

@@ -21,3 +21,15 @@ scanner_range = 50
 -- Durations for a number of actions (measured in ticks)
 docking_duration = 3
 undocking_duration = 3
+transfer_duration = 3
+
+-- Tunables of the physics engine
+dt = 0.5
+vmax = 25
+m0_small   =  1 -- Leergewicht eines kleinen Schiffs (3 slots)
+m0_medium  =  2 -- Leergewicht eines mittleren Schiffs (6 slots)
+m0_large   =  4 -- Leergewicht eines grossen Schiffs (12 slots)
+m0_huge    =  8 -- Leergewicht eines riesigen Schiffs (24 slots)
+m0_klotz   =  1 -- Gewicht eines Klotzes (thruster, resource, laser)
+F_thruster = 20 -- Schub eines thrusters
+epsilon    = 1e-10 -- // Missmatches im Kurs durch Rundungsfehler ab denen die Physiksengine sich beklagen soll

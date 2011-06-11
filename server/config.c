@@ -144,7 +144,7 @@ int config_get_int(char* param_name) {
 
 double config_get_double(char* param_name) {
 
-	int d;
+	double d;
 	lua_getglobal(config_state, param_name);
 
 	/* If this parameter is no int, return 0 */

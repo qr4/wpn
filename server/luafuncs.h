@@ -34,6 +34,9 @@ int lua_dock(lua_State* L);
 /* Undock again */
 int lua_undock(lua_State* L);
 
+/* Transfer (swap) slots to/from the docking partner */
+int lua_transfer_slot(lua_State* L);
+
 /* --- QUERIES - with which entities get information about their surroundings */
 /* Search the closest entity in the search radius matchin the filter.
  */
@@ -44,6 +47,15 @@ int lua_get_player(lua_State* L);
 
 /* Get the position (x- and y-coordinate) of an entity (or yourself) */
 int lua_get_position(lua_State* L);
+
+/* Get your current docking partner (or nil, if not docked) */
+int lua_get_docking_partner(lua_State* L);
+
+/* Get the distance of another entity */
+int lua_get_distance(lua_State* L);
+
+/* Determine wether you're busy (waiting for some action to finish */
+int lua_busy(lua_State* L);
 
 /* --- Debugging and administrative functions --- */
 /* Registers all lua_functions available through c-api */

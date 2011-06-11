@@ -10,6 +10,9 @@
 #include "entity_storage.h"
 #include "storages.h"
 
+extern double asteroid_radius_to_slots_ratio;
+extern double planet_size;
+
 /*
  * Swaps two slots. *left can be the same as *right
  */
@@ -79,11 +82,11 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 			break;
 		case PLANET :
 			e->planet_data   = (planet_data_t *)   malloc (sizeof(planet_data_t));
-			e->radius = PLANET_SIZE;
+			e->radius = planet_size;
 			break;
 		case ASTEROID :
 			e->asteroid_data = (asteroid_data_t *) malloc (sizeof(asteroid_data_t));
-			e->radius = ASTEROID_RADIUS_TO_SLOTS_RATIO * slots;
+			e->radius = asteroid_radius_to_slots_ratio * slots;
 			e->asteroid_data->docked_to = INVALID_ID;
 			break;
 		case BASE :

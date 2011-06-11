@@ -8,6 +8,7 @@
 #include "storages.h"
 #include "debug.h"
 #include "config.h"
+#include "route.h"
 
 /* Type of functions which we make available to lua states */
 typedef struct {
@@ -18,16 +19,24 @@ typedef struct {
 /* Add all functions that shall be available for the shipcomputers here */
 static const lua_function_entry lua_wrappers[] = {
 //   C-function name,      Lua-function name
+
+	/* Action */
+	{lua_killself,         "killself"},
 	{lua_moveto,           "moveto"},
 	{lua_set_autopilot_to, "set_autopilot_to"},
-	{lua_killself,         "killself"},
-	{lua_find_closest,     "find_closest"},       
-	{lua_entity_to_string, "entity_to_string"},
 	{lua_set_timer,        "set_timer"},
-	{lua_get_player,       "get_player"},
-	{lua_get_position,     "get_position"},
 	{lua_dock,             "dock"},
-	{lua_undock,           "undock"}
+	{lua_undock,           "undock"},
+	{lua_transfer_slot,    "transfer_slot"},
+
+	/* Queries */
+	{lua_entity_to_string, "entity_to_string"},
+	{lua_get_player,       "get_player"},
+	{lua_find_closest,     "find_closest"},       
+	{lua_get_position,     "get_position"},
+	{lua_get_distance,     "get_distance"},
+	{lua_get_docking_partner, "get_docking_partner"},
+	{lua_busy,             "busy"},
 };
 
 void register_lua_functions(entity_t *s) {
@@ -114,10 +123,9 @@ int lua_stop(lua_State* L) {
 
 	/* Now call the moveto-flightplanner */
 	/* TODO: Actually do this. */
-	/* stop_planner(e, x, y, callback) */
+	stop_planner(e, callback);
 	/* Until then: just set the speed to zero */
-
-	e->v.v = (v2d) {0, 0};
+	//e->v.v = (v2d) {0, 0};
 
 	return 0;
 }
@@ -182,10 +190,10 @@ int lua_moveto(lua_State* L) {
 
 	/* Now call the moveto-flightplanner */
 	/* TODO: Actually do this. */
-	/* moveto_planner(e, x, y, callback) */
+	moveto_planner(e, x, y, callback);
 	/* Until then: just set the speed to arrive at the target location within 5 timesteps. We do, however, not stop yet. */
 
-	e->v.v = (((v2d) {x, y}) - e->pos.v) / vector(5).v;
+	//e->v.v = (((v2d) {x, y}) - e->pos.v) / vector(5).v;
 
 	return 0;
 }
@@ -249,7 +257,7 @@ int lua_set_autopilot_to(lua_State* L) {
 
 	/* Now call the flightplanner */
 	/* TODO: Actually do this. */
-	/* autopilot_planner(e, x, y, callback) */
+	autopilot_planner(e, x, y, callback);
 
 	return 0;
 }
@@ -275,6 +283,12 @@ int lua_dock(lua_State* L) {
 	id.id = (uint64_t) lua_touserdata(L,-1);
 	lua_pop(L,1);
 	e = get_entity_by_id(id);
+
+	/* Check that we are not trying to dock ourselves, because that's bullshit! */
+	if(id.id == self.id) {
+		DEBUG("Trying to dock self!\n");
+		return 0;
+	}
 
 	DEBUG("Attempting dock...");
 
@@ -322,7 +336,7 @@ int lua_dock(lua_State* L) {
 
 /* Undock from your docking partner */
 int lua_undock(lua_State* L) {
-	entity_id_t id, self;
+	entity_id_t self;
 	entity_t *e, *eself;
 	int n;
 
@@ -347,6 +361,12 @@ int lua_undock(lua_State* L) {
 	/* Make certain that our docking partner hasn't exploded... or worse. */
 	e = get_entity_by_id(eself->ship_data->docked_to);
 	if(!e) {
+		return 0;
+	}
+
+	/* Check that we are not currently waiting for some other action to complete */
+	if(eself->ship_data->timer_value != -1) {
+		DEBUG("Can't undock: currently waiting for timer!\n");
 		return 0;
 	}
 
@@ -427,8 +447,8 @@ int lua_entity_to_string(lua_State* L) {
 	} else {
 		/* Fill in description */
 		temp = slots_to_string(e);
-		if(asprintf(&s, "{\n\tEntity %li:\n\tpos: %f,  %f\n\tv: %f, %f\n\ttype: %s\n\tslots: %i\n\tplayer: %i\n\tcontents: [%s]\n}\n",
-					(size_t)e, e->pos.x, e->pos.y, e->v.x, e->v.y, type_string(e->type), e->slots, e->player_id, temp));
+		if(asprintf(&s, "{\n\tEntity %lu:\n\tpos: %f,  %f\n\tv: %f, %f\n\ttype: %s\n\tslots: %i\n\tplayer: %i\n\tcontents: [%s]\n}\n",
+					(size_t)e->unique_id.id, e->pos.x, e->pos.y, e->v.x, e->v.y, type_string(e->type), e->slots, e->player_id, temp));
 
 		/* Return it */
 		lua_pushstring(L,s);
@@ -577,4 +597,147 @@ int lua_get_position(lua_State* L) {
 			return 0;
 	}
 
+}
+
+/* Get your current docking partner (or nil, if not docked) */
+int lua_get_docking_partner(lua_State* L) {
+
+	entity_id_t self;
+	entity_t *eself;
+	int n;
+
+	n = lua_gettop(L);
+
+	/* Syntax check */
+	if(n!=0) {
+		lua_pushstring(L, "Invalid number of arguments: get_docking_partner() doesn't need any.");
+		lua_error(L);
+	}
+
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	/* Check whether we're docked */
+	if(eself->ship_data->docked_to.id == INVALID_ID.id) {
+		return 0;
+	} else {
+		DEBUG("Docked: %lu <-> %lu\n", eself->unique_id.id, eself->ship_data->docked_to.id);
+
+		/* Return our docking partner's id */
+		lua_pushlightuserdata(L, (void*)(eself->ship_data->docked_to.id));
+		return 1;
+	}
+}
+
+/* Get the distance of another entity */
+int lua_get_distance(lua_State* L) {
+	entity_id_t id, self;
+	entity_t *e, *eself;
+	int n;
+
+	n = lua_gettop(L);
+
+	/* Set self entity */
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	if(n != 1 || !lua_islightuserdata(L,-1)) {
+			lua_pushstring(L, "get_distance expects exactly one entity argument");
+			lua_error(L);
+	}
+
+	/* Get target */
+	id.id = (uint64_t) lua_touserdata(L,-1);
+	lua_pop(L,1);
+	e = get_entity_by_id(id);
+	if(e == NULL) {
+		/* Return nil if the entity doesn't exist */
+		return 0;
+	} else {
+		/* Check that the target entity is within scanner range */
+		if(dist(eself, e) < config_get_double("scanner_range")) {
+
+			/* Return its distance */
+			lua_pushnumber(L,dist(eself, e));
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+}
+
+/* Transfer a slot from / to the docked partner */
+/* Arguments are: local_slot and remote_slot.
+ * Only works when docked. */
+int lua_transfer_slot(lua_State* L) {
+	entity_id_t self;
+	entity_t *e, *eself;
+	int n;
+	int local_slot, remote_slot;
+
+	n = lua_gettop(L);
+
+	if(n != 2 || !lua_isnumber(L,-1) || !lua_isnumber(L,-2)) {
+		lua_pushstring(L, "transfer_slot() requires exactly two number arguments.");
+		lua_error(L);
+	}
+
+	local_slot = lua_tonumber(L,1);
+	remote_slot = lua_tonumber(L,2);
+	lua_pop(L,2);
+
+	/* get self */
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	/* Check whether we're docked */
+	if(eself->ship_data->docked_to.id == INVALID_ID.id) {
+		return 0;
+	}
+
+	/* Check that we are not currently waiting for some other action to complete */
+	if(eself->ship_data->timer_value != -1) {
+		DEBUG("Not transferring: currently waiting for timer!\n");
+		return 0;
+	}
+
+	e = get_entity_by_id(eself->ship_data->docked_to);
+	if(!e) {
+		/* Looks like our docking partner has exploded. Poor guy. */
+		return 0;
+	}
+
+	/* Swap the slots */
+	if(swap_slots(eself, local_slot, e, remote_slot) != OK) {
+
+		/* Somethings has gone wrong. */
+		return 0;
+	}
+
+	/* Now the little robognomes on board are busy carrying over the chests. */
+	eself->ship_data->timer_value = config_get_int("transfer_duration");
+	eself->ship_data->timer_event = TRANSFER_COMPLETE;
+
+	/* Return 1 to indicate successful initiation of transfer */
+	lua_pushnumber(L,1);
+	return 1;
+}
+
+/* Determine whether you are currently waiting for some action to finish */
+int lua_busy(lua_State* L) {
+	entity_id_t self;
+	entity_t* eself;
+
+	self=get_self(L);
+	eself = get_entity_by_id(self);
+
+	/* If no timer is set, we are idle. */
+	if(eself->ship_data->timer_value == -1) {
+		lua_pushboolean(L,0);
+		return 1;
+	} else {
+		/* Otherwise we are busy */
+		lua_pushboolean(L,1);
+		return 1;
+	}
 }
