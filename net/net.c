@@ -64,13 +64,14 @@ void map_flush() {
   now[0] = 'a' + net.current_map;
   map[sizeof(map) - 2] = now[0];
 
-  net.map_fd = shm_open(map, O_CREAT | O_EXCL | O_RDWR, 0700);
-  if (net.map_fd == -1) {
+  while( (net.map_fd = shm_open(map, O_CREAT | O_EXCL | O_RDWR, 0700)) == -1 ) {
     if (errno == EEXIST) {
-      log_perror("client konsumiert meine maps nicht schnell genug -- ABBRUCH");
+      log_msg("netio-client kommt nicht hinterher... schlafe 100usec");
+      usleep(100);
+    } else {
+      log_perror("shm_open map");
+      exit(EXIT_FAILURE);
     }
-    log_perror("shm_open");
-    exit(EXIT_FAILURE); 
   }
 }
 
@@ -95,13 +96,14 @@ void update_flush() {
   now[0] = 'A' + net.current_update;
   update[sizeof(update) - 2] = now[0];
 
-  net.update_fd = shm_open(update, O_CREAT | O_EXCL | O_RDWR, 0700);
-  if (net.update_fd == -1) {
+  while( (net.update_fd = shm_open(update, O_CREAT | O_EXCL | O_RDWR, 0700)) == -1 ) {
     if (errno == EEXIST) {
-      log_perror("client konsumiert meine updates nicht schnell genug -- ABBRUCH");
+      log_msg("netio-client kommt nicht hinterher... schlafe 100usec");
+      usleep(100);
+    } else {
+      log_perror("shm_open update");
+      exit(EXIT_FAILURE);
     }
-    log_perror("shm_open"); 
-    exit(EXIT_FAILURE); 
   }
 }
 
