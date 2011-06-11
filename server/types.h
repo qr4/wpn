@@ -6,7 +6,7 @@
 #include "vector.h"
 
 typedef enum {
-	EMPTY,
+	EMPTY = 0,
 	WEAPON,
 	DRIVE,
 	ORE,

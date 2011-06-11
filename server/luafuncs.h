@@ -57,6 +57,9 @@ int lua_get_distance(lua_State* L);
 /* Determine wether you're busy (waiting for some action to finish */
 int lua_busy(lua_State* L);
 
+/* Get the slot contents of an entity */
+int lua_get_slots(lua_State* L);
+
 /* --- Debugging and administrative functions --- */
 /* Registers all lua_functions available through c-api */
 void register_lua_functions(entity_t *s);
