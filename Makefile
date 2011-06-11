@@ -1,7 +1,6 @@
+include settings.mak
+
 SUBDIRS = logging net server
-CC = gcc
-LUA_PKG = $(shell pkg-config --list-all | grep lua | head -n 1 | cut -d" " -f 1)
-CFLAGS = -Wall -g3 -O2 -march=native -mtune=native -pipe `pkg-config $(LUA_PKG) --cflags` -std=gnu99 -lm -lrt `pkg-config $(LUA_PKG) --libs` -Wl,-O1 -Wl,--as-needed
 
 all: gameserver
 
