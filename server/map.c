@@ -336,7 +336,7 @@ entity_t *find_closest(entity_t *e, const double radius, const unsigned int filt
 			if (filter & SHIP) {
 				for (i = 0; i < quad->moving_objects; i++) {
 					if (filter & quad->moving_object[i].type 
-							&& e->unique_id.id != quad->static_object[i].id
+							&& e->unique_id.id != quad->moving_object[i].id
 							&& (t = collision_dist(e, get_entity_by_id(quad->moving_object[i]))) < dist) {
 						dist = t;
 						closest = get_entity_by_id(quad->moving_object[i]);
