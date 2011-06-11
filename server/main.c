@@ -12,6 +12,7 @@
 #include "storages.h"
 #include "debug.h"
 #include "../net/net.h"
+#include "physics.h"
 
 #define print_sizeof(TYPE) \
 	printf("sizeof(%-14s) = %4lu\n", #TYPE, sizeof(TYPE));
@@ -53,6 +54,7 @@ int main(int argc, char *argv[]) {
 	for (uint64_t timestep=0;;timestep++) {
 
 		/* Legacy Debugging Code, still left in */
+		/*
 		e->pos.v = (randv().v + vector(1).v) * vector(2000).v;
 		closest = find_closest_by_position(e->pos, e->radius, 1000, PLANET);
 		DEBUG("Checking (%f, %f)\n", e->pos.x, e->pos.y);
@@ -65,6 +67,7 @@ int main(int argc, char *argv[]) {
 		} else {
 			DEBUG("Nothing\n");
 		}
+		*/
 
 		/* Iterate through all sentient entities (ships and bases) and determine if
 		 * any timer-based callbacks should be triggered (like completed actions or
@@ -78,7 +81,13 @@ int main(int argc, char *argv[]) {
 				/* Call it's handler */
 				call_entity_callback(&(ship_storage->entities[i]), ship_storage->entities[i].ship_data->timer_event);
 			}
+
+			/* Decrement timers */
+			if(ship_storage->entities[i].ship_data->timer_value >= 0) {
+				ship_storage->entities[i].ship_data->timer_value--;
+			}
 		}
+
 		for(int i=0; i<base_storage->first_free; i++) {
 			if(base_storage->entities[i].base_data->timer_value == 0) {
 
@@ -88,15 +97,8 @@ int main(int argc, char *argv[]) {
 				/* Call it's handler */
 				call_entity_callback(&(base_storage->entities[i]), base_storage->entities[i].base_data->timer_event);
 			}
-		}
 
-		/* Decrement timers */
-		for(int i=0; i<ship_storage->first_free; i++) {
-			if(ship_storage->entities[i].ship_data->timer_value >= 0) {
-				ship_storage->entities[i].ship_data->timer_value--;
-			}
-		}
-		for(int i=0; i<base_storage->first_free; i++) {
+			/* Decrement timers */
 			if(base_storage->entities[i].base_data->timer_value >= 0) {
 				base_storage->entities[i].base_data->timer_value--;
 			}
@@ -104,19 +106,44 @@ int main(int argc, char *argv[]) {
 
 		/* Likewise, notify all ships whose autopilots have arrived at their
 		 * destinations */
-		/* TODO: Implement autopilot arrival notification */
+		for(int i=0; i<ship_storage->first_free; i++) {
+			if(ship_storage->entities[i].ship_data->flightplan != NULL) {
+				if(ship_storage->entities[i].ship_data->flightplan->type == WP_STOP) {
+					free_waypoint(ship_storage->entities[i].ship_data->flightplan);
+					ship_storage->entities[i].ship_data->flightplan = NULL;
+				}
+			}
+		}
+
+		/* Look for any proximity-triggers in spacecraft */
+		/* TODO: Implement proximity warnings */
 
 		/* Move ships by one physics-step */
-		/* TODO: implement physics here. */
+		for(int i=0; i<ship_storage->first_free; i++) {
+			if(ship_storage->entities[i].ship_data->flightplan != NULL) {
+				waypoint_t* next = ship_storage->entities[i].ship_data->flightplan->next;
+				free_waypoint(ship_storage->entities[i].ship_data->flightplan);
+				ship_storage->entities[i].ship_data->flightplan = next;
 
-		/* Look for any collisions or proximity-triggers in spacecraft */
+				quad_index_t old_quad = get_quad_index_by_pos(ship_storage->entities[i].pos);
+				ship_storage->entities[i].pos.v = next->point.v;
+				quad_index_t new_quad = get_quad_index_by_pos(ship_storage->entities[i].pos);
+				if((old_quad.quad_x != new_quad.quad_x) || (old_quad.quad_y != new_quad.quad_y)) {
+					update_quad_object(&(ship_storage->entities[i]));
+				}
+
+				ship_storage->entities[i].v.v = next->speed.v;
+			}
+		}
+
+		/* Look for any collisions in spacecraft */
 		/* TODO: Implement collisions */
 
 		/* Push Map-Data out to clients */
 		map_to_network();
 
 		/* FIXME: This is just debug-Waiting. */
-    sleep(1);
+		sleep(1);
 	}
 
 	free_entity(ship_storage,ship1);

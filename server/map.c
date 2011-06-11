@@ -205,6 +205,12 @@ map_quad_t *register_object(entity_t *e) {
 	return quad;
 }
 
+map_quad_t* update_quad_object(entity_t *e) {
+	unregister_object(e);
+	return register_object(e);
+}
+
+
 void build_quads() {
 	entity_t *cluster;
 	size_t i;
