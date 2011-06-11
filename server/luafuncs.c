@@ -36,6 +36,7 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_get_position,     "get_position"},
 	{lua_get_distance,     "get_distance"},
 	{lua_get_docking_partner, "get_docking_partner"},
+	{lua_busy,             "busy"},
 };
 
 void register_lua_functions(entity_t *s) {
@@ -720,4 +721,23 @@ int lua_transfer_slot(lua_State* L) {
 	/* Return 1 to indicate successful initiation of transfer */
 	lua_pushnumber(L,1);
 	return 1;
+}
+
+/* Determine whether you are currently waiting for some action to finish */
+int lua_busy(lua_State* L) {
+	entity_id_t self;
+	entity_t* eself;
+
+	self=get_self(L);
+	eself = get_entity_by_id(self);
+
+	/* If no timer is set, we are idle. */
+	if(eself->ship_data->timer_value == -1) {
+		lua_pushboolean(L,0);
+		return 1;
+	} else {
+		/* Otherwise we are busy */
+		lua_pushboolean(L,1);
+		return 1;
+	}
 }
