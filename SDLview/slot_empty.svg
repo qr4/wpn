@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   version="1.0"
+   width="7.9997883"
+   height="8.0000763"
+   id="svg2977">
+  <defs
+     id="defs2979" />
+  <g
+     transform="translate(7.8085347e-5,-1047.5621)"
+     id="layer1">
+    <g
+       transform="matrix(0.9090652,0,0,0.9091012,-14.181488,967.59559)"
+       id="g9314">
+      <rect
+         width="8"
+         height="8"
+         ry="2.1428571"
+         x="16"
+         y="88.362183"
+         id="rect6816"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#737373;stroke-width:0.48000002;stroke-linecap:butt;stroke-linejoin:bevel;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+      <rect
+         width="8"
+         height="8"
+         ry="2.1428571"
+         x="16"
+         y="88.362183"
+         id="rect6814"
+         style="fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#737373;stroke-width:0.80000001;stroke-linecap:butt;stroke-linejoin:bevel;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dasharray:3.2, 1.6, 0.8, 1.6;stroke-dashoffset:0;stroke-opacity:1;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,13 @@
+Game viewer in SDL für Debugging und Hausgebrauch
+
+
+Zum komplieren werden benötigt:
+
+* SDL
+* SDL_image
+* SDL_gfx
+* jansson
+
+Die SDL Sachen kommen normal bei deiner Distribution mit. Jansson eher
+nicht, kann man aber von http://www.digip.org/jansson runterladen und
+baut ohne externe Abhängigkeiten.
