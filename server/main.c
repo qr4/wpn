@@ -72,6 +72,7 @@ int main(int argc, char *argv[]) {
 	free(temp);
 
 	e = get_entity_by_id(ship1);
+	e->ship_data->slot[0] = DRIVE;
 
 	/* Main simulation loop */
 	for (uint64_t timestep=0;;timestep++) {

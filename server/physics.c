@@ -234,6 +234,11 @@ void _straight_minimal_time(waypoint_t* wp0, waypoint_t* wp1, double a) {
 		wp1->t = wp0->t + t_end;
 	} else {
 		fprintf(stderr, "Sorry: t_midway = %e and t_end = %e (difference %e) mean that _straight_minimal_time aint't working\n", t_midway, t_end, t_end - t_midway);
+		fprintf(stderr, "Start:\n");
+		print_waypoint(wp0);
+		fprintf(stderr, "Stop \n");
+		print_waypoint(wp1);
+		fprintf(stderr, "a = %f\n", a);
 		return;
 	}
 }

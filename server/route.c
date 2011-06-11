@@ -314,6 +314,10 @@ void autopilot_planner(entity_t* e, double x, double y, char* callback) {
 		fprintf(stderr, "We don't do autoroute planing for non-ship entities\n");
 		exit(1);
 	}
+	if(get_acceleration(e) == 0) {
+		fprintf(stderr, "Flying without engines? Talk to Mr. Scott first.\n");
+		return;
+	}
 	if(e->ship_data->flightplan != NULL) {
 		free_route(e->ship_data->flightplan);
 		e->ship_data->flightplan = NULL;

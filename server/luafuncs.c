@@ -8,6 +8,7 @@
 #include "storages.h"
 #include "debug.h"
 #include "config.h"
+#include "route.h"
 
 /* Type of functions which we make available to lua states */
 typedef struct {
@@ -120,10 +121,9 @@ int lua_stop(lua_State* L) {
 
 	/* Now call the moveto-flightplanner */
 	/* TODO: Actually do this. */
-	/* stop_planner(e, x, y, callback) */
+	stop_planner(e, callback);
 	/* Until then: just set the speed to zero */
-
-	e->v.v = (v2d) {0, 0};
+	//e->v.v = (v2d) {0, 0};
 
 	return 0;
 }
@@ -188,10 +188,10 @@ int lua_moveto(lua_State* L) {
 
 	/* Now call the moveto-flightplanner */
 	/* TODO: Actually do this. */
-	/* moveto_planner(e, x, y, callback) */
+	moveto_planner(e, x, y, callback);
 	/* Until then: just set the speed to arrive at the target location within 5 timesteps. We do, however, not stop yet. */
 
-	e->v.v = (((v2d) {x, y}) - e->pos.v) / vector(5).v;
+	//e->v.v = (((v2d) {x, y}) - e->pos.v) / vector(5).v;
 
 	return 0;
 }
@@ -255,7 +255,7 @@ int lua_set_autopilot_to(lua_State* L) {
 
 	/* Now call the flightplanner */
 	/* TODO: Actually do this. */
-	/* autopilot_planner(e, x, y, callback) */
+	autopilot_planner(e, x, y, callback);
 
 	return 0;
 }

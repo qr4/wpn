@@ -334,5 +334,4 @@ void map_to_network() {
 	ships_to_network();
 	map_printf("}\n");
 	map_flush();
-	fprintf(stderr, "Here you go\n");
 }

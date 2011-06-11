@@ -61,8 +61,17 @@ function on_timer_expired()
 	print "My Alarm rang!"
 
 	-- set new timer
-	set_timer(3)
+	--set_timer(3)
+	set_autopilot_to(500, 500)
+	set_timer(1)
+	on_timer_expired = function()
+		x,y = get_position()
+		print("I'm now at "..x..", "..y)
+		set_timer(1)
+	end
+	
 end
+
 
 -- Override global functions which should not be available within spaceships
 --print = nil   -- Ships are not supposed to be able to write to stdout
