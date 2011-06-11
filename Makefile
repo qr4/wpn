@@ -1,8 +1,8 @@
+all: gameserver
+
 include settings.mak
 
 SUBDIRS = logging net server
-
-all: gameserver
 
 .PHONY: clean subdirs $(SUBDIRS)
 
