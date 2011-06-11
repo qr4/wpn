@@ -27,7 +27,8 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_get_player,       "get_player"},
 	{lua_get_position,     "get_position"},
 	{lua_dock,             "dock"},
-	{lua_undock,           "undock"}
+	{lua_undock,           "undock"},
+	{lua_get_docking_partner, "get_docking_partner"}
 };
 
 void register_lua_functions(entity_t *s) {
@@ -276,6 +277,12 @@ int lua_dock(lua_State* L) {
 	lua_pop(L,1);
 	e = get_entity_by_id(id);
 
+	/* Check that we are not trying to dock ourselves, because that's bullshit! */
+	if(id.id == self.id) {
+		DEBUG("Trying to dock self!\n");
+		return 0;
+	}
+
 	DEBUG("Attempting dock...");
 
 	/* Check that we are targetting something dockable */
@@ -322,7 +329,7 @@ int lua_dock(lua_State* L) {
 
 /* Undock from your docking partner */
 int lua_undock(lua_State* L) {
-	entity_id_t id, self;
+	entity_id_t self;
 	entity_t *e, *eself;
 	int n;
 
@@ -427,8 +434,8 @@ int lua_entity_to_string(lua_State* L) {
 	} else {
 		/* Fill in description */
 		temp = slots_to_string(e);
-		if(asprintf(&s, "{\n\tEntity %li:\n\tpos: %f,  %f\n\tv: %f, %f\n\ttype: %s\n\tslots: %i\n\tplayer: %i\n\tcontents: [%s]\n}\n",
-					(size_t)e, e->pos.x, e->pos.y, e->v.x, e->v.y, type_string(e->type), e->slots, e->player_id, temp));
+		if(asprintf(&s, "{\n\tEntity %lu:\n\tpos: %f,  %f\n\tv: %f, %f\n\ttype: %s\n\tslots: %i\n\tplayer: %i\n\tcontents: [%s]\n}\n",
+					(size_t)e->unique_id.id, e->pos.x, e->pos.y, e->v.x, e->v.y, type_string(e->type), e->slots, e->player_id, temp));
 
 		/* Return it */
 		lua_pushstring(L,s);
@@ -577,4 +584,34 @@ int lua_get_position(lua_State* L) {
 			return 0;
 	}
 
+}
+
+/* Get your current docking partner (or nil, if not docked) */
+int lua_get_docking_partner(lua_State* L) {
+
+	entity_id_t self;
+	entity_t *eself;
+	int n;
+
+	n = lua_gettop(L);
+
+	/* Syntax check */
+	if(n!=0) {
+		lua_pushstring(L, "Invalid number of arguments: get_docking_partner() doesn't need any.");
+		lua_error(L);
+	}
+
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	/* Check whether we're docked */
+	if(eself->ship_data->docked_to.id == INVALID_ID.id) {
+		return 0;
+	} else {
+		DEBUG("Docked: %lu <-> %lu\n", eself->unique_id.id, eself->ship_data->docked_to.id);
+
+		/* Return our docking partner's id */
+		lua_pushlightuserdata(L, (void*)(eself->ship_data->docked_to.id));
+		return 1;
+	}
 }

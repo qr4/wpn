@@ -45,6 +45,9 @@ int lua_get_player(lua_State* L);
 /* Get the position (x- and y-coordinate) of an entity (or yourself) */
 int lua_get_position(lua_State* L);
 
+/* Get your current docking partner (or nil, if not docked) */
+int lua_get_docking_partner(lua_State* L);
+
 /* --- Debugging and administrative functions --- */
 /* Registers all lua_functions available through c-api */
 void register_lua_functions(entity_t *s);
