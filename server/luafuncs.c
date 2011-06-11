@@ -18,17 +18,22 @@ typedef struct {
 /* Add all functions that shall be available for the shipcomputers here */
 static const lua_function_entry lua_wrappers[] = {
 //   C-function name,      Lua-function name
+
+	/* Action */
+	{lua_killself,         "killself"},
 	{lua_moveto,           "moveto"},
 	{lua_set_autopilot_to, "set_autopilot_to"},
-	{lua_killself,         "killself"},
-	{lua_find_closest,     "find_closest"},       
-	{lua_entity_to_string, "entity_to_string"},
 	{lua_set_timer,        "set_timer"},
-	{lua_get_player,       "get_player"},
-	{lua_get_position,     "get_position"},
 	{lua_dock,             "dock"},
 	{lua_undock,           "undock"},
-	{lua_get_docking_partner, "get_docking_partner"}
+
+	/* Queries */
+	{lua_entity_to_string, "entity_to_string"},
+	{lua_get_player,       "get_player"},
+	{lua_find_closest,     "find_closest"},       
+	{lua_get_position,     "get_position"},
+	{lua_get_distance,     "get_distance"},
+	{lua_get_docking_partner, "get_docking_partner"},
 };
 
 void register_lua_functions(entity_t *s) {
@@ -613,5 +618,42 @@ int lua_get_docking_partner(lua_State* L) {
 		/* Return our docking partner's id */
 		lua_pushlightuserdata(L, (void*)(eself->ship_data->docked_to.id));
 		return 1;
+	}
+}
+
+/* Get the distance of another entity */
+int lua_get_distance(lua_State* L) {
+	entity_id_t id, self;
+	entity_t *e, *eself;
+	int n;
+
+	n = lua_gettop(L);
+
+	/* Set self entity */
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	if(n != 1 || !lua_islightuserdata(L,-1)) {
+			lua_pushstring(L, "get_distance expects exactly one entity argument");
+			lua_error(L);
+	}
+
+	/* Get target */
+	id.id = (uint64_t) lua_touserdata(L,-1);
+	lua_pop(L,1);
+	e = get_entity_by_id(id);
+	if(e == NULL) {
+		/* Return nil if the entity doesn't exist */
+		return 0;
+	} else {
+		/* Check that the target entity is within scanner range */
+		if(dist(eself, e) < config_get_double("scanner_range")) {
+
+			/* Return its distance */
+			lua_pushnumber(L,dist(eself, e));
+			return 1;
+		} else {
+			return 0;
+		}
 	}
 }
