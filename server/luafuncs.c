@@ -26,7 +26,8 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_set_timer,        "set_timer"},
 	{lua_get_player,       "get_player"},
 	{lua_get_position,     "get_position"},
-	{lua_dock,             "dock"}
+	{lua_dock,             "dock"},
+	{lua_undock,           "undock"}
 };
 
 void register_lua_functions(entity_t *s) {
@@ -316,6 +317,52 @@ int lua_dock(lua_State* L) {
 	/* Return one in order to denote successful initialization of docking process */
 	fprintf(stderr, "Success!\n");
 	lua_pushnumber(L,1);
+	return 1;
+}
+
+/* Undock from your docking partner */
+int lua_undock(lua_State* L) {
+	entity_id_t id, self;
+	entity_t *e, *eself;
+	int n;
+
+	n = lua_gettop(L);
+
+	if(n!=0) {
+		lua_pushstring(L, "Invalid number of arguments: undock() doesn't need any.");
+		lua_error(L);
+	}
+
+	/* Get self entity */
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	/* Determine that we are, in fact, docked */
+	if(eself->ship_data->docked_to.id == INVALID_ID.id) {
+
+		/* If not, just return nil */
+		return 0;
+	}
+
+	/* Make certain that our docking partner hasn't exploded... or worse. */
+	e = get_entity_by_id(eself->ship_data->docked_to);
+	if(!e) {
+		return 0;
+	}
+
+	/* Remove the dockedness. */
+	eself->ship_data->docked_to.id = INVALID_ID.id;
+	e->ship_data->docked_to.id = INVALID_ID.id;
+
+	/* TODO: inform the other entity that it is being undocked */
+
+	/* Set up timer to inform the client once undocking is complete */
+	e->ship_data->timer_value = config_get_int("undocking_duration");
+	e->ship_data->timer_event = UNDOCKING_COMPLETE;
+
+	/* Return 1 to denote successful undocking */
+	lua_pushnumber(L,1);
+
 	return 1;
 }
 

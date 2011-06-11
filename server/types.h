@@ -31,6 +31,7 @@ typedef enum {
 	WEAPONS_READY,      // After firing, the weapons have recharged and are back on-line
 	BEING_DOCKED,       // You are being docked
 	DOCKING_COMPLETE,   // The docking operation you requested has completed
+	UNDOCKING_COMPLETE, // Releasing the docking clamps has completed
 	TRANSFER_COMPLETE,  // Transfer of a slot has completed.
 	BUILD_COMPLETE,  // Production of a new ship completed (for bases)
 	TIMER_EXPIRED,      // A fixed timer has expired

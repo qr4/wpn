@@ -13,18 +13,43 @@ function on_autopilot_arrived()
 	print "I will now proceed to do nothing."
 end
 
+
+-- A debugging handler for dockedness.
+function	on_docking_complete()
+		print("I detect: DOCKING COMPLETE!")
+
+		print("Undocking...");
+		undock();
+end
+
+function on_undocking_complete()
+		print("Undocked again. Yay")
+
+		set_timer(3)
+end
 -- And here is some verbose initialization code for testing:
 
 print "Hi, I'm a ship"
 
 s = entity_to_string(self)
 print("Here is some information about myself:\n".. s)
-closest = entity_to_string(find_closest(600, PLANET))
-print("I'm very close to:\n".. closest)
+closest_planet = find_closest(600, PLANET)
+if(closest_planet) then
+	print("I'm very close to:\n".. entity_to_string(closest_planet))
+end
 
-print("And that guy belongs to player number "..get_player(find_closest(600,PLANET)));
-x,y = get_position(find_closest(600,PLANET));
-print("Also, his position is ".. x .. " " .. y);
+-- print("And that guy belongs to player number "..get_player(find_closest(600,PLANET)));
+-- x,y = get_position(find_closest(600,PLANET));
+-- print("Also, his position is ".. x .. " " .. y);
+
+closest_ship = find_closest(600,SHIP);
+if(closest_ship) then
+	docked = dock(closest_ship);
+	print("Docking returned "..docked)
+
+else
+	print("No ship in 600 blocks radius.")
+end
 
 -- For testing the execution time limit: an endless loop
 --while 1 do

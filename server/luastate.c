@@ -23,6 +23,7 @@ char* callback_names[NUM_EVENTS] = {
 	/* WEAPONS_READY */ "on_weapons_ready",
 	/* BEING_DOCKED */ "on_being_docked",
 	/* DOCKING_COMPLETE */ "on_docking_complete",
+	/* UNDOCKING_COMPLETE */ "on_undocking_complete",
 	/* TRANSFER_COMPLETE */ "on_transfer_complete",
 	/* BUILD_COMPLETE */ "on_build_complete",
 	/* TIMER_EXPIRED */ "on_timer_expired",
@@ -140,12 +141,17 @@ void call_entity_callback(entity_t* e, event_t event) {
 		return;
 	}
 
+	/* Make this entity "active" */
+	lua_active_entity = e->unique_id;
+
 	/* Call it.*/
 	/* TODO: Pass some relevant arguments to the event?
 	 * alternatively: set information of the craft's environment
 	 * as globals in it's lua state */
 	if(lua_pcall(e->lua, 0,0,0)) {
+
 		/* Lua errors send the ship adrift */
+		DEBUG("Entity %u killed due to lua error:\n%s\n", e->unique_id.id, lua_tostring(e->lua, -1));
 		kill_computer(e);
 	}
 }

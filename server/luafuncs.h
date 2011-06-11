@@ -31,6 +31,8 @@ int lua_set_timer(lua_State* L);
 /* Dock with another entity */
 int lua_dock(lua_State* L);
 
+/* Undock again */
+int lua_undock(lua_State* L);
 
 /* --- QUERIES - with which entities get information about their surroundings */
 /* Search the closest entity in the search radius matchin the filter.
