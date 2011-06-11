@@ -81,7 +81,6 @@ char* asteroid_to_json(entity_t* e) {
 }
 
 /* Returns the json representation of the given base (with curvy braces included) */
-/* TODO: docked_to currently always contains null */
 char* base_to_json(entity_t* e) {
 	char* contents;
 	char* retval;
@@ -96,8 +95,13 @@ char* base_to_json(entity_t* e) {
 
 	contents = slots_to_string(e);
 
-	asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": %i, \"size\": %i, \"contents\": \"%s\", \"docked_to\":null}",
+	if(e->base_data->docked_to.id == INVALID_ID.id) {
+		asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": %i, \"size\": %i, \"contents\": \"%s\", \"docked_to\":null}",
 			(uint64_t)e, e->pos.x, e->pos.y, e->player_id, e->slots, contents);
+	} else {
+		asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": %i, \"size\": %i, \"contents\": \"%s\", \"docked_to\": %lu}",
+			(uint64_t)e, e->pos.x, e->pos.y, e->player_id, e->slots, contents, e->base_data->docked_to.id);
+	}
 
 	free(contents);
 
@@ -123,7 +127,6 @@ char* planet_to_json(entity_t* e) {
 }
 
 /* Give the json representation of a ship (with the curly braces included) */
-/* TODO: docked_to currently always contains null */
 char* ship_to_json(entity_t* e) {
 	char* contents;
 	char* retval;
@@ -138,8 +141,13 @@ char* ship_to_json(entity_t* e) {
 
 	contents = slots_to_string(e);
 
-	asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": %i, \"size\": %i, \"contents\": \"%s\", \"docked_to\":null}",
+	if(e->ship_data->docked_to.id == INVALID_ID.id) {
+		asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": %i, \"size\": %i, \"contents\": \"%s\", \"docked_to\":null}",
 			(uint64_t)e, e->pos.x, e->pos.y, e->player_id, e->slots, contents);
+	} else {
+		asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": %i, \"size\": %i, \"contents\": \"%s\", \"docked_to\": %lu}",
+			(uint64_t)e, e->pos.x, e->pos.y, e->player_id, e->slots, contents, e->ship_data->docked_to.id);
+	}
 
 	free(contents);
 
