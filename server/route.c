@@ -160,9 +160,13 @@ waypoint_t* plotCourse(vector_t* start, vector_t* stop) {
 	waypoint_t* jp2 = wp_stop;
 
 	wp_start->point = *start;
+	wp_start->speed = (vector_t){{0, 0}};
+	wp_start->t = 0;
 	wp_start->type = WP_START;
 	wp_start->next = NULL;
 	wp_stop->point = *stop;
+	wp_stop->speed = (vector_t){{0, 0}};
+	wp_start->type = WP_START;
 	wp_stop->type = WP_STOP;
 	wp_stop->next = NULL;
 
