@@ -10,7 +10,11 @@ SHIP      = 16;
 -- A default, out of the box autopilot arrival handler.
 function on_autopilot_arrived() 
 	print "I arrived somewhere! Yay I'm awesome!"
-	print "I will now proceed to do nothing."
+	--print "I will now proceed to do nothing."
+	x = math.random(20000)
+	y = math.random(20000)
+	print("Going to "..x..", "..y)
+	set_autopilot_to(x, y)
 end
 
 

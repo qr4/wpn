@@ -74,6 +74,8 @@ int main(int argc, char *argv[]) {
 	e = get_entity_by_id(ship1);
 	e->ship_data->slot[0] = DRIVE;
 
+	map_to_network();
+
 	/* Main simulation loop */
 	for (uint64_t timestep=0;;timestep++) {
 
@@ -135,6 +137,7 @@ int main(int argc, char *argv[]) {
 				if(ship_storage->entities[i].ship_data->flightplan->type == WP_STOP) {
 					free_waypoint(ship_storage->entities[i].ship_data->flightplan);
 					ship_storage->entities[i].ship_data->flightplan = NULL;
+					call_entity_callback(&(ship_storage->entities[i]), AUTOPILOT_ARRIVED);
 				}
 			}
 		}
@@ -170,10 +173,10 @@ int main(int argc, char *argv[]) {
 		/* TODO: Implement collisions */
 
 		/* Push Map-Data out to clients */
-		map_to_network();
+		//map_to_network();
 
 		/* FIXME: This is just debug-Waiting. */
-		sleep(1);
+		//sleep(1);
 	}
 
 	free_entity(ship_storage,ship1);
