@@ -86,37 +86,16 @@ int lua_killself(lua_State* L) {
 }
 
 /* Stop the ship as soon as possible. If we lost all thrust that might mean lithobreaking
- * Arguments: [on_arrival]
- * where:
- * 				on_arrival: name of the callback to invoke on arrival (optional)
  * 	Return value: none.
- *
- * 	TODO: pass the callback as a string, or as an anonymous function?
  */
 int lua_stop(lua_State* L) {
 	entity_t* e;
 	entity_id_t id;
 	int n;
-	char* callback=NULL;
 
 	/* Check number of arguments */
 	n = lua_gettop(L);
-	switch(n) {
-		case 1:
-			/* Get callback name */
-			if(!lua_isstring(L,-1)) {
-				lua_pushstring(L, "argument to stop must be a function name");
-				lua_error(L);
-			}
-			callback = strdup(lua_tostring(L,-1));
-
-			/* Pop it from the stack */
-			lua_pop(L,0);
-
-			/* Fall through to the 0-argument case */
-		case 0:
-			break;
-		default:
+	if(n > 0) {
 			lua_pushstring(L, "Wrong number of arguments to stop.");
 			lua_error(L);
 	}
@@ -124,11 +103,8 @@ int lua_stop(lua_State* L) {
 	id = get_self(L);
 	e = get_entity_by_id(id);
 
-	/* Now call the moveto-flightplanner */
-	/* TODO: Actually do this. */
-	stop_planner(e, callback);
-	/* Until then: just set the speed to zero */
-	//e->v.v = (v2d) {0, 0};
+	/* Now call the stop-flightplanner */
+	stop_planner(e);
 
 	return 0;
 }
@@ -138,10 +114,7 @@ int lua_stop(lua_State* L) {
  * where:
  * 				x: x-coordinate of target location
  * 				y: y-coordinate of target location
- * 				on_arrival: name of the callback to invoke on arrival (optional)
  * 	Return value: none.
- *
- * 	TODO: pass the callback as a string, or as an anonymous function?
  */
 int lua_moveto(lua_State* L) {
 	entity_t* e;
@@ -149,23 +122,10 @@ int lua_moveto(lua_State* L) {
 	int n;
 	double x = 0;
 	double y = 0;
-	char* callback=NULL;
 
 	/* Check number of arguments */
 	n = lua_gettop(L);
 	switch(n) {
-		case 3:
-			/* Get callback name */
-			if(!lua_isstring(L,-1)) {
-				lua_pushstring(L, "Third argument to moveto must be a function name");
-				lua_error(L);
-			}
-			callback = strdup(lua_tostring(L,-1));
-
-			/* Pop it from the stack */
-			lua_pop(L,2);
-
-			/* Fall through to the 2-argument case */
 		case 2:
 
 			/* Get coordinates */
@@ -192,11 +152,7 @@ int lua_moveto(lua_State* L) {
 	}
 
 	/* Now call the moveto-flightplanner */
-	/* TODO: Actually do this. */
-	moveto_planner(e, x, y, callback);
-	/* Until then: just set the speed to arrive at the target location within 5 timesteps. We do, however, not stop yet. */
-
-	//e->v.v = (((v2d) {x, y}) - e->pos.v) / vector(5).v;
+	moveto_planner(e, x, y);
 
 	return 0;
 }
@@ -206,33 +162,17 @@ int lua_moveto(lua_State* L) {
  * where:
  * 				x: x-coordinate of target location
  * 				y: y-coordinate of target location
- * 				on_arrival: name of the callback to invoke on arrival (optional)
  * 	Return value: none.
- *
- * 	TODO: pass the callback as a string, or as an anonymous function?
  */
 int lua_set_autopilot_to(lua_State* L) {
 	entity_t* e;
 	entity_id_t id;
 	int n;
 	double x=0,y=0;
-	char* callback=NULL;
 
 	/* Check number of arguments */
 	n = lua_gettop(L);
 	switch(n) {
-		case 3:
-			/* Get callback name */
-			if(!lua_isstring(L,-1)) {
-				lua_pushstring(L, "Third argument to set_autopilot_to must be a function name");
-				lua_error(L);
-			}
-			callback = strdup(lua_tostring(L,-1));
-
-			/* Pop it from the stack */
-			lua_pop(L,2);
-
-			/* Fall through to the 2-argument case */
 		case 2:
 
 			/* Get coordinates */
@@ -259,8 +199,7 @@ int lua_set_autopilot_to(lua_State* L) {
 	}
 
 	/* Now call the flightplanner */
-	/* TODO: Actually do this. */
-	autopilot_planner(e, x, y, callback);
+	autopilot_planner(e, x, y);
 
 	return 0;
 }

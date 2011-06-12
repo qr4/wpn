@@ -233,7 +233,7 @@ waypoint_t* plotCourse(vector_t* start, vector_t* stop) {
 }
 
 // To be called from Lua code
-void moveto_planner(entity_t* e, double x, double y, char* callback) {
+void moveto_planner(entity_t* e, double x, double y) {
 	if(e->type != SHIP) {
 		fprintf(stderr, "We don't do moveto planing for non-ship entities\n");
 		exit(1);
@@ -271,7 +271,7 @@ void moveto_planner(entity_t* e, double x, double y, char* callback) {
 }
 
 // To be called from Lua code
-void stop_planner(entity_t* e, char* callback) {
+void stop_planner(entity_t* e) {
 	if(e->type != SHIP) {
 		fprintf(stderr, "We don't do moveto planing for non-ship entities\n");
 		exit(1);
@@ -353,7 +353,7 @@ void stop_planner(entity_t* e, char* callback) {
 }
 
 // To be called from Lua code
-void autopilot_planner(entity_t* e, double x, double y, char* callback) {
+void autopilot_planner(entity_t* e, double x, double y) {
 	if(e->type != SHIP) {
 		fprintf(stderr, "We don't do autoroute planing for non-ship entities\n");
 		exit(1);
