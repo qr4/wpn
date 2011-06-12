@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <lauxlib.h>
 #include "luafuncs.h"
 #include "luastate.h"
 #include "entities.h"
@@ -28,6 +29,7 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_dock,             "dock"},
 	{lua_undock,           "undock"},
 	{lua_transfer_slot,    "transfer_slot"},
+	{lua_send_data,        "send_data"},
 
 	/* Queries */
 	{lua_entity_to_string, "entity_to_string"},
@@ -213,7 +215,7 @@ int lua_set_autopilot_to(lua_State* L) {
 	entity_t* e;
 	entity_id_t id;
 	int n;
-	double x,y;
+	double x=0,y=0;
 	char* callback=NULL;
 
 	/* Check number of arguments */
@@ -724,6 +726,86 @@ int lua_transfer_slot(lua_State* L) {
 	return 1;
 }
 
+/* Function_dump writer for transferral of data between lua states */
+static int data_transfer_writer (lua_State *L, const void* b, size_t size, void* B) {
+	luaL_addlstring((luaL_Buffer*) B, (const char *)b, size);
+	return 0;
+}
+
+/* Send arbitrary lua data to your docking partner */
+int lua_send_data(lua_State* L) {
+	entity_id_t self, partner;
+	entity_t* eself, *epartner;
+	int n = lua_gettop(L);
+	luaL_Buffer b;
+
+	if(n != 1) {
+		lua_pushstring(L, "Invalid Arguments: send_data expects exactly one argument");
+		lua_error(L);
+	}
+
+	/* Get self */
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	/* Determine that we're docked to someone */
+	partner = eself->ship_data->docked_to;
+	if(partner.id == INVALID_ID.id) {
+		return 0;
+	}
+	epartner = get_entity_by_id(partner);
+	if(!epartner) {
+		/* Looks like our docking partner vanished. */
+		return 0;
+	}
+
+	/* Check whether the other entity even has a lua-state, and whether that one
+	 * can handle incoming data */
+	if(!(epartner->lua)) {
+		return 0;
+	}
+	lua_getglobal(epartner->lua, "on_incoming_data"); /* TODO: Don't hardcode this name */
+	if(lua_isnil(epartner->lua, -1)) {
+		lua_pop(epartner->lua, 1);
+		return 0;
+	}
+
+	/* Create a stringbuffer in the other entities' lua state, and serialize our data into it */
+	luaL_buffinit(epartner->lua, &b);
+	if(lua_dump(L, data_transfer_writer, &b)) {
+		DEBUG("Error while dumping lua data\n");
+		return 0;
+	}
+	luaL_pushresult(&b);
+
+	/* We can now savely pop our argument */
+	lua_pop(L,1);
+
+	/* Call the handler function on the other side */
+	lua_active_entity = partner;
+	if(lua_pcall(epartner->lua, 1,1,0)) {
+		/* An error occured in the other state.
+		 * Let's be fair and just ignore it. */
+		DEBUG("Error sending data to docking partner: %s\n", lua_tostring(epartner->lua, -1));
+		lua_pop(epartner->lua,1);
+		lua_pushnil(L);
+	} else {
+
+		/* The code on the other side may return a number to us */
+		if(lua_isnumber(epartner->lua, -1)) {
+			lua_pushnumber(L, lua_tonumber(epartner->lua,-1));
+			lua_pop(epartner->lua,1);
+		} else {
+			/* Whatever he may have returned, we don't want it. */
+			lua_pop(epartner->lua,1);
+			lua_pushnil(L);
+		}
+	}
+
+	lua_active_entity = self;
+	return 1;
+}
+
 /* Determine whether you are currently waiting for some action to finish */
 int lua_busy(lua_State* L) {
 	entity_id_t self;
@@ -784,9 +866,10 @@ int lua_get_slots(lua_State* L) {
 			}
 
 			break;
-		case 2:
+		default:
 			lua_pushstring(L, "get_slots expects no, or one entity argument");
 			lua_error(L);
+			return 0;
 	}
 
 	/* Push each of the slot contents on the stack */

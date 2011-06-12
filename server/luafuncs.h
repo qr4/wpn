@@ -37,6 +37,10 @@ int lua_undock(lua_State* L);
 /* Transfer (swap) slots to/from the docking partner */
 int lua_transfer_slot(lua_State* L);
 
+/* Send arbitrary lua data to our docking partner */
+int lua_send_data(lua_State* L);
+
+
 /* --- QUERIES - with which entities get information about their surroundings */
 /* Search the closest entity in the search radius matchin the filter.
  */

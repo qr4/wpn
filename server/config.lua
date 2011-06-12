@@ -3,6 +3,9 @@
 -- Maximum amount of cycles a ship may use per lua function call
 lua_max_cycles = 10000
 
+-- Minimum time of one "tick", in microseconds
+-- (this is 1000000/framerate)
+frametime = 100000
 
 -- Name of the initial lua code file that will be executed before any player-
 -- specific code, in a new ship computer.

@@ -120,6 +120,7 @@ void kill_computer(entity_t* s) {
 void call_entity_callback(entity_t* e, event_t event) {
 
 	char* function_name;
+	entity_id_t prev_active_entity;
 
 	/* First: check lua-workyness */
 	if(!e->lua) {
@@ -142,6 +143,7 @@ void call_entity_callback(entity_t* e, event_t event) {
 	}
 
 	/* Make this entity "active" */
+	prev_active_entity = lua_active_entity;
 	lua_active_entity = e->unique_id;
 
 	/* Set the execution time limit */
@@ -157,4 +159,7 @@ void call_entity_callback(entity_t* e, event_t event) {
 		DEBUG("Entity %u killed due to lua error:\n%s\n", e->unique_id.id, lua_tostring(e->lua, -1));
 		kill_computer(e);
 	}
+
+	/* Whatever was active previously is now active again */
+	lua_active_entity = prev_active_entity;
 }

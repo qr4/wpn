@@ -23,6 +23,17 @@ end
 function	on_docking_complete()
 		print("I detect: DOCKING COMPLETE!")
 
+		print("I am sending some code.");
+
+		-- Send a function which rewrites the timer-handler on the other side.
+		send_data(function()
+			print "Code transferred successfully!";
+			on_timer_expired = function()
+				print "My timer function was mogrified!"
+				set_timer(3);
+			end
+		end)
+
 		print("Undocking...");
 		undock();
 end
@@ -32,6 +43,15 @@ function on_undocking_complete()
 
 		set_timer(3)
 end
+
+
+-- The default behaviour when recieving data from a docked partner is to
+-- execute it right away. (This allows initial programming of a new ship)
+function on_incoming_data(d)
+	local f = loadstring(d);
+	f();
+end
+
 -- And here is some verbose initialization code for testing:
 
 print "Hi, I'm a ship"
