@@ -1,4 +1,5 @@
-
+-- Weltraumprogrammiernacht Config file, for dynamically controllable parameters of the
+-- simulation.
 
 -- Maximum amount of cycles a ship may use per lua function call
 lua_max_cycles = 10000
@@ -36,3 +37,8 @@ m0_huge    =  8 -- Leergewicht eines riesigen Schiffs (24 slots)
 m0_klotz   =  1 -- Gewicht eines Klotzes (thruster, resource, laser)
 F_thruster = 20 -- Schub eines thrusters
 epsilon    = 1e-10 -- // Missmatches im Kurs durch Rundungsfehler ab denen die Physiksengine sich beklagen soll
+
+-- When building a new ship, offset it from the building bases' position by this
+-- amount. (This should always be larger than the collision distance)
+build_offset_x = -0.5
+build_offset_y = 0

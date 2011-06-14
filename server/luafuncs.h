@@ -40,6 +40,9 @@ int lua_transfer_slot(lua_State* L);
 /* Send arbitrary lua data to our docking partner */
 int lua_send_data(lua_State* L);
 
+/* As a base, build a new empty ship running the default bios. */
+int lua_build_ship(lua_State* L);
+
 
 /* --- QUERIES - with which entities get information about their surroundings */
 /* Search the closest entity in the search radius matchin the filter.

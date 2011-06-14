@@ -6,6 +6,7 @@
 #include "luafuncs.h"
 #include "luastate.h"
 #include "entities.h"
+#include "ship.h"
 #include "storages.h"
 #include "debug.h"
 #include "config.h"
@@ -30,6 +31,7 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_undock,           "undock"},
 	{lua_transfer_slot,    "transfer_slot"},
 	{lua_send_data,        "send_data"},
+	{lua_build_ship,       "build_ship"},
 
 	/* Queries */
 	{lua_entity_to_string, "entity_to_string"},
@@ -818,4 +820,93 @@ int lua_get_slots(lua_State* L) {
 
 	/* Return the number of slots, thus forming a valid lua list */
 	return n;
+}
+
+/* As a base, build a new empty ship running the default bios.
+ * A number of resource slot has to be specified and will be consumed in the process.
+ * The new ship will then be the new docking partner */
+int lua_build_ship(lua_State* L) {
+	
+	entity_id_t id, self;
+	entity_t *eself;
+	int n,a;
+	int used_slots[24];
+	vector_t pos;
+
+	n = lua_gettop(L);
+
+	switch(n) {
+		case 24:
+		case 12:
+		case 6:
+		case 3:
+			break;
+		default:
+			lua_pushstring(L,"Attempted to build a ship of invalid size.");
+			lua_error(L);
+			return 0;
+	}
+
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	/* Check the arguments */
+	/* TODO: Should all errors here really be fatal for the ship? */
+	for(int i=0; i<n; i++) {
+		if(!lua_isnumber(L,i+1)) {
+			lua_pushstring(L, "Invalid type for arguments of build: Integer slot indices required");
+			lua_error(L);
+		}
+		
+		a = lua_tonumber(L,i+1);
+
+		/* No slot should be specified twice */
+		for(int j=0; j<i; j++) {
+			if(a == used_slots[j]) {
+				lua_pushstring(L, "A slot was specified twice in build_ship!");
+				lua_error(L);
+			}
+		}
+
+		/* Ships should be build from resource / ore */
+		if(eself->slot_data->slot[i] != ORE) {
+			lua_pushstring(L, "Attempted to build a ship from a non-resource block.");
+			lua_error(L);
+		}
+
+		used_slots[i]=a;
+	}
+
+	/* Pop all arguments */
+	lua_pop(L,n);
+
+	/* Check that we are a base */
+	if(!eself->type == BASE) {
+		return 0;
+	}
+
+	/* Check that we're not currently busy, or docked to someone else */
+	if(eself->base_data->timer_value != -1) {
+		return 0;
+	}
+	if(eself->base_data->docked_to.id != INVALID_ID.id) {
+		return 0;
+	}
+
+	/* So far, everything looks nice. Let's build a ship then! */
+	pos.x = eself->pos.x +  config_get_double("build_offset_x");
+	pos.y = eself->pos.y + config_get_double("build_offset_y");
+	id = init_ship(ship_storage, pos, n);
+	
+	/* Zero out the slots */
+	for(int i=0; i<n; i++) {
+		eself->slot_data->slot[used_slots[i]] = EMPTY;
+	}
+
+	/* TODO: Currently, the new ship is created instantly. There should be a way
+	 * to delay it. */
+
+	/* Return the ship's id to the caller */
+	lua_pushlightuserdata(L, (void*)(id.id));
+	return 1;
 }
