@@ -17,10 +17,14 @@ struct pstr {
 };
 
 void pstr_clear(struct pstr* p);
-char* pstr_as_cstr(struct pstr* p);
+
 void pstr_set(struct pstr* dest, struct pstr* src);
 int pstr_set_cstr(struct pstr* p, char* src, int src_len);
-int pstr_append(struct pstr* dest, char* src, int src_len);
+
+int pstr_append(struct pstr* dest, struct pstr* src);
+int pstr_append_cstr(struct pstr* dest, char* src, int src_len);
+
+char* pstr_as_cstr(struct pstr* p);
 int pstr_len(struct pstr* p);
 
 

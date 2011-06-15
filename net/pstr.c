@@ -17,11 +17,8 @@ void pstr_clear(struct pstr* p) {
   p->used = 0;
 }
 
-// pstr als char*
-char* pstr_as_cstr(struct pstr* p) {
-  return p->str;
-}
 
+// setzte src als string
 void pstr_set(struct pstr* dest, struct pstr* src) {
   memcpy(dest->str, src->str, src->used + 1);
   dest->used = src->used;
@@ -37,14 +34,25 @@ int pstr_set_cstr(struct pstr* p, char* src, int src_len) {
   return len;
 }
 
+
 // an den pstr was drannhaengen
-int pstr_append(struct pstr* dest, char* src, int src_len) {
+int pstr_append(struct pstr* dest, struct pstr* src) {
+  return pstr_append_cstr(dest, src->str, src->used);
+}
+
+// an den pstr was drannhaengen
+int pstr_append_cstr(struct pstr* dest, char* src, int src_len) {
   const size_t str_size = sizeof ((struct pstr*)0)->str - 1;  // -1 wegen \0-terminierung
   size_t len = src_len + dest->used > str_size ? str_size - dest->used : src_len;
   memcpy(dest->str + dest->used, src, len);
   dest->used += len;
   dest->str[dest->used] = '\0';
   return len;
+}
+
+// pstr als char*
+char* pstr_as_cstr(struct pstr* p) {
+  return p->str;
 }
 
 // laenge von dem pstr abfragen
