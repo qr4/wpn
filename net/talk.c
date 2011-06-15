@@ -36,7 +36,7 @@
 #include "network.h"
 #include "pstr.h"
 
-#define PORT "8080"
+#define PORT "8090"
 #define MAX_CONNECTION 100
 #define MAX_USERS 100
 
