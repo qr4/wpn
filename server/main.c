@@ -13,6 +13,7 @@
 #include "storages.h"
 #include "debug.h"
 #include "../net/net.h"
+#include "../logging/logging.h"
 #include "physics.h"
 
 #define print_sizeof(TYPE) \
