@@ -8,6 +8,11 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <sys/types.h>  // open, read, write, close
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 //
 // pstr (sowas wie pascal-strings nur mit fixer groesse)
 //
@@ -26,7 +31,7 @@ void pstr_set(struct pstr* dest, struct pstr* src) {
 
 // setzt src als string
 int pstr_set_cstr(struct pstr* p, char* src, int src_len) {
-  const size_t str_size = sizeof ((struct pstr*)0)->str - 1;  // -1 wegen \0-terminierung
+  const size_t str_size = sizeof((struct pstr*)0)->str - 1;  // -1 wegen \0-terminierung
   size_t len = str_size < src_len ? str_size : src_len;
   memcpy(p->str, src, len);
   p->used = len;
@@ -42,6 +47,8 @@ int pstr_append(struct pstr* dest, struct pstr* src) {
 
 // an den pstr was drannhaengen
 int pstr_append_cstr(struct pstr* dest, char* src, int src_len) {
+  if (src_len == 0) return 0;
+
   const size_t str_size = sizeof ((struct pstr*)0)->str - 1;  // -1 wegen \0-terminierung
   size_t len = src_len + dest->used > str_size ? str_size - dest->used : src_len;
   memcpy(dest->str + dest->used, src, len);
@@ -60,7 +67,59 @@ int pstr_len(struct pstr* p) {
   return p->used;
 }
 
+// pstr in eine datei schreiben -> 0 wenns geklappt hat, sonst -1
+int pstr_write_file(struct pstr* p, struct pstr* data, int flags) {
+  int fd = open(pstr_as_cstr(p), flags, 0600);
+  if (fd == -1) return -1;
 
+  ssize_t count = write(fd, pstr_as_cstr(data), pstr_len(data));
+  if (count == -1) {
+    // das ging was mächtig schief. warum auch immer
+    int _errno = errno;
+    close(fd);
+    errno = _errno;
+    return -1;
+  } else if (count != pstr_len(data)) {
+    // hier sollte man noch den rest schreiben. kommt auf die TODO-liste
+  }
+
+  close(fd);
+  return 0;
+}
+
+// datei-inhalt nach pstr schreiben -> 0 wenns geklappt hat, sonst -1
+// -1 gibts auch, wenn der inhalt nicht rein passt
+int pstr_read_file(struct pstr* p, struct pstr* data) {
+  int fd = open(pstr_as_cstr(p), O_RDONLY, 0600);
+  if (fd == -1) return -1;
+
+  const ssize_t exact_buffer_size = sizeof((struct pstr*)0)->str;
+
+  ssize_t count = read(fd, data->str, exact_buffer_size);
+
+  if (count == -1) {
+    // das ging was mächtig schief. warum auch immer
+    data->used = 0;   // zur sicherheit "leeren"
+    int _errno = errno;
+    close(fd);
+    errno = _errno;
+    return -1;
+  }
+
+  if (count == exact_buffer_size) {
+    // wir gehen davon aus, dass wir den inhalt der datei mit einem schwung lesen koennen
+    // da von exact_buffer_size noch ein byte fuer \0 weg geht ist die datei zu gross
+    close(fd);
+    errno = EOVERFLOW;
+    return -1;
+  }
+
+  data->used = count;
+  data->str[count] = '\0';
+
+  close(fd);
+  return 0;
+}
 
 
 //
@@ -98,7 +157,7 @@ void dstr_clear(struct dstr* p) {
   }
 }
 
-// dstr als \0-terminierten string zurueckgeben = bereich von next bis unused 
+// dstr als \0-terminierten string zurueckgeben = bereich von next bis ohne unused 
 char* dstr_as_cstr(struct dstr* p) {
   return p->data + p->next;
 }
@@ -126,6 +185,8 @@ int dstr_set(struct dstr* p, char* src, size_t src_len) {
 
 // fuegt src mit der laenge src_len an dstr an
 int dstr_append(struct dstr* p, char* src, size_t src_len) {
+  if (src_len == 0) return 0;
+
   // da wir data mit \0 terminieren wollen muessen wir
   // src_len bei der speicherberechnung um +1 nach oben korrigieren
 
@@ -192,6 +253,51 @@ int dstr_read_line(struct dstr* p, char** data, int* len) {
   }
 
   return -1;
+}
+
+// dstr in eine datei schreiben -> 0 wenns geklappt hat, sonst -1
+int dstr_write_file(struct pstr* p, struct dstr* data, int flags) {
+  int fd = open(pstr_as_cstr(p), flags, 0600);
+  if (fd == -1) return -1;
+
+  ssize_t count = write(fd, dstr_as_cstr(data), dstr_len(data));
+  if (count == -1) {
+    // das ging was mächtig schief. warum auch immer
+    int _errno = errno;
+    close(fd);
+    errno = _errno;
+    return -1;
+  } else if (count != dstr_len(data)) {
+    // hier sollte man noch den rest schreiben. kommt auf die TODO-liste
+  }
+
+  close(fd);
+  return 0;
+}
+
+// datei-inhalt nach dstr schreiben -> 0 wenns geklappt hat, sonst -1
+int dstr_read_file(struct pstr* p, struct dstr* data) {
+  char buffer[4096];
+
+  int fd = open(pstr_as_cstr(p), O_RDONLY, 0600);
+  if (fd == -1) return -1;
+
+  ssize_t count;
+
+  do {
+    count = read(fd, buffer, sizeof(buffer));
+    if (count == -1) {
+      // o_O ... die ist richtig was futsch
+      int _errno = errno;
+      close(fd);
+      errno = _errno;
+      return -1;
+    }
+    dstr_append(data, buffer, count);
+  } while (count > 0);
+
+  close(fd);
+  return 0;
 }
 
 

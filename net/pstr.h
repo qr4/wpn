@@ -7,11 +7,11 @@
 #define __PSTR_H
 
 #include <stddef.h>
+#include <errno.h>
 
 #define PSTR_DSTR_DEFAULT_SIZE 4000
 
 struct pstr {
-//  size_t size;
   size_t used;
   char str[512];
 };
@@ -27,6 +27,8 @@ int pstr_append_cstr(struct pstr* dest, char* src, int src_len);
 char* pstr_as_cstr(struct pstr* p);
 int pstr_len(struct pstr* p);
 
+int pstr_write_file(struct pstr* p, struct pstr* data, int flags);
+int pstr_read_file(struct pstr* p, struct pstr* data);
 
 // nutzdaten: #
 //
@@ -50,7 +52,8 @@ int dstr_append(struct dstr* p, char* src, size_t src_len);
 int dstr_append_cstr(struct dstr* p, char* src);
 int dstr_len(struct dstr* p);
 int dstr_read_line(struct dstr* p, char** data, int* len);
-
+int dstr_write_file(struct pstr* p, struct dstr* data, int flags);
+int dstr_read_file(struct pstr* p, struct dstr* data);
 
 #endif
 

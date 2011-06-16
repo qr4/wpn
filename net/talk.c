@@ -112,7 +112,7 @@ int add_user(char *name, int len_name, char *pw, int len_pw, unsigned int* user_
     SHA1_Update(&c, pw, len_pw);
     SHA1_Final(sha1_pw, &c);
 
-    int fd = open(pstr_as_cstr(&file), O_CREAT | O_EXCL | O_WRONLY, 0700);
+    int fd = open(pstr_as_cstr(&file), O_CREAT | O_EXCL | O_WRONLY, 0600);
     if (fd == -1) { log_perror("pw-file open"); return -1; }
 
     if (write(fd, sha1_pw, SHA_DIGEST_LENGTH) != SHA_DIGEST_LENGTH) {
@@ -124,7 +124,7 @@ int add_user(char *name, int len_name, char *pw, int len_pw, unsigned int* user_
 
   *user_id = -1;
   if (ret == 0) {
-    int fd = open(CONFIG_HOME "/last_id", O_CREAT | O_RDWR, 0700);
+    int fd = open(CONFIG_HOME "/last_id", O_CREAT | O_RDWR, 0600);
     if (fd == -1) { log_perror("last_id"); return -1; }
 
     char id[16];
@@ -161,7 +161,7 @@ int add_user(char *name, int len_name, char *pw, int len_pw, unsigned int* user_
     pstr_set(&file, &home);
     pstr_append_cstr(&file, "/id", 3);
 
-    int fd = open(pstr_as_cstr(&file), O_CREAT | O_EXCL | O_WRONLY, 0700);
+    int fd = open(pstr_as_cstr(&file), O_CREAT | O_EXCL | O_WRONLY, 0600);
     if (fd == -1) { log_perror("id-file open"); return -1; }
 
     char id[16];
@@ -177,6 +177,34 @@ int add_user(char *name, int len_name, char *pw, int len_pw, unsigned int* user_
   return ret;
 }
 
+int write_user_msg(struct userstate* us) {
+
+  struct pstr msg = { .used = sizeof(USER_HOME), .str = USER_HOME "/" };
+  pstr_append(&msg, &us->user);
+  pstr_append_cstr(&msg, "/msg", 4);
+
+  int fd = open(msg.str, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+  if (fd == -1) {
+    log_perror("open msg");
+    return -1;
+  }
+
+  ssize_t ret = write(fd, dstr_as_cstr(&us->tmp), dstr_len(&us->tmp));
+  if (ret == -1) {
+    log_perror("write msg");
+    close(fd);
+    return -1;
+  } else if (ret != dstr_len(&us->tmp)) {
+    log_msg("msg von %s konnte nicht komplett geschrieben werden. soll = %d, ist = %d", 
+      pstr_as_cstr(&us->user), dstr_len(&us->tmp), ret);
+  }
+
+  close(fd);
+
+  return 0;
+}
+
+
 //
 //
 //
@@ -186,12 +214,14 @@ int _new_account_name(struct userstate* us, int write_fd);
 int _new_account_pw1(struct userstate* us, int write_fd);
 int _new_account_pw2(struct userstate* us, int write_fd);
 int _set_user_info(struct userstate* us, int write_fd);
+int _set_noob(struct userstate* us, int write_fd);
+
 int _check_password(struct userstate* us, int write_fd);
 int _menu_main(struct userstate* us, int write_fd);
 int _menu_config(struct userstate* us, int write_fd);
 
-enum state { LOGIN, NEW_ACCOUNT_NAME, NEW_ACCOUNT_PW1, NEW_ACCOUNT_PW2, SET_USER_INFO, CHECK_PASSWORD, 
-  MENU_MAIN, MENU_CONFIG };
+enum state { LOGIN, NEW_ACCOUNT_NAME, NEW_ACCOUNT_PW1, NEW_ACCOUNT_PW2, SET_USER_INFO, SET_NOOB,
+  CHECK_PASSWORD, MENU_MAIN, MENU_CONFIG };
 
 struct automaton {
   const char* msg;
@@ -202,80 +232,100 @@ struct automaton {
   int (*fkt)(struct userstate*, int);
   enum state state;
 } const a[] = {
+//
+// hinweise zur erstellung von menu-texten:
+//
+// folgende idee: wenn jemand eine gui drann klatschen moechte - oder das ganze einfach
+// per skript steuern will, dann soll ein parsen der ausgaben möglichst einfach sein. daher
+// werden texte für den menschen mit einem leerzeichen am anfang "verschönert". 
+// eingabeaufforderungen haben eine eindeutige id am anfang. so kann der parser unterscheiden
+// ob es für ihn gerade wichtig ist
+//
   {
-    .msg = "#\n"
-      "# Hallo Weltraumreisender,\n"
-      "#\n"
-      "# wenn Du einen neuen Account haben willst, dann gib keinen Loginnamen an.\n"
-      "# (Also jetzt eiinfach nur RETURN druecken.)\n"
-      "# Dann hast Du die Moeglichkeit Dir einen neuen Account anzulegen. Ansonsten\n"
-      "# gib Deinen Usernamen und Dein Passwort ein\n"
-      "#\n",
+    .msg = "\n"
+      " Hallo Weltraumreisender,\n"
+      "\n"
+      " wenn Du einen neuen Account anlegen willst, dann lass die Eingabe einfach leer.\n"
+      " Ansonsten gib Deinen Usernamen ein...\n"
+      "\n",
     .prompt = "100 login: ",
     .fkt = _login,
     .state = LOGIN
   },
   {
-    .msg = "#\n"
-      "# Hallo neuer User. Gib doch mal Deinen Loginnamen an\n"
-      "# Erlaubt sind die Zeichen [a-zA-Z0-9:-+_]. Mehr nicht. Aetsch! Und 3 bis maximal 12 Zeichen!\n"
-      "#\n",
+    .msg = "\n"
+      " Hallo neuer User. Gib doch mal Deinen Loginnamen an\n"
+      " Erlaubt sind die Zeichen [a-zA-Z0-9:-+_]. Mehr nicht. Aetsch! Und 3 bis maximal 12 Zeichen!\n"
+      "\n",
     .prompt = "110 username: ",
     .fkt = _new_account_name,
     .state = NEW_ACCOUNT_NAME
   },
   {
-    .msg = "#\n"
-      "# Okay. Dann verrate mir doch bitte noch dein Passwort.\n"
-      "# Laenge muss zwischen 6 und sagen wir mal 42 Zeichen liegen.\n"
-      "#\n",
-    .prompt = "111 passort: ",
+    .msg = "\n"
+      " Okay. Dann verrate mir doch bitte noch dein Passwort.\n"
+      " Laenge muss zwischen 6 und sagen wir mal 42 Zeichen liegen.\n"
+      "\n",
+    .prompt = "111 passwort: ",
     .fkt = _new_account_pw1,
     .state = NEW_ACCOUNT_PW1
   },
   {
-    .msg = "#\n"
-      "# Okay. Noch einmal - nur zur Sicherheit.\n",
-    .prompt = "112 passowrt: ",
+    .msg = "\n"
+      " Okay. Noch einmal - nur zur Sicherheit.\n",
+    .prompt = "112 passwort: ",
     .fkt = _new_account_pw2,
     .state = NEW_ACCOUNT_PW2
   },
   {
-    .msg = "#\n"
-      "# Hier kannst Du noch Informationen angeben, die Du uns mitteilen moechtest.\n"
-      "# Z.B. E-Mail-Adresse, wo sitzt Du damit wir Dich schuetteln koennen wenn Du was boeses\n"
-      "# machst, oder einfach nur: GEILES SPIEL WAS IHR DA GEBAUT HABT!! Ueber sowas freuen wir\n"
-      "# uns natuerlich auch :-)\n"
-      "# 2x <RETURN> wenn ferig mit der Eingabe bist\n"
-      "#\n",
+    .msg = "\n"
+      " Hier kannst Du noch Informationen angeben, die Du uns mitteilen moechtest.\n"
+      " Z.B. E-Mail-Adresse, wo sitzt Du damit wir Dich schuetteln koennen wenn Du was boeses\n"
+      " machst, oder einfach nur: GEILES SPIEL WAS IHR DA GEBAUT HABT!! Ueber sowas freuen wir\n"
+      " uns natuerlich auch :-)\n"
+      " Eine leere Zeile beendet die Eingabe.\n"
+      "\n",
     .prompt = "120 info: ",
     .fkt = _set_user_info,
     .state = SET_USER_INFO
   },
   {
-    .msg = "",
+    .msg = "\n"
+      " So, eine letzte Frage noch. Der noob, auch so ein komischer Nerd, möchte Deinen\n"
+      " LUA-Code verwenden/missbrauchen/andere schlimme Dinge damit machen, um seine\n"
+      " Plagiats-Erkennungs-Software zu verbessern. Die komplette entstehungsgeschichte\n"
+      " Deines Codes bekommt er aber nur, wenn Du ihm das erlaubst und hier \"JA\"\n"
+      " eintippst. Sonst nicht. Also jetzt hier \"JA\" ohne die Gänsefüßchen eintippen!!!1!!1!\n"
+      " (sonst kommen die bösen Space-Monster und machen Dich karp00t :P)\n"
+      " \n",
+    .prompt = "130 noob: ",
+    .fkt = _set_noob,
+    .state = SET_NOOB
+  },
+  {
+    .msg = "\n",
     .prompt = "150 passwort: ",
     .fkt = _check_password,
     .state = CHECK_PASSWORD
   },
   {
-    .msg = "#\n"
-      "# Welcome to the M A I N - M E N U\n"
-      "#\n"
-      "# 1 LUA-Konsole oeffen und Schiffchen per Hand steuern\n"
-      "# 2 Deinen tollen Schiffchen-Code hochladen\n"
-      "# 3 LUA-Logging-Konsole oeffnen - watching shit scroll by...\n"
-      "#\n"
-      "# Bitte treffen Sie Ihre Wahl\n"
-      "#\n",
+    .msg = "\n"
+      " Welcome to the   M A I N - M E N U\n"
+      "\n"
+      " 1 LUA-Konsole oeffen und Schiffchen per Hand steuern\n"
+      " 2 Deinen tollen Schiffchen-Code hochladen\n"
+      " 3 LUA-Logging-Konsole oeffnen - watching shit scroll by...\n"
+      "\n"
+      " Bitte treffen Sie Ihre Wahl\n"
+      "\n",
     .prompt = "300 menu: ",
     .fkt = _menu_main,
     .state = MENU_MAIN
   },
   {
-    .msg = "#\n"
-      "# The C O N F I G - M E N U\n"
-      "#\n",
+    .msg = "\n"
+      " The C O N F I G - M E N U\n"
+      "\n",
     .prompt = "350 config: ",
     .fkt = _menu_config,
     .state = MENU_CONFIG
@@ -457,6 +507,9 @@ int _new_account_pw2(struct userstate* us, int write_fd) {
     return -1;
   }
 
+  dstr_clear(&us->tmp); // da kommt jetzt die user_info rein
+  us->count = 0;
+
   return set_state(SET_USER_INFO, us, write_fd);;
 }
 
@@ -466,8 +519,55 @@ int _set_user_info(struct userstate* us, int write_fd) {
 
   if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
 
-  return print_msg_and_prompt(write_fd, "wurst!", 6, us);
+  if (len == 0) {
+    if (write_user_msg(us) == -1) return -1;    // irgendwas ist da schief gegangen
+    return set_state(SET_NOOB, us, write_fd);
+  }
+
+  if (us->count > 3) {
+    const char msg[] = "505 Nee nee. Irgendwas machst Du da falsch. User wurde angelegt. Log Dich einfach neu ein.\n";
+    print_msg_and_prompt(write_fd, msg, sizeof(msg), NULL);
+    return -1;
+  }
+
+  if (dstr_len(&us->tmp) > 10000) {
+    us->count++;
+    const char msg[] = "505 Das jetzt doch ein wenig viel für eine einfache Beschreibung.\n";
+    return print_msg_and_prompt(write_fd, msg, sizeof(msg), NULL);
+  }
+
+  dstr_append(&us->tmp, data, len);
+  dstr_append(&us->tmp, "\n", 1);
+
+  return print_msg_and_prompt(write_fd, NULL, 0, us);
 }
+
+int _set_noob(struct userstate* us, int write_fd) {
+  char* data;
+  int len;
+
+  if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
+
+  if ((len == 2) && (strncasecmp(data, "ja", 2) == 0)) {
+    struct pstr noob = { .used = sizeof(USER_HOME), .str = USER_HOME "/" };
+    pstr_append(&noob, &us->user);
+    pstr_append_cstr(&noob, "/noob", 5);
+
+    int fd = open(pstr_as_cstr(&noob), O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if (fd == -1) {
+      log_msg("user %s möchte, dass der noob darf, schreiben geht aber nicht", pstr_as_cstr(&us->user));
+    }
+
+    if (write(fd, "JA\n", 3) == -1) {
+      log_perror("write ja");
+    }
+
+    close(fd);
+  }
+
+  return set_state(MENU_MAIN, us, write_fd);
+}
+
 
 int _check_password(struct userstate* us, int write_fd) {
   char* data;
@@ -524,12 +624,21 @@ int _menu_main(struct userstate* us, int write_fd) {
 
   if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
 
+  if (len == 0) goto out;
+
   const char msg[] = "540 Unbekannter Menu-Punkt\n";
   if ((len != 1) || (data[0] < '1' || data[0] > '3')) {
     return print_msg_and_prompt(write_fd, msg, sizeof(msg), us);
   }
 
-  return 0;
+
+out:
+  if (++us->count > 3) {
+    us->count = 0;    // menu nochmal anzeigen
+    return set_state(MENU_MAIN, us, write_fd);
+  } else {
+    return print_msg_and_prompt(write_fd, NULL, 0, us); // nur den prompt anzeigen
+  }
 }
 
 int _menu_config(struct userstate* us, int write_fd) {
