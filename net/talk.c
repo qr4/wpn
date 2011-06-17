@@ -40,9 +40,11 @@
 #define MAX_CONNECTION 100
 #define MAX_USERS 100
 
-#define HOME "/opt/wpn/"
-#define USER_HOME "/opt/wpn/user"
-#define CONFIG_HOME "/opt/wpn/etc"
+#define HOME "/opt/wpn"
+#define USER_HOME_BY_NAME HOME"/user/by-name"
+#define USER_HOME_BY_ID HOME"/user/by-id"
+#define CONFIG_HOME HOME"/etc"
+#define CONFIG_LAST_ID CONFIG_HOME"/last_id"
 
 //
 // user-info-status-dinge
@@ -62,16 +64,27 @@ struct userstate {
 
 static struct userstate* us;
 
+#if 0
+int write_file() {
+}
+
+int write_user_file(struct userstate* us, char* filename, int len_filename, struct dstr* data) {
+  struct pstr msg = { .used = sizeof(USER_HOME), .str = USER_HOME "/" };
+  pstr_append(&msg, &us->user);
+  pstr_append_cstr(&msg, filename, len_filename);
+  return pstr_write_file(&msg, data, 0);
+}
+#endif
+
 // schaut unter USER_HOME/$name nach ob es ein verzeichnis (oder eine andere datei) gibt 
 // 1 = ja, 0 = nein
 int have_user(struct pstr* name) {
-  struct pstr path = { .used = sizeof(USER_HOME), .str = USER_HOME "/" };
-
+  struct pstr path = { .used = sizeof(USER_HOME_BY_ID), .str = USER_HOME_BY_ID "/" };
   pstr_append(&path, name);
 
   struct stat sb;
 
-  if (stat(path.str, &sb) == -1) {
+  if (stat(pstr_as_cstr(&path), &sb) == -1) {
     if (errno != ENOENT) {
       log_perror("stat");
     }
@@ -85,101 +98,110 @@ int have_user(struct pstr* name) {
   return 1;
 }
 
-// legt einen neuen user unter USER_HOME/$name mit password $pw an
-// gibt ihm eine neue id (wird auch zurueckgegeben)
+int get_id(struct pstr* file) {
+  struct pstr id = { .used = 0 };
+
+  int ret = -1;
+
+  if (pstr_read_file(file, &id) == -1) goto err;
+
+  errno = 0;
+  ret = strtol(pstr_as_cstr(&id), (char **) NULL, 10);
+  if (errno != 0) goto err;
+  
+  return ret;
+
+err:
+  log_msg("probleme beim lesen von %.*s", pstr_len(file), pstr_as_cstr(file));
+  log_perror("get_id");
+  return -1;
+}
+
+void crypt_passwd(const void* pw, unsigned long pw_len, struct pstr* hash) {
+  pstr_clear(hash);
+  SHA_CTX c;
+  SHA1_Init(&c);
+  SHA1_Update(&c, pw, pw_len);
+  SHA1_Final((unsigned char *)hash->str, &c);
+  hash->used = SHA_DIGEST_LENGTH;
+  hash->str[SHA_DIGEST_LENGTH] = '\0';
+}                    
+
+// legt einen neuen user unter USER_HOME_BY_ID/$id und USER_HOME_BY_NAME/$name (symlink) 
+// mit password $pw an. gibt ihm eine neue id (wird auch zurueckgegeben)
 // bei "geht nicht" wird -1 zurueckgegeben
-int add_user(char *name, int len_name, char *pw, int len_pw, unsigned int* user_id) {
+int add_user(char *name, int len_name, const void* pw, unsigned long pw_len, unsigned int* user_id) {
 
-  struct pstr home = { .used = sizeof(USER_HOME), .str = USER_HOME "/" };
+  struct pstr home_by_id = { .used = sizeof(USER_HOME_BY_ID), .str = USER_HOME_BY_ID "/" };
+  struct pstr home_by_name = { .used = sizeof(USER_HOME_BY_NAME), .str = USER_HOME_BY_NAME "/" };
   struct pstr file;
-  int ret = 0;
 
-  pstr_append_cstr(&home, name, len_name);
+  {
+    // neue user-id bauen
+    struct pstr file_last_id = { .used = sizeof(CONFIG_LAST_ID) - 1, .str = CONFIG_LAST_ID };
+    if ((*user_id = get_id(&file_last_id)) == -1) return -1;
 
-  if (mkdir(pstr_as_cstr(&home), 0700) == -1) {
-    log_perror("mkdir");
-    return -1;
+    (*user_id)++;
+
+    struct pstr id = { .used = 0 };
+    pstr_append_printf(&id, "%d\n", *user_id);
+
+    if (pstr_write_file(&file_last_id, &id, O_WRONLY | O_TRUNC) == -1) {
+      log_perror("kann "CONFIG_LAST_ID" nicht schreiben!");
+      return -1;
+    }
   }
   
-  if (ret == 0) {
-    // passwd schreiben
-    pstr_set(&file, &home);
-    pstr_append_cstr(&file, "/passwd", 7);
+  pstr_append_printf(&home_by_id, "%d", *user_id);
+  pstr_append_cstr(&home_by_name, name, len_name);
 
-    SHA_CTX c;
-    unsigned char sha1_pw[SHA_DIGEST_LENGTH];
-    SHA1_Init(&c);
-    SHA1_Update(&c, pw, len_pw);
-    SHA1_Final(sha1_pw, &c);
-
-    int fd = open(pstr_as_cstr(&file), O_CREAT | O_EXCL | O_WRONLY, 0600);
-    if (fd == -1) { log_perror("pw-file open"); return -1; }
-
-    if (write(fd, sha1_pw, SHA_DIGEST_LENGTH) != SHA_DIGEST_LENGTH) {
-      log_msg("write schreibt nicht alles von SHA_DIGEST_LENGTH; user: %.*s", len_name, name);
-      ret = -1;
+  {
+    // verzeichnis und symlink fuer den user anlegen
+    if (mkdir(pstr_as_cstr(&home_by_id), 0700) == -1) {
+      log_perror("mkdir");
+      return -1;
     }
-    close(fd);
+    if (symlink(pstr_as_cstr(&home_by_id), pstr_as_cstr(&home_by_name)) == -1) {
+      log_perror("symlink home-by-name");
+      return -1;
+    }
   }
 
-  *user_id = -1;
-  if (ret == 0) {
-    int fd = open(CONFIG_HOME "/last_id", O_CREAT | O_RDWR, 0600);
-    if (fd == -1) { log_perror("last_id"); return -1; }
-
-    char id[16];
-    ssize_t count = read(fd, id, sizeof(id));
-    if (count == -1) {
-      // -1 = boese
-      log_perror("read last_id geht nicht");
-      ret = -1;
-    } else if (count == 0) {
-      // datei gibt es wohl noch nicht
-      *user_id = 100;
-    } else {
-      errno = 0;
-      *user_id = strtol(id, (char **) NULL, 10);
-      if (errno != 0) {
-        log_perror(CONFIG_HOME "/last_id convertieren fehlgeschlagen.");
-        ret = -1;
-      }
-      (*user_id)++;
-    }
-
-    if (lseek(fd, 0, SEEK_SET) == -1) { log_perror("lseek"); ret = -1; }
-    snprintf(id, sizeof(id), "%d\n", *user_id);
-    if (write(fd, id, strlen(id)) != strlen(id)) {
-      log_msg("update last_id geht nicht. last_id = %d", *user_id);
-      ret = -1;
-    }
-
-    close(fd);
-  }
-
-  if (ret == 0) {
+  {
     // user id schreiben
-    pstr_set(&file, &home);
+    pstr_set(&file, &home_by_id);
     pstr_append_cstr(&file, "/id", 3);
 
-    int fd = open(pstr_as_cstr(&file), O_CREAT | O_EXCL | O_WRONLY, 0600);
-    if (fd == -1) { log_perror("id-file open"); return -1; }
+    struct pstr id = { .used = 0 };
+    pstr_append_printf(&id, "%d\n", *user_id);
 
-    char id[16];
-    snprintf(id, sizeof(id), "%d\n", *user_id);
-
-    if (write(fd, id, strlen(id)) != strlen(id)) {
+    if (pstr_write_file(&file, &id, O_CREAT | O_EXCL | O_WRONLY) == -1) {
+      log_perror("write user-id");
       log_msg("write mag id nicht schreiben. id = %s", id);
-      ret = -1;
+      return -1;
     }
-    close(fd);
   }
 
-  return ret;
+  {
+    // passwd schreiben
+    struct pstr hash;
+    crypt_passwd(pw, pw_len, &hash);
+
+    pstr_set(&file, &home_by_id);
+    pstr_append_cstr(&file, "/passwd", 7);
+
+    if (pstr_write_file(&file, &hash, O_CREAT | O_EXCL | O_WRONLY) == -1) {
+      log_perror("pw-file write");
+      return -1;
+    }
+  }
+
+  return 0;
 }
 
 int write_user_msg(struct userstate* us) {
 
-  struct pstr msg = { .used = sizeof(USER_HOME), .str = USER_HOME "/" };
+  struct pstr msg = { .used = sizeof(USER_HOME_BY_NAME), .str = USER_HOME_BY_NAME "/" };
   pstr_append(&msg, &us->user);
   pstr_append_cstr(&msg, "/msg", 4);
 
@@ -502,7 +524,7 @@ int _new_account_pw2(struct userstate* us, int write_fd) {
     return set_state(NEW_ACCOUNT_PW1, us, write_fd);
   }
 
-  if (add_user(pstr_as_cstr(&us->user), pstr_len(&us->user), data, len, &us->id) == -1) {
+  if (add_user(pstr_as_cstr(&us->user), pstr_len(&us->user), (const void*)data, (unsigned long)len, &us->id) == -1) {
     log_msg("ooops. kann user/pw nicht anlegen");
     return -1;
   }
@@ -537,7 +559,6 @@ int _set_user_info(struct userstate* us, int write_fd) {
   }
 
   dstr_append(&us->tmp, data, len);
-  dstr_append(&us->tmp, "\n", 1);
 
   return print_msg_and_prompt(write_fd, NULL, 0, us);
 }
@@ -549,7 +570,7 @@ int _set_noob(struct userstate* us, int write_fd) {
   if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
 
   if ((len == 2) && (strncasecmp(data, "ja", 2) == 0)) {
-    struct pstr noob = { .used = sizeof(USER_HOME), .str = USER_HOME "/" };
+    struct pstr noob = { .used = sizeof(USER_HOME_BY_NAME), .str = USER_HOME_BY_NAME "/" };
     pstr_append(&noob, &us->user);
     pstr_append_cstr(&noob, "/noob", 5);
 
@@ -568,56 +589,51 @@ int _set_noob(struct userstate* us, int write_fd) {
   return set_state(MENU_MAIN, us, write_fd);
 }
 
-
+//
 int _check_password(struct userstate* us, int write_fd) {
   char* data;
   int len;
 
   if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
 
-  struct pstr path = { .used = sizeof(USER_HOME), .str = USER_HOME "/" };
-  pstr_append(&path, &us->user);
-  pstr_append_cstr(&path, "/passwd", 7);
+  struct pstr path = { .used = 0 };
+  pstr_append_printf(&path, USER_HOME_BY_NAME "/%s/passwd", pstr_as_cstr(&us->user));
 
-  int fd = open(pstr_as_cstr(&path), O_RDONLY);
-  if (fd == -1) {
-    log_msg("%s hat keinen passwd-file?", pstr_as_cstr(&path));
-    return -1;
+  struct pstr hash_platte, hash_user;
+  if (pstr_read_file(&path, &hash_platte) == -1) {
+    log_msg("user %s und/oder path %s gibt es nicht?", pstr_as_cstr(&us->user), pstr_as_cstr(&path));
+    log_perror("pw-file kann nicht geoeffnet werden");
+    goto err;
   }
+  crypt_passwd((const void*)data, (unsigned long)len, &hash_user);
 
-  unsigned char sha1_auf_platte[SHA_DIGEST_LENGTH];
-  ssize_t read_count = read(fd, sha1_auf_platte, SHA_DIGEST_LENGTH);
-  if (read_count == -1) {
-    log_perror("read");
-    return -1;
-  } else if (read_count != SHA_DIGEST_LENGTH) {
-    log_msg("passwd-file %s beschaedigt? Nur %d bytes gelesen", pstr_as_cstr(&path), read_count);
-    return -1;
-  }
-
-  close(fd);
-
-  SHA_CTX c;
-  unsigned char sha1_pw[SHA_DIGEST_LENGTH];
-  SHA1_Init(&c);
-  SHA1_Update(&c, data, len);
-  SHA1_Final(sha1_pw, &c);
-
-  if (memcmp(sha1_auf_platte, sha1_pw, SHA_DIGEST_LENGTH) == 0) {
+  if (pstr_cmp(&hash_user, &hash_platte) == 0) {
     // login okay
+    pstr_clear(&path);
+    pstr_append_printf(&path, USER_HOME_BY_NAME"/%s/id", pstr_as_cstr(&us->user));
+    if ((us->id = get_id(&path)) == -1) {
+      log_perror("user hat keine id??");
+      return -1;
+    }
+  
+    log_msg("successful login: id = %d, user = %s", us->id, pstr_as_cstr(&us->user));
+
     return set_state(MENU_MAIN, us, write_fd);
   }
 
+  // fall thue
+err:
   if (++us->count > 3) {
     const char msg[] = "521 Das war 1x zuviel...\n";
     print_msg_and_prompt(write_fd, msg, sizeof(msg), NULL);
     return -1;
-  } else {
-    const char msg[] = "520 Dein Passwort passt nicht. Nochmal!\n";
-    return print_msg_and_prompt(write_fd, msg, sizeof(msg), us);
   }
+
+  const char msg[] = "520 Dein Passwort passt nicht. Nochmal!\n";
+  return print_msg_and_prompt(write_fd, msg, sizeof(msg), us);
 }
 
+//
 int _menu_main(struct userstate* us, int write_fd) {
   char* data;
   int len;
@@ -630,6 +646,7 @@ int _menu_main(struct userstate* us, int write_fd) {
   if ((len != 1) || (data[0] < '1' || data[0] > '3')) {
     return print_msg_and_prompt(write_fd, msg, sizeof(msg), us);
   }
+
 
 
 out:
@@ -715,6 +732,24 @@ static void net_client_talk(int fd, fd_set* master) {
 int main() {
 	log_open("test_talk_main.log");
 	log_msg("---------------- new start");
+
+  {
+    // sicherstellen, dass alle wichtigen verzeichnisse da sind
+    char* dirs[] = { HOME, USER_HOME_BY_NAME, USER_HOME_BY_ID, CONFIG_HOME };
+    for (int i = 0; i < sizeof(dirs) / sizeof(char*); ++i) {
+      struct stat sb;
+      if (stat(dirs[i], &sb) == -1) {
+        log_msg("mkdir %s", dirs[i]);
+        if (mkdir(dirs[i], 0777) == -1) {
+          log_perror("mkdir dirs...");
+          exit(EXIT_FAILURE);
+        }
+      }
+    }
+    // sicherstellen, dass last_id da ist
+    struct pstr file_last_id = { .used = sizeof(CONFIG_LAST_ID) - 1, .str = CONFIG_LAST_ID };
+    if (get_id(&file_last_id) == -1) exit(EXIT_FAILURE);
+  }
 
   us = (struct userstate*)malloc(sizeof(struct userstate) * MAX_USERS);
   if (us == NULL) { log_msg("malloc us == NULL: kein platz"); exit(EXIT_FAILURE); }

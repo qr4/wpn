@@ -57,6 +57,32 @@ int pstr_append_cstr(struct pstr* dest, char* src, int src_len) {
   return len;
 }
 
+// an den pstr das zeux von printf drann haengen
+int pstr_append_printf(struct pstr* p, char* msg, ...) {
+  va_list ap;
+  va_start(ap, msg);
+
+  const size_t str_size = sizeof ((struct pstr*)0)->str;  // kein -1 wegen \0-terminierung weil vsnprintf 0 terminiert
+  int count = vsnprintf(p->str + p->used, str_size - p->used, msg, ap);
+
+  p->used += count;
+
+  if (count >= str_size - p->used) {
+    // passt nicht mehr rein
+    return -1;
+  }
+
+  return 0;
+}
+
+// vergleiche a und b; 0 = beide gleich
+int pstr_cmp(struct pstr* a, struct pstr* b) {
+  if (a->used == b->used) {
+    return memcmp(a->str, b->str, a->used);
+  }
+  return 1;
+}
+
 // pstr als char*
 char* pstr_as_cstr(struct pstr* p) {
   return p->str;

@@ -7,6 +7,8 @@
 #define __PSTR_H
 
 #include <stddef.h>
+#include <stdio.h>
+#include <stdarg.h>
 #include <errno.h>
 
 #define PSTR_DSTR_DEFAULT_SIZE 4000
@@ -23,6 +25,9 @@ int pstr_set_cstr(struct pstr* p, char* src, int src_len);
 
 int pstr_append(struct pstr* dest, struct pstr* src);
 int pstr_append_cstr(struct pstr* dest, char* src, int src_len);
+int pstr_append_printf(struct pstr* dest, char* msg, ...);
+
+int pstr_cmp(struct pstr* a, struct pstr* b);
 
 char* pstr_as_cstr(struct pstr* p);
 int pstr_len(struct pstr* p);
