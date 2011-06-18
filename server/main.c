@@ -15,6 +15,8 @@
 #include "../net/net.h"
 #include "../logging/logging.h"
 #include "physics.h"
+#include <fenv.h>
+
 
 #define print_sizeof(TYPE) \
 	printf("sizeof(%-14s) = %4lu\n", #TYPE, sizeof(TYPE));
@@ -59,6 +61,11 @@ int main(int argc, char *argv[]) {
 	epsilon = config_get_double("epsilon");
 	asteroid_radius_to_slots_ratio = config_get_double("asteroid_radius_to_slots_ratio");
 	planet_size = config_get_double("planet_size");
+
+#ifdef ENABLE_DEBU
+	DEBUG("Listen to your mum kids. Never devide by zero. I'm watching you.\n");
+	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+#endif
 
 	/* Start networking code */
 	net_init();

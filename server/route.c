@@ -189,31 +189,11 @@ waypoint_t* intra_cluster_route(vector_t* start, vector_t* stop, entity_t* clust
 }
 
 waypoint_t* plotCourse(vector_t* start, vector_t* stop) {
-	waypoint_t* wp_start = malloc(sizeof(waypoint_t));
-	if(!wp_start) {
-		fprintf(stderr, "No start no joy.\n");
-		exit(1);
-	}
-
-	waypoint_t* wp_stop = malloc(sizeof(waypoint_t));
-	if(!wp_stop) {
-		fprintf(stderr, "No stop no joy.\n");
-		exit(1);
-	}
+	waypoint_t* wp_start = create_waypoint(start->x, start->y, 0, 0, 0, WP_START);
+	waypoint_t* wp_stop = create_waypoint(stop->x, stop->y, 0, 0, 0, WP_STOP);
 
 	waypoint_t* jp1 = wp_start;
 	waypoint_t* jp2 = wp_stop;
-
-	wp_start->point = *start;
-	wp_start->speed = (vector_t){{0, 0}};
-	wp_start->t = 0;
-	wp_start->type = WP_START;
-	wp_start->next = NULL;
-	wp_stop->point = *stop;
-	wp_stop->speed = (vector_t){{0, 0}};
-	wp_start->type = WP_START;
-	wp_stop->type = WP_STOP;
-	wp_stop->next = NULL;
 
 	entity_t* e_start = find_closest_by_position(*start, 0, 0, CLUSTER);
 	entity_t* e_stop = find_closest_by_position(*stop, 0, 0, CLUSTER);
@@ -229,25 +209,30 @@ waypoint_t* plotCourse(vector_t* start, vector_t* stop) {
 	} else {
 		if(e_start != NULL) {
 			// We start in a cluster
-			jp1 = malloc(sizeof(waypoint_t));
-			if(!jp1) {
-				fprintf(stderr, "No jp1, no joy\n");
+			jp1 = create_waypoint(0, 0, 0, 0, 0, WP_VIA);
+			double dist = vector_dist(&(e_start->pos), start);
+			if(dist == 0) { // Start at the center of a cluster
+				double dir = 2 * M_PI * drand48();
+				jp1->point.x = e_start->pos.x + sin(dir) * e_start->radius;
+				jp1->point.y = e_start->pos.y + cos(dir) * e_start->radius;
+			} else {
+				jp1->point.x = e_start->pos.x + (start->x - e_start->pos.x) * e_start->radius / dist;
+				jp1->point.y = e_start->pos.y + (start->y - e_start->pos.y) * e_start->radius / dist;
 			}
-			jp1->point.x = e_start->pos.x + (start->x - e_start->pos.x) * e_start->radius / vector_dist(&(e_start->pos), start);
-			jp1->point.y = e_start->pos.y + (start->y - e_start->pos.y) * e_start->radius / vector_dist(&(e_start->pos), start);
-			jp1->type = WP_VIA;
-			jp1->next = NULL;
 			wp_start->next = intra_cluster_route(start, &(jp1->point), e_start);
 		}
 		if(e_stop != NULL) {
-			// We start in a cluster
-			jp2 = malloc(sizeof(waypoint_t));
-			if(!jp2) {
-				fprintf(stderr, "No jp1, no joy\n");
+			// We stop in a cluster
+			jp2 = create_waypoint(0, 0, 0, 0, 0, WP_VIA);
+			double dist = vector_dist(&(e_stop->pos), stop);
+			if(dist == 0) {
+				double dir = 2 * M_PI * drand48();
+				jp2->point.x = e_stop->pos.x + sin(dir) * e_stop->radius;
+				jp2->point.y = e_stop->pos.y + cos(dir) * e_stop->radius;
+			} else {
+				jp2->point.x = e_stop->pos.x + (stop->x - e_stop->pos.x) * e_stop->radius / dist;
+				jp2->point.y = e_stop->pos.y + (stop->y - e_stop->pos.y) * e_stop->radius / dist;
 			}
-			jp2->point.x = e_stop->pos.x + (stop->x - e_stop->pos.x) * e_stop->radius / vector_dist(&(e_stop->pos), stop);
-			jp2->point.y = e_stop->pos.y + (stop->y - e_stop->pos.y) * e_stop->radius / vector_dist(&(e_stop->pos), stop);
-			jp2->type = WP_VIA;
 			jp2->next = intra_cluster_route(&(jp2->point), stop, e_stop);
 			t = jp2;
 			while (t->next != NULL) {
@@ -284,22 +269,9 @@ void moveto_planner(entity_t* e, double x, double y) {
 	stop.x = x;
 	stop.y = y;
 
-	waypoint_t* wp_start = malloc(sizeof(waypoint_t));
-	if(!wp_start) {
-		fprintf(stderr, "No wp_start in moveto_planer\n");
-		exit(1);
-	}
-	waypoint_t* wp_stop = malloc(sizeof(waypoint_t));
-	if(!wp_stop) {
-		fprintf(stderr, "No wp_stop in moveto_planer\n");
-		exit(1);
-	}
-	wp_start->point = start;
-	wp_start->type = WP_START;
+	waypoint_t* wp_start = create_waypoint(start.x, start.y, 0, 0, 0, WP_START);
+	waypoint_t* wp_stop = create_waypoint(stop.x, stop.y, 0, 0, 0, WP_STOP);
 	wp_start->next = wp_stop;
-	wp_stop->point = stop;
-	wp_stop->type = WP_STOP;
-	wp_stop->next = NULL;
 
 	e->ship_data->flightplan = wp_start;
 	complete_flightplan(e);
@@ -331,36 +303,16 @@ void stop_planner(entity_t* e) {
 		stop.x = start.x + stopping_distance * vel.x / speed;
 		stop.y = start.y + stopping_distance * vel.y / speed;
 
-		waypoint_t* wp_start = malloc(sizeof(waypoint_t));
-		if(!wp_start) {
-			fprintf(stderr, "No wp_start in stop_planner\n");
-			exit(1);
-		}
-		waypoint_t* wp_stop = malloc(sizeof(waypoint_t));
-		if(!wp_stop) {
-			fprintf(stderr, "No wp_stop in stop_planner\n");
-			exit(1);
-		}
-		wp_start->point = start;
-		wp_start->type = WP_START;
+		waypoint_t* wp_start = create_waypoint(start.x, start.y, 0, 0, 0, WP_START);
+		waypoint_t* wp_stop = create_waypoint(stop.x, stop.y, 0, 0, 0, WP_STOP);
 		wp_start->next = wp_stop;
-		wp_stop->point = stop;
-		wp_stop->type = WP_STOP;
-		wp_stop->next = NULL;
 
 		e->ship_data->flightplan = wp_start;
 		complete_flightplan(e);
 	} else {
 		// Oh boy you are so fucked
-		waypoint_t* wp_start = malloc(sizeof(waypoint_t));
-		if(!wp_start) {
-			fprintf(stderr, "No wp_start in stop_planner\n");
-			exit(1);
-		}
+		waypoint_t* wp_start = create_waypoint(start.x, start.y, 0, 0, 0, WP_VIA);
 		waypoint_t* wp_stop = wp_start;
-		wp_start->type = WP_VIA;
-		wp_start->point = start;
-		wp_start->next = NULL;
 
 		vector_t end_pos;
 		end_pos.v = start.v;
@@ -368,14 +320,7 @@ void stop_planner(entity_t* e) {
 			end_pos.x += vel.x * dt;
 			end_pos.y += vel.y * dt;
 
-			waypoint_t* wp_tmp = malloc(sizeof(waypoint_t));
-			if(!wp_tmp) {
-				fprintf(stderr, "No wp_tmp in stop_planner\n");
-				exit(1);
-			}
-			wp_tmp->point = end_pos;
-			wp_tmp->type = WP_VIA;
-			wp_tmp->next = NULL;
+			waypoint_t* wp_tmp = create_waypoint(end_pos.x, end_pos.y, 0, 0, 0, WP_VIA);
 			wp_stop->next = wp_tmp;
 			wp_stop = wp_tmp;
 

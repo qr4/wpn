@@ -9,7 +9,7 @@
 extern double asteroid_radius_to_slots_ratio;
 
 double AVERAGE_CLUSTER_DISTANCE = 500;
-double MAXIMUM_CLUSTER_SIZE = 500 / 3;
+double MAXIMUM_CLUSTER_SIZE = 500 / 4.1;
 
 double MINIMUM_PLANET_SIZE = 30;
 double MAXIMUM_PLANET_SIZE = 50;

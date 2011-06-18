@@ -121,7 +121,7 @@ void free_route(waypoint_t* head) {
 	}
 }
 
-void print_waypoint(waypoint_t* wp) {
+void fprint_waypoint(FILE *stream, waypoint_t* wp) {
 	if(wp != NULL) {
 		char* type;
 		switch(wp->type) {
@@ -146,11 +146,15 @@ void print_waypoint(waypoint_t* wp) {
 			default:
 				type = "unknown";
 		}
-		fprintf(stdout, "t=%f, x=(%f,%f), v=(%f,%f) [%s]\n", wp->t, wp->point.x, wp->point.y, wp->speed.x, wp->speed.y, type);
+		fprintf(stream, "t=%f, x=(%f,%f), v=(%f,%f) [%s]\n", wp->t, wp->point.x, wp->point.y, wp->speed.x, wp->speed.y, type);
 		if(wp->type == WP_TURN_START || wp->type == WP_TURN_VIA || wp->type == WP_TURN_STOP) {
-			fprintf(stdout, "    (trying to avoid (%f, %f)\n", wp->obs.x, wp->obs.y);
+			fprintf(stream, "    (trying to avoid (%f, %f)\n", wp->obs.x, wp->obs.y);
 		}
 	}
+}
+
+void print_waypoint(waypoint_t* wp) {
+	fprint_waypoint(stdout, wp);
 }
 
 void print_route(waypoint_t* head) {
@@ -235,9 +239,9 @@ void _straight_minimal_time(waypoint_t* wp0, waypoint_t* wp1, double a) {
 	} else {
 		fprintf(stderr, "Sorry: t_midway = %e and t_end = %e (difference %e) mean that _straight_minimal_time aint't working\n", t_midway, t_end, t_end - t_midway);
 		fprintf(stderr, "Start:\n");
-		print_waypoint(wp0);
-		fprintf(stderr, "Stop \n");
-		print_waypoint(wp1);
+		fprint_waypoint(stderr, wp0);
+		fprintf(stderr, "Stop: \n");
+		fprint_waypoint(stderr, wp1);
 		fprintf(stderr, "a = %f\n", a);
 		return;
 	}
@@ -250,7 +254,20 @@ void straight_minimal_time(waypoint_t* wp0, waypoint_t* wp1, double a) {
 	} else if(wp1 == NULL) {
 		fprintf(stderr, "Very funny, calling straight_minimal_time with wp1 == NULL\n");
 		return;
+	} else if(isnan(wp0->point.x)) {
+		fprintf(stderr, "Very funny, calling straight_minimal_time with wp0.x == NaN\n");
+		return;
+	} else if(isnan(wp0->point.y)) {
+		fprintf(stderr, "Very funny, calling straight_minimal_time with wp0.y == NaN\n");
+		return;
+	} else if(isnan(wp1->point.x)) {
+		fprintf(stderr, "Very funny, calling straight_minimal_time with wp1.x == NaN\n");
+		return;
+	} else if(isnan(wp1->point.y)) {
+		fprintf(stderr, "Very funny, calling straight_minimal_time with wp1.y == NaN\n");
+		return;
 	}
+
 
 	double l_spinup = dist_to_vmax(hypot(wp0->speed.x, wp0->speed.y), a);
 	double l_spindown = dist_to_vmax(hypot(wp1->speed.x, wp1->speed.y), a);
@@ -299,8 +316,8 @@ void swing_by(waypoint_t* wp0, vector_t obstacle, waypoint_t* wp1, double a) {
 
 	if(fabs(dist0 - dist1) > epsilon) {
 		fprintf(stderr, "A swing_by can't just change the distance from %f to %f (obs = %f, %f, diff = %e)\n", dist0, dist1, obstacle.x, obstacle.y, dist0 - dist1);
-		print_waypoint(wp0);
-		print_waypoint(wp1);
+		fprint_waypoint(stderr, wp0);
+		fprint_waypoint(stderr, wp1);
 		return;
 	}
 
