@@ -36,15 +36,9 @@
 #include "network.h"
 #include "pstr.h"
 
-#define PORT "8090"
-#define MAX_CONNECTION 100
-#define MAX_USERS 100
+#include "userstuff.h"
 
-#define HOME "/opt/wpn"
-#define USER_HOME_BY_NAME HOME"/user/by-name"
-#define USER_HOME_BY_ID HOME"/user/by-id"
-#define CONFIG_HOME HOME"/etc"
-#define CONFIG_LAST_ID CONFIG_HOME"/last_id"
+#include "config.h"
 
 //
 // user-info-status-dinge
@@ -64,174 +58,13 @@ struct userstate {
 
 static struct userstate* us;
 
-#if 0
-int write_file() {
-}
-
-int write_user_file(struct userstate* us, char* filename, int len_filename, struct dstr* data) {
-  struct pstr msg = { .used = sizeof(USER_HOME), .str = USER_HOME "/" };
-  pstr_append(&msg, &us->user);
-  pstr_append_cstr(&msg, filename, len_filename);
-  return pstr_write_file(&msg, data, 0);
-}
-#endif
-
-// schaut unter USER_HOME/$name nach ob es ein verzeichnis (oder eine andere datei) gibt 
-// 1 = ja, 0 = nein
-int have_user(struct pstr* name) {
-  struct pstr path = { .used = sizeof(USER_HOME_BY_NAME), .str = USER_HOME_BY_NAME "/" };
-  pstr_append(&path, name);
-
-  struct stat sb;
-
-  if (stat(pstr_as_cstr(&path), &sb) == -1) {
-    if (errno != ENOENT) {
-      log_perror("stat");
-    }
-    return 0;
-  }
-
-  if ((sb.st_mode & S_IFMT) != S_IFDIR) {
-    log_msg("path %s is not a directory - why??", path.str);
-  }
-
-  return 1;
-}
-
-int get_id(struct pstr* file) {
-  struct pstr id = { .used = 0 };
-
-  int ret = -1;
-
-  if (pstr_read_file(file, &id) == -1) goto err;
-
-  errno = 0;
-  ret = strtol(pstr_as_cstr(&id), (char **) NULL, 10);
-  if (errno != 0) goto err;
-  
-  return ret;
-
-err:
-  log_msg("probleme beim lesen von %.*s", pstr_len(file), pstr_as_cstr(file));
-  log_perror("get_id");
-  return -1;
-}
-
-void crypt_passwd(const void* pw, unsigned long pw_len, struct pstr* hash) {
-  pstr_clear(hash);
-  SHA_CTX c;
-  SHA1_Init(&c);
-  SHA1_Update(&c, pw, pw_len);
-  SHA1_Final((unsigned char *)hash->str, &c);
-  hash->used = SHA_DIGEST_LENGTH;
-  hash->str[SHA_DIGEST_LENGTH] = '\0';
-}                    
-
-// legt einen neuen user unter USER_HOME_BY_ID/$id und USER_HOME_BY_NAME/$name (symlink) 
-// mit password $pw an. gibt ihm eine neue id (wird auch zurueckgegeben)
-// bei "geht nicht" wird -1 zurueckgegeben
-int add_user(char *name, int len_name, const void* pw, unsigned long pw_len, unsigned int* user_id) {
-
-  struct pstr home_by_id = { .used = sizeof(USER_HOME_BY_ID), .str = USER_HOME_BY_ID "/" };
-  struct pstr home_by_name = { .used = sizeof(USER_HOME_BY_NAME), .str = USER_HOME_BY_NAME "/" };
-  struct pstr file;
-
-  {
-    // neue user-id bauen
-    struct pstr file_last_id = { .used = sizeof(CONFIG_LAST_ID) - 1, .str = CONFIG_LAST_ID };
-    if ((*user_id = get_id(&file_last_id)) == -1) return -1;
-
-    (*user_id)++;
-
-    struct pstr id = { .used = 0 };
-    pstr_append_printf(&id, "%d\n", *user_id);
-
-    if (pstr_write_file(&file_last_id, &id, O_WRONLY | O_TRUNC) == -1) {
-      log_perror("kann "CONFIG_LAST_ID" nicht schreiben!");
-      return -1;
-    }
-  }
-  
-  pstr_append_printf(&home_by_id, "%d", *user_id);
-  pstr_append_cstr(&home_by_name, name, len_name);
-
-  {
-    // verzeichnis und symlink fuer den user anlegen
-    if (mkdir(pstr_as_cstr(&home_by_id), 0700) == -1) {
-      log_perror("mkdir");
-      return -1;
-    }
-    if (symlink(pstr_as_cstr(&home_by_id), pstr_as_cstr(&home_by_name)) == -1) {
-      log_perror("symlink home-by-name");
-      return -1;
-    }
-  }
-
-  {
-    // user id schreiben
-    pstr_set(&file, &home_by_id);
-    pstr_append_cstr(&file, "/id", 3);
-
-    struct pstr id = { .used = 0 };
-    pstr_append_printf(&id, "%d\n", *user_id);
-
-    if (pstr_write_file(&file, &id, O_CREAT | O_EXCL | O_WRONLY) == -1) {
-      log_perror("write user-id");
-      log_msg("write mag id nicht schreiben. id = %s", id);
-      return -1;
-    }
-  }
-
-  {
-    // passwd schreiben
-    struct pstr hash;
-    crypt_passwd(pw, pw_len, &hash);
-
-    pstr_set(&file, &home_by_id);
-    pstr_append_cstr(&file, "/passwd", 7);
-
-    if (pstr_write_file(&file, &hash, O_CREAT | O_EXCL | O_WRONLY) == -1) {
-      log_perror("pw-file write");
-      return -1;
-    }
-  }
-
-  return 0;
-}
-
-int write_user_msg(struct userstate* us) {
-
-  struct pstr msg = { .used = sizeof(USER_HOME_BY_NAME), .str = USER_HOME_BY_NAME "/" };
-  pstr_append(&msg, &us->user);
-  pstr_append_cstr(&msg, "/msg", 4);
-
-  int fd = open(msg.str, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-  if (fd == -1) {
-    log_perror("open msg");
-    return -1;
-  }
-
-  ssize_t ret = write(fd, dstr_as_cstr(&us->tmp), dstr_len(&us->tmp));
-  if (ret == -1) {
-    log_perror("write msg");
-    close(fd);
-    return -1;
-  } else if (ret != dstr_len(&us->tmp)) {
-    log_msg("msg von %s konnte nicht komplett geschrieben werden. soll = %d, ist = %d", 
-      pstr_as_cstr(&us->user), dstr_len(&us->tmp), ret);
-  }
-
-  close(fd);
-
-  return 0;
-}
-
 
 //
-//
+// sachen für den endlichen automaten für die menu-führung
 //
 
 int _login(char*, int, struct userstate* us, int write_fd);
+
 int _new_account_name(char*, int, struct userstate* us, int write_fd);
 int _new_account_pw1(char*, int, struct userstate* us, int write_fd);
 int _new_account_pw2(char*, int, struct userstate* us, int write_fd);
@@ -240,15 +73,37 @@ int _set_noob(char*, int, struct userstate* us, int write_fd);
 
 int _check_password(char*, int, struct userstate* us, int write_fd);
 int _menu_main(char*, int, struct userstate* us, int write_fd);
-int _menu_config(char*, int, struct userstate* us, int write_fd);
 
-enum state { LOGIN, NEW_ACCOUNT_NAME, NEW_ACCOUNT_PW1, NEW_ACCOUNT_PW2, SET_USER_INFO, SET_NOOB,
-  CHECK_PASSWORD, MENU_MAIN, MENU_CONFIG };
+int _lua_console(char*, int, struct userstate* us, int write_fd);
+int _lua_get_code(char*, int, struct userstate* us, int write_fd);
+int _lua_monitor(char*, int, struct userstate* us, int write_fd);
+
+int _menu_config(char*, int, struct userstate* us, int write_fd);
+int _change_password_old(char*, int, struct userstate* us, int write_fd);
+int _change_password_new1(char*, int, struct userstate* us, int write_fd);
+int _change_password_new2(char*, int, struct userstate* us, int write_fd);
+int _change_user_info(char*, int, struct userstate* us, int write_fd);
+int _change_noob(char*, int, struct userstate* us, int write_fd);
+int _change_ssh_key(char*, int, struct userstate* us, int write_fd);
+
+enum state { 
+  LOGIN, 
+    NEW_ACCOUNT_NAME, NEW_ACCOUNT_PW1, NEW_ACCOUNT_PW2, SET_USER_INFO, SET_NOOB,
+    CHECK_PASSWORD, 
+      MENU_MAIN, 
+        LUA_CONSOLE, 
+        LUA_GET_CODE, 
+        LUA_MONITOR, 
+        MENU_CONFIG, 
+          CHANGE_PASSWORD_OLD, CHANGE_PASSWORD_NEW1, CHANGE_PASSWORD_NEW2, 
+          CHANGE_USER_INFO, 
+          CHANGE_NOOB, 
+          CHANGE_SSH_KEY };
 
 struct automaton {
   const char* msg;
   const char* prompt;
-  const char* const* error;   // evtl. irgend wann mal
+//  const char* const* error;   // evtl. irgend wann mal
 //    .error = (const char * const []){"hallo??", "wurst!", NULL},
 //    .error = (const char *[]) { "foo", "bar" },
   int (*fkt)(char*, int, struct userstate*, int);
@@ -336,7 +191,9 @@ struct automaton {
       "\n"
       " 1 LUA-Konsole oeffen und Schiffchen per Hand steuern\n"
       " 2 Deinen tollen Schiffchen-Code hochladen\n"
-      " 3 LUA-Logging-Konsole oeffnen - watching shit scroll by...\n"
+      " 3 LUA-Monitor oeffnen - watching shit scroll by...\n"
+      "\n"
+      " 0 Konfig-Menu\n"
       "\n"
       " Bitte treffen Sie Ihre Wahl\n"
       "\n",
@@ -346,11 +203,89 @@ struct automaton {
   },
   {
     .msg = "\n"
+      " Hint: Öffne in einer andren Konsole den LUA-Monitor um weitere Ausgaben zu sehen\n"
+      " Gib .quit<RETURN> ein um die LUA-Konsole zu verlassen\n"
+      "\n",
+    .prompt = "400 lua: ",
+    .fkt = _lua_console,
+    .state = LUA_CONSOLE
+  },
+  {
+    .msg = "\n"
+      " Paste hier Deinen Lua-Code rein.\n"
+      " \"-- .quit\" terminiert die Eingabe (ohne die \"\") und aktiviert den neuen Code.\n"
+      "\n",
+    .prompt = "410 code: ",
+    .fkt = _lua_get_code,
+    .state = LUA_GET_CODE
+  },
+  {
+    .msg = "\n"
+      " Eine beliebige Eingabe mit <RETURN> beendet Monitor-Mode.\n"
+      "\n",
+    .prompt = "450 monitor: ",
+    .fkt = _lua_monitor,
+    .state = LUA_MONITOR
+  },
+  {
+    .msg = "\n"
       " The C O N F I G - M E N U\n"
+      "\n"
+      " 1 Login-Passwort ändern\n"
+      " 2 User-Info ändern\n"
+      " 3 Noob-Mode ändern (-> Dein Code für Plagiatserkennungssoftware)\n"
+      " 4 ssh-key ändern\n"
+      "\n"
+      " 0 Main-Menu\n"
       "\n",
     .prompt = "350 config: ",
     .fkt = _menu_config,
     .state = MENU_CONFIG
+  },
+  {
+    .msg = "\n"
+      " So, 1x Loginpasswort ändern\n"
+      "\n",
+    .prompt = "100 altes passwort: ",
+    .fkt = _change_password_old,
+    .state = CHANGE_PASSWORD_OLD
+  },
+  {
+    .msg = "",
+    .prompt = "101 passwort: ",
+    .fkt = _change_password_new1,
+    .state = CHANGE_PASSWORD_NEW1
+  },
+  {
+    .msg = "",
+    .prompt = "102 passwort: ",
+    .fkt = _change_password_new2,
+    .state = CHANGE_PASSWORD_NEW2
+  },
+  {
+    .msg = "\n"
+      " User-Info ändern...\n"
+      " Eine leere Zeile beendet die Eingabe.\n"
+      "\n",
+    .prompt = "120 info: ",
+    .fkt = _change_user_info,
+    .state = CHANGE_USER_INFO
+  },
+  {
+    .msg = "\n"
+      " noob\n"
+      "\n",
+    .prompt = "120 noob: ",
+    .fkt = _change_noob,
+    .state = CHANGE_NOOB
+  },
+  {
+    .msg = "\n"
+      " ssh-key\n"
+      "\n",
+    .prompt = "125 sshkey: ",
+    .fkt = _change_ssh_key,
+    .state = CHANGE_SSH_KEY
   }
 };
 
@@ -411,10 +346,12 @@ static ssize_t set_state(enum state s, struct userstate* us, int write_fd) {
 }
 
 //
-//
+// ------------------------------------------------------------------------------------------------
 //
 
-// neue verbindung? das menu!
+//
+//
+//
 int _login(char* data, int len, struct userstate* us, int write_fd) {
   us->count = 0;
 
@@ -433,6 +370,8 @@ int _login(char* data, int len, struct userstate* us, int write_fd) {
   return set_state(CHECK_PASSWORD, us, write_fd);;
 }
 
+//
+//
 //
 int _new_account_name(char* data, int len, struct userstate* us, int write_fd) {
   if ((len < 3) || (len > 12)) {
@@ -476,6 +415,8 @@ err:
 }
 
 //
+//
+//
 int _new_account_pw1(char* data, int len, struct userstate* us, int write_fd) {
   if (len < 6) {
     if (++us->count > 3) { goto err; }
@@ -497,6 +438,8 @@ err:
 }
 
 //
+//
+//
 int _new_account_pw2(char* data, int len, struct userstate* us, int write_fd) {
   if ( (dstr_len(&us->tmp) != len) || (strncmp(dstr_as_cstr(&us->tmp), data, len)) ) {
     const char msg[] = "505 Die eingegebenen Passwoerter stimmen nicht ueberein. Nochmal!\n";
@@ -515,9 +458,20 @@ int _new_account_pw2(char* data, int len, struct userstate* us, int write_fd) {
   return set_state(SET_USER_INFO, us, write_fd);;
 }
 
+//
+//
+//
 int _set_user_info(char* data, int len, struct userstate* us, int write_fd) {
+
   if (len == 0) {
-    if (write_user_msg(us) == -1) return -1;    // irgendwas ist da schief gegangen
+    struct pstr path = { .used = 0 };
+    pstr_append_printf(&path, USER_HOME_BY_NAME "/%s/msg", pstr_as_cstr(&us->user));
+
+    if (dstr_write_file(&path, &us->tmp, O_WRONLY | O_CREAT | O_TRUNC) == -1) {
+      log_perror("write msg");
+      return -1;
+    }
+
     return set_state(SET_NOOB, us, write_fd);
   }
 
@@ -539,6 +493,9 @@ int _set_user_info(char* data, int len, struct userstate* us, int write_fd) {
   return print_msg_and_prompt(write_fd, NULL, 0, us);
 }
 
+//
+//
+//
 int _set_noob(char* data, int len, struct userstate* us, int write_fd) {
   if ((len == 2) && (strncasecmp(data, "ja", 2) == 0)) {
     struct pstr noob = { .used = sizeof(USER_HOME_BY_NAME), .str = USER_HOME_BY_NAME "/" };
@@ -560,6 +517,8 @@ int _set_noob(char* data, int len, struct userstate* us, int write_fd) {
   return set_state(MENU_MAIN, us, write_fd);
 }
 
+//
+//
 //
 int _check_password(char* data, int len, struct userstate* us, int write_fd) {
   struct pstr path = { .used = 0 };
@@ -587,7 +546,7 @@ int _check_password(char* data, int len, struct userstate* us, int write_fd) {
     return set_state(MENU_MAIN, us, write_fd);
   }
 
-  // fall thue
+  // fall through
 err:
   if (++us->count > 3) {
     const char msg[] = "521 Das war 1x zuviel...\n";
@@ -600,12 +559,24 @@ err:
 }
 
 //
+//
+//
 int _menu_main(char* data, int len, struct userstate* us, int write_fd) {
   if (len == 0) goto out;
 
+  dstr_clear(&us->tmp);
+
   const char msg[] = "540 Unbekannter Menu-Punkt\n";
-  if ((len != 1) || (data[0] < '1' || data[0] > '3')) {
+  if (len != 1) {
     return print_msg_and_prompt(write_fd, msg, sizeof(msg), us);
+  }
+
+  switch (data[0]) {
+    case '1': return set_state(LUA_CONSOLE, us, write_fd);
+    case '2': return set_state(LUA_GET_CODE, us, write_fd);
+    case '3': return set_state(LUA_MONITOR, us, write_fd);
+    case '0': return set_state(MENU_CONFIG, us, write_fd);
+    default: return print_msg_and_prompt(write_fd, msg, sizeof(msg), us);
   }
 
 out:
@@ -617,14 +588,102 @@ out:
   }
 }
 
-int _menu_config(char* data, int len, struct userstate* us, int write_fd) {
+//
+//
+//
+int _lua_console(char* data, int len, struct userstate* us, int write_fd) {
 
+  if ((len == 5) && (strncasecmp(data, ".quit", 5) == 0)) return set_state(MENU_MAIN, us, write_fd);
 
-  return 0;
+  return print_msg_and_prompt(write_fd, NULL, 0, us); // nur den prompt anzeigen
 }
 
 //
 //
+//
+int _lua_get_code(char* data, int len, struct userstate* us, int write_fd) {
+
+  if ((len == 8) && (strncasecmp(data, "-- .quit", 8) == 0)) {
+    return set_state(MENU_MAIN, us, write_fd);
+  }
+
+  dstr_append(&us->tmp, data, len);
+  dstr_append(&us->tmp, "\n", 1);
+
+  return 0; // kein prompt
+}
+
+//
+//
+//
+int _lua_monitor(char* data, int len, struct userstate* us, int write_fd) {
+  return set_state(MENU_CONFIG, us, write_fd);
+}
+
+//
+//
+//
+int _menu_config(char* data, int len, struct userstate* us, int write_fd) {
+  if (len == 0) return set_state(MENU_MAIN, us, write_fd);
+
+  const char msg[] = "540 Unbekannter Menu-Punkt\n";
+  if (len != 1) {
+    return print_msg_and_prompt(write_fd, msg, sizeof(msg), us);
+  }
+
+  switch (data[0]) {
+    case '1': return set_state(CHANGE_PASSWORD_OLD, us, write_fd);
+    case '2': return set_state(CHANGE_USER_INFO, us, write_fd);
+    case '3': return set_state(CHANGE_NOOB, us, write_fd);
+    case '4': return set_state(CHANGE_SSH_KEY, us, write_fd);
+    default: return print_msg_and_prompt(write_fd, msg, sizeof(msg), us);
+  }
+}
+
+//
+//
+//
+int _change_password_old(char* data, int len, struct userstate* us, int write_fd) {
+  return set_state(MENU_CONFIG, us, write_fd);
+}
+
+//
+//
+//
+int _change_password_new1(char* data, int len, struct userstate* us, int write_fd) {
+  return set_state(MENU_CONFIG, us, write_fd);
+}
+
+//
+//
+//
+int _change_password_new2(char* data, int len, struct userstate* us, int write_fd) {
+  return set_state(MENU_CONFIG, us, write_fd);
+}
+
+//
+//
+//
+int _change_user_info(char* data, int len, struct userstate* us, int write_fd) {
+  return set_state(MENU_CONFIG, us, write_fd);
+}
+
+//
+//
+//
+int _change_noob(char* data, int len, struct userstate* us, int write_fd) {
+  return set_state(MENU_CONFIG, us, write_fd);
+}
+
+//
+//
+//
+int _change_ssh_key(char* data, int len, struct userstate* us, int write_fd) {
+  return set_state(MENU_CONFIG, us, write_fd);
+}
+
+//
+// ------------------------------------------------------------------------------------------------
 //
 
 static void net_client_connect(int fd, fd_set* master, int* fdmax) {
@@ -637,7 +696,7 @@ static void net_client_connect(int fd, fd_set* master, int* fdmax) {
     return;
   }
 
-  if (newfd >= MAX_CONNECTION) {
+  if (newfd >= TALK_MAX_CONNECTION) {
     log_msg("max connections reached. can't handle this connection");
     close(newfd);
     return;
@@ -716,15 +775,15 @@ int main() {
     if (get_id(&file_last_id) == -1) exit(EXIT_FAILURE);
   }
 
-  us = (struct userstate*)malloc(sizeof(struct userstate) * MAX_USERS);
+  us = (struct userstate*)malloc(sizeof(struct userstate) * TALK_MAX_USERS);
   if (us == NULL) { log_msg("malloc us == NULL: kein platz"); exit(EXIT_FAILURE); }
-  for (int i = 0; i < MAX_USERS; ++i) {
+  for (int i = 0; i < TALK_MAX_USERS; ++i) {
     if (dstr_malloc(&us[i].net_data) < 0) { log_perror("pstr_malloc"); exit(EXIT_FAILURE); }
     if (dstr_malloc(&us[i].tmp) < 0) { log_perror("pstr_malloc"); exit(EXIT_FAILURE); }
   }
 
-	int listener = network_bind(PORT, MAX_CONNECTION);
-	if (listener == -1) { log_msg("kann auf port "PORT" nicht binden... exit"); exit(EXIT_FAILURE); }
+	int listener = network_bind(TALK_PORT, TALK_MAX_CONNECTION);
+	if (listener == -1) { log_msg("kann auf port "TALK_PORT" nicht binden... exit"); exit(EXIT_FAILURE); }
 
   int net_fd = listener;
 

@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -g3 -O2 -march=native -mtune=native -pipe -std=gnu99 -I../logging
 LDFLAGS = -lrt -lssl
 OBJ_NET = network.o net.o net_test.o ../logging/logging.o
-OBJ_TALK = network.o pstr.o talk.o ../logging/logging.o
+OBJ_TALK = network.o pstr.o userstuff.o talk.o ../logging/logging.o
 
 all: talk net
 
