@@ -54,7 +54,7 @@ struct userstate {
   struct pstr user;   // name des users
   unsigned int id;    // id des users
 
-  int (*fkt)(struct userstate*, int);   // funktion die aufgerufen werden soll
+  int (*fkt)(char* data, int len, struct userstate*, int);   // funktion die aufgerufen werden soll
 
   struct dstr net_data;   // empfangsbuffer-dinge
 
@@ -79,7 +79,7 @@ int write_user_file(struct userstate* us, char* filename, int len_filename, stru
 // schaut unter USER_HOME/$name nach ob es ein verzeichnis (oder eine andere datei) gibt 
 // 1 = ja, 0 = nein
 int have_user(struct pstr* name) {
-  struct pstr path = { .used = sizeof(USER_HOME_BY_ID), .str = USER_HOME_BY_ID "/" };
+  struct pstr path = { .used = sizeof(USER_HOME_BY_NAME), .str = USER_HOME_BY_NAME "/" };
   pstr_append(&path, name);
 
   struct stat sb;
@@ -231,16 +231,16 @@ int write_user_msg(struct userstate* us) {
 //
 //
 
-int _login(struct userstate* us, int write_fd);
-int _new_account_name(struct userstate* us, int write_fd);
-int _new_account_pw1(struct userstate* us, int write_fd);
-int _new_account_pw2(struct userstate* us, int write_fd);
-int _set_user_info(struct userstate* us, int write_fd);
-int _set_noob(struct userstate* us, int write_fd);
+int _login(char*, int, struct userstate* us, int write_fd);
+int _new_account_name(char*, int, struct userstate* us, int write_fd);
+int _new_account_pw1(char*, int, struct userstate* us, int write_fd);
+int _new_account_pw2(char*, int, struct userstate* us, int write_fd);
+int _set_user_info(char*, int, struct userstate* us, int write_fd);
+int _set_noob(char*, int, struct userstate* us, int write_fd);
 
-int _check_password(struct userstate* us, int write_fd);
-int _menu_main(struct userstate* us, int write_fd);
-int _menu_config(struct userstate* us, int write_fd);
+int _check_password(char*, int, struct userstate* us, int write_fd);
+int _menu_main(char*, int, struct userstate* us, int write_fd);
+int _menu_config(char*, int, struct userstate* us, int write_fd);
 
 enum state { LOGIN, NEW_ACCOUNT_NAME, NEW_ACCOUNT_PW1, NEW_ACCOUNT_PW2, SET_USER_INFO, SET_NOOB,
   CHECK_PASSWORD, MENU_MAIN, MENU_CONFIG };
@@ -251,7 +251,7 @@ struct automaton {
   const char* const* error;   // evtl. irgend wann mal
 //    .error = (const char * const []){"hallo??", "wurst!", NULL},
 //    .error = (const char *[]) { "foo", "bar" },
-  int (*fkt)(struct userstate*, int);
+  int (*fkt)(char*, int, struct userstate*, int);
   enum state state;
 } const a[] = {
 //
@@ -415,12 +415,7 @@ static ssize_t set_state(enum state s, struct userstate* us, int write_fd) {
 //
 
 // neue verbindung? das menu!
-int _login(struct userstate* us, int write_fd) {
-  char* data;
-  int len;
-
-  if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
-
+int _login(char* data, int len, struct userstate* us, int write_fd) {
   us->count = 0;
 
   if (len == 0) {
@@ -439,12 +434,7 @@ int _login(struct userstate* us, int write_fd) {
 }
 
 //
-int _new_account_name(struct userstate* us, int write_fd) {
-  char* data;
-  int len;
-  
-  if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
-
+int _new_account_name(char* data, int len, struct userstate* us, int write_fd) {
   if ((len < 3) || (len > 12)) {
     if (++us->count > 3) { goto err; }
     const char msg[] = "501 Nur 3 bis max. 12 Zeichen. Du Knackwurst. Probiers nochmal\n";
@@ -486,12 +476,7 @@ err:
 }
 
 //
-int _new_account_pw1(struct userstate* us, int write_fd) {
-  char* data;
-  int len;
-
-  if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
-
+int _new_account_pw1(char* data, int len, struct userstate* us, int write_fd) {
   if (len < 6) {
     if (++us->count > 3) { goto err; }
     const char msg[] = "504 Dein Passwort ist zu kurz.\n";
@@ -512,12 +497,7 @@ err:
 }
 
 //
-int _new_account_pw2(struct userstate* us, int write_fd) {
-  char* data;
-  int len;
-
-  if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
-
+int _new_account_pw2(char* data, int len, struct userstate* us, int write_fd) {
   if ( (dstr_len(&us->tmp) != len) || (strncmp(dstr_as_cstr(&us->tmp), data, len)) ) {
     const char msg[] = "505 Die eingegebenen Passwoerter stimmen nicht ueberein. Nochmal!\n";
     print_msg_and_prompt(write_fd, msg, sizeof(msg), NULL);
@@ -535,12 +515,7 @@ int _new_account_pw2(struct userstate* us, int write_fd) {
   return set_state(SET_USER_INFO, us, write_fd);;
 }
 
-int _set_user_info(struct userstate* us, int write_fd) {
-  char* data;
-  int len;
-
-  if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
-
+int _set_user_info(char* data, int len, struct userstate* us, int write_fd) {
   if (len == 0) {
     if (write_user_msg(us) == -1) return -1;    // irgendwas ist da schief gegangen
     return set_state(SET_NOOB, us, write_fd);
@@ -559,16 +534,12 @@ int _set_user_info(struct userstate* us, int write_fd) {
   }
 
   dstr_append(&us->tmp, data, len);
+  dstr_append(&us->tmp, "\n", 1);
 
   return print_msg_and_prompt(write_fd, NULL, 0, us);
 }
 
-int _set_noob(struct userstate* us, int write_fd) {
-  char* data;
-  int len;
-
-  if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
-
+int _set_noob(char* data, int len, struct userstate* us, int write_fd) {
   if ((len == 2) && (strncasecmp(data, "ja", 2) == 0)) {
     struct pstr noob = { .used = sizeof(USER_HOME_BY_NAME), .str = USER_HOME_BY_NAME "/" };
     pstr_append(&noob, &us->user);
@@ -590,12 +561,7 @@ int _set_noob(struct userstate* us, int write_fd) {
 }
 
 //
-int _check_password(struct userstate* us, int write_fd) {
-  char* data;
-  int len;
-
-  if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
-
+int _check_password(char* data, int len, struct userstate* us, int write_fd) {
   struct pstr path = { .used = 0 };
   pstr_append_printf(&path, USER_HOME_BY_NAME "/%s/passwd", pstr_as_cstr(&us->user));
 
@@ -634,20 +600,13 @@ err:
 }
 
 //
-int _menu_main(struct userstate* us, int write_fd) {
-  char* data;
-  int len;
-
-  if (dstr_read_line(&us->net_data, &data, &len) < 0) return 0;  // kein '\n' gefunden
-
+int _menu_main(char* data, int len, struct userstate* us, int write_fd) {
   if (len == 0) goto out;
 
   const char msg[] = "540 Unbekannter Menu-Punkt\n";
   if ((len != 1) || (data[0] < '1' || data[0] > '3')) {
     return print_msg_and_prompt(write_fd, msg, sizeof(msg), us);
   }
-
-
 
 out:
   if (++us->count > 3) {
@@ -658,7 +617,7 @@ out:
   }
 }
 
-int _menu_config(struct userstate* us, int write_fd) {
+int _menu_config(char* data, int len, struct userstate* us, int write_fd) {
 
 
   return 0;
@@ -720,10 +679,16 @@ static void net_client_talk(int fd, fd_set* master) {
   if (dstr_append(&us[fd].net_data, buffer, len) < 0) { log_perror("dstr_append"); exit(1); }
 
   // nun die eigentliche fkt aufrufen
-  if (us[fd].fkt(&us[fd], fd) < 0) {
-    log_msg("return-state sagt verbindung dichtmachen...");
-    close(fd);
-    FD_CLR(fd, master);
+  
+  char* data;
+  int data_len;
+
+  while (dstr_read_line(&us[fd].net_data, &data, &data_len) >= 0) {
+    if (us[fd].fkt(data, data_len, &us[fd], fd) < 0) {
+      log_msg("return-state sagt verbindung dichtmachen. user = %s", pstr_as_cstr(&us[fd].user));
+      close(fd);
+      FD_CLR(fd, master);
+    }
   }
 }
 
