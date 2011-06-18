@@ -70,6 +70,8 @@ int main(int argc, char *argv[]) {
 	/* Create a testship */
 	vector_t v1 = vector(1000);
 	entity_id_t ship1 = init_ship(ship_storage, v1, 6);
+	vector_t v2 = vector(2000);
+	entity_id_t ship2 = init_ship(ship_storage, v2, 6);
 
 	/* Test json-output with the testship */
 	temp = ship_to_json(get_entity_from_storage_by_id(ship_storage, ship1));
@@ -77,6 +79,8 @@ int main(int argc, char *argv[]) {
 	free(temp);
 
 	e = get_entity_by_id(ship1);
+	e->ship_data->slot[0] = DRIVE;
+	e = get_entity_by_id(ship2);
 	e->ship_data->slot[0] = DRIVE;
 
 	map_to_network();

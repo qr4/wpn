@@ -37,6 +37,8 @@ m0_huge    =  8 -- Leergewicht eines riesigen Schiffs (24 slots)
 m0_klotz   =  1 -- Gewicht eines Klotzes (thruster, resource, laser)
 F_thruster = 20 -- Schub eines thrusters
 epsilon    = 1e-10 -- // Missmatches im Kurs durch Rundungsfehler ab denen die Physiksengine sich beklagen soll
+asteroid_radius_to_slots_ratio = 1
+planet_size = 50
 
 -- When building a new ship, offset it from the building bases' position by this
 -- amount. (This should always be larger than the collision distance)
