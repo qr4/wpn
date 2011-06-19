@@ -97,10 +97,10 @@ char* base_to_json(entity_t* e) {
 
 	if(e->base_data->docked_to.id == INVALID_ID.id) {
 		asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": %i, \"size\": %i, \"contents\": \"%s\", \"docked_to\":null}",
-			(uint64_t)e, e->pos.x, e->pos.y, e->player_id, e->slots, contents);
+			e->unique_id.id, e->pos.x, e->pos.y, e->player_id, e->slots, contents);
 	} else {
 		asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": %i, \"size\": %i, \"contents\": \"%s\", \"docked_to\": %lu}",
-			(uint64_t)e, e->pos.x, e->pos.y, e->player_id, e->slots, contents, e->base_data->docked_to.id);
+			e->unique_id.id, e->pos.x, e->pos.y, e->player_id, e->slots, contents, e->base_data->docked_to.id);
 	}
 
 	free(contents);
@@ -121,7 +121,7 @@ char* planet_to_json(entity_t* e) {
 	}
 
 	asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": null}",
-			(uint64_t)e, e->pos.x, e->pos.y);
+			e->unique_id.id, e->pos.x, e->pos.y);
 
 	return retval;
 }
@@ -143,13 +143,30 @@ char* ship_to_json(entity_t* e) {
 
 	if(e->ship_data->docked_to.id == INVALID_ID.id) {
 		asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": %i, \"size\": %i, \"contents\": \"%s\", \"docked_to\":null}",
-			(uint64_t)e, e->pos.x, e->pos.y, e->player_id, e->slots, contents);
+			e->unique_id.id, e->pos.x, e->pos.y, e->player_id, e->slots, contents);
 	} else {
 		asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": %i, \"size\": %i, \"contents\": \"%s\", \"docked_to\": %lu}",
-			(uint64_t)e, e->pos.x, e->pos.y, e->player_id, e->slots, contents, e->ship_data->docked_to.id);
+			e->unique_id.id, e->pos.x, e->pos.y, e->player_id, e->slots, contents, e->ship_data->docked_to.id);
 	}
 
 	free(contents);
+
+	return retval;
+}
+
+/* Give the json representation of an explosion of the given entity (with curly braces) */
+char* explosion_to_json(entity_t* e) {
+	char* retval;
+
+	if(!e) {
+		DEBUG("Trying to explode a NULL entity in explosion_to_json\n");
+		return NULL;
+	} else if(!(e-> type & (BASE|SHIP))) {
+		DEBUG("Trying to explode something that's neither a base nor a ship.\n");
+		return NULL;
+	}
+
+	asprintf(&retval, "{\"exploding_entity\": %li, \"x\": %f, \"y\": %f}", e->unique_id.id, e->pos.x, e->pos.y);
 
 	return retval;
 }

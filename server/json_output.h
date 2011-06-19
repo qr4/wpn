@@ -16,6 +16,7 @@ char* asteroids_to_json();
 char* bases_to_json();
 char* planets_to_json();
 char* ships_to_json();
+char* explosion_to_json(entity_t* e);
 void asteroids_to_network();
 void bases_to_network();
 void planets_to_network();
