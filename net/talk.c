@@ -4,8 +4,6 @@
 
 #define _GNU_SOURCE
 
-#include <openssl/sha.h>    // fuer pw hashing
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -31,6 +29,10 @@
 
 #include <sys/mman.h>
 
+#include <sys/types.h>      // kill
+#include <signal.h>
+
+
 #include <logging.h>
 
 #include "network.h"
@@ -39,6 +41,35 @@
 #include "userstuff.h"
 
 #include "config.h"
+
+
+#define MAX(a, b)  (((a) > (b)) ? (a) : (b))
+
+
+//
+// fuer die kommunikation vater <-> sohn
+//
+
+struct talk_info {
+  pid_t cpid;     // pid des sohnes
+
+  int pipe_fd[2]; // fd fuer papa <-> sohn
+
+  // sohn
+  union {
+    struct {
+      int id;     // id des users fuer den die nachricht ist
+      int len;    // groesse der nachricht
+    } head;
+    char data[0];
+  } lua_log;
+  int lua_log_size; // = wie viele bytes vom "header" haben wir schon
+
+  int log_read;   // anzahl der bytes die von der nachrcht schon verschickt wurden
+};
+
+static struct talk_info talk = { .lua_log_size = 0 };
+
 
 //
 // user-info-status-dinge
@@ -617,7 +648,7 @@ int _lua_get_code(char* data, int len, struct userstate* us, int write_fd) {
 //
 //
 int _lua_monitor(char* data, int len, struct userstate* us, int write_fd) {
-  return set_state(MENU_CONFIG, us, write_fd);
+  return set_state(MENU_MAIN, us, write_fd);
 }
 
 //
@@ -727,6 +758,7 @@ static void net_client_talk(int fd, fd_set* master) {
   if (len == 0) {
     // client mag nicht mehr mit uns reden
     log_msg("<%d> client hang up", fd);
+    us[fd].id = -1;
 
     // sachen globale kommunikation aufraeumen
     close(fd);
@@ -753,81 +785,196 @@ static void net_client_talk(int fd, fd_set* master) {
 
 
 
+static void socket_talk(fd_set* master) {
+  if (talk.lua_log_size < sizeof(talk.lua_log.head)) {
+    // "header" noch nicht vollstaendig
+    ssize_t read_len = read(talk.pipe_fd[0],    // socket read fd
+        talk.lua_log.data + talk.lua_log_size,  // position - evtl. append
+        sizeof(talk.lua_log.head) - talk.lua_log_size /* nicht ueber id und len hinausschreiben */);
+    if (read_len == -1) { log_perror("read from pipe"); exit(EXIT_FAILURE); }
+    talk.lua_log_size += read_len;
+    talk.log_read = 0;
+  } else {
+    // "header" ist da -> daten an user weiterleiten
+    char buffer[4000];
+    int buffer_size = sizeof(buffer) < talk.lua_log.head.len - talk.log_read
+      ? sizeof(buffer)
+      : talk.lua_log.head.len - talk.log_read;
+
+    // daten lesen
+    ssize_t read_len = read(talk.pipe_fd[0], buffer, buffer_size);
+    talk.log_read += read_len;
+
+    // alle offenen konsolen suchen meldung ausgeben
+    for (int i = 0; i < TALK_MAX_USERS; ++i) {
+      if ((us[i].id == talk.lua_log.head.id) && (us[i].fkt == _lua_monitor)){
+        if (write(i, buffer, buffer_size) == -1) {
+          // fail -> verbindung dicht machen
+          close(i);
+          FD_CLR(i, master);
+        }
+      }
+    }
+
+    // alles an den client weiter gegeben
+    if (talk.log_read == talk.lua_log.head.len) {
+      talk.lua_log_size = 0;
+    }
+  }
+}
+
+
+
+static void talk_client_loop(int net_fd) {
+  
+  // talk_pipe_fd[0] refers to the read end of the pipe. 
+  // talk_pipe_fd[1] refers to the write end of the pipe
+
+  fd_set rfds, rfds_tmp;
+  int ret;
+
+  FD_ZERO(&rfds);
+  FD_SET(talk.pipe_fd[0], &rfds);
+  FD_SET(net_fd, &rfds);
+
+  int max_fd = MAX(net_fd, talk.pipe_fd[0]);
+
+  for(;;) {
+    rfds_tmp = rfds;
+    ret = select(max_fd + 1, &rfds_tmp, NULL, NULL, NULL);
+
+    if (ret == -1) { log_perror("select"); exit(EXIT_FAILURE); }
+
+    int max_fd_tmp = max_fd;  // brauchen wir, da sich max_fd durch client-connects ??ndern kann
+    for (int fd = 0; fd <= max_fd_tmp; ++fd) {
+      if (FD_ISSET(fd, &rfds_tmp)) {
+        if (fd == talk.pipe_fd[0]) {
+          socket_talk(&rfds);
+
+
+//          ret = net_pipe(fd, &tv);
+//          if (ret == -1) { return; } // papa-pipe redet nicht mehr mit uns
+        } else if (fd == net_fd) {
+          // client connect
+          net_client_connect(net_fd, &rfds, &max_fd);
+        } else {
+          // client sagt irgendwas...
+          net_client_talk(fd, &rfds);
+        }
+      } // FD_SET
+    } // for
+  } // while
+
+}
+
+
+void init_talk() {
+ 
+  // sicherstellen, dass alle wichtigen verzeichnisse da sind
+  char* dirs[] = { HOME, USER_HOME, USER_HOME_BY_NAME, USER_HOME_BY_ID, CONFIG_HOME };
+  for (int i = 0; i < sizeof(dirs) / sizeof(char*); ++i) {
+    struct stat sb;
+    if (stat(dirs[i], &sb) == -1) {
+      log_msg("mkdir %s", dirs[i]);
+      if (mkdir(dirs[i], 0777) == -1) {
+        log_perror("mkdir dirs...");
+        exit(EXIT_FAILURE);
+      }
+    }
+  }
+
+  // sicherstellen, dass last_id da ist, evtl. neu anlegen
+  struct pstr file_last_id = { .used = sizeof(CONFIG_LAST_ID) - 1, .str = CONFIG_LAST_ID };
+  if (get_id(&file_last_id) == -1) {
+    if (errno == ENOENT) {
+      log_msg("creating new last_id-file");
+      struct pstr default_id = { .used = 3, .str = "99\n" };
+      if (pstr_write_file(&file_last_id, &default_id, O_WRONLY | O_CREAT ) == -1) {
+        log_perror("create new last_id");
+        exit(EXIT_FAILURE);
+      }
+    } else {
+      exit(EXIT_FAILURE);
+    }
+  }
+ 
+  // pipe basteln fuer kommunikation
+  // talk_pipe_fd[0] refers to the read end of the pipe. 
+  // talk_pipe_fd[1] refers to the write end of the pipe
+  if (pipe(talk.pipe_fd) == -1) { log_perror("pipe"); exit(EXIT_FAILURE); }
+
+  // talk-client abspalten
+  int cpid = fork();
+  if (cpid == -1) { log_perror("fork"); exit(EXIT_FAILURE); }
+
+  if (cpid == 0) {
+    // wir sind der client
+    
+    // brauchen wir nicht mehr
+//    close(STDIN_FILENO);
+//    close(STDOUT_FILENO);
+//    close(STDERR_FILENO);
+
+    // speicher holen
+    us = (struct userstate*)malloc(sizeof(struct userstate) * TALK_MAX_USERS);
+    if (us == NULL) { log_msg("malloc us == NULL: kein platz"); exit(EXIT_FAILURE); }
+    for (int i = 0; i < TALK_MAX_USERS; ++i) {
+      us[i].id = -1;
+      if (dstr_malloc(&us[i].net_data) < 0) { log_perror("pstr_malloc"); exit(EXIT_FAILURE); }
+      if (dstr_malloc(&us[i].tmp) < 0) { log_perror("pstr_malloc"); exit(EXIT_FAILURE); }
+    }
+
+    // listening socket aufmachen
+	  int net_fd = network_bind(TALK_PORT, TALK_MAX_CONNECTION);
+  	if (net_fd == -1) { log_msg("kann auf port "TALK_PORT" nicht binden... exit"); exit(EXIT_FAILURE); }
+
+    talk_client_loop(net_fd);
+
+    close(talk.pipe_fd[0]);
+    close(talk.pipe_fd[1]);
+    log_msg("talk client exit");
+
+    _exit(EXIT_SUCCESS);
+  }
+
+  // wir sind der papa
+
+}
+
+
+void talk_log_lua_msg(unsigned int user_id, char* msg, int msg_len) {
+  write(talk.pipe_fd[1], &user_id, sizeof(unsigned int));
+  write(talk.pipe_fd[1], &msg_len, sizeof(int));
+  write(talk.pipe_fd[1], msg, msg_len);
+}
+
+int talk_get_user_change_code_fd() {
+  return talk.pipe_fd[0];
+}
+
+
+//
+//
+//
+
 int main() {
 	log_open("test_talk_main.log");
 	log_msg("---------------- new start");
 
-  {
-    // sicherstellen, dass alle wichtigen verzeichnisse da sind
-    char* dirs[] = { HOME, USER_HOME_BY_NAME, USER_HOME_BY_ID, CONFIG_HOME };
-    for (int i = 0; i < sizeof(dirs) / sizeof(char*); ++i) {
-      struct stat sb;
-      if (stat(dirs[i], &sb) == -1) {
-        log_msg("mkdir %s", dirs[i]);
-        if (mkdir(dirs[i], 0777) == -1) {
-          log_perror("mkdir dirs...");
-          exit(EXIT_FAILURE);
-        }
-      }
+  init_talk();
+
+  for (int i = 0; i < 100; ++i) {
+    for (int id = 100; id < 105; ++id) {
+      struct pstr foo = { .used = 0 };
+      pstr_append_printf(&foo, "lalala, id = %d, loop = %d\n", id, i);
+      talk_log_lua_msg(id, foo.str, foo.used);
     }
-    // sicherstellen, dass last_id da ist
-    struct pstr file_last_id = { .used = sizeof(CONFIG_LAST_ID) - 1, .str = CONFIG_LAST_ID };
-    if (get_id(&file_last_id) == -1) exit(EXIT_FAILURE);
+    sleep(1);
   }
 
-  us = (struct userstate*)malloc(sizeof(struct userstate) * TALK_MAX_USERS);
-  if (us == NULL) { log_msg("malloc us == NULL: kein platz"); exit(EXIT_FAILURE); }
-  for (int i = 0; i < TALK_MAX_USERS; ++i) {
-    if (dstr_malloc(&us[i].net_data) < 0) { log_perror("pstr_malloc"); exit(EXIT_FAILURE); }
-    if (dstr_malloc(&us[i].tmp) < 0) { log_perror("pstr_malloc"); exit(EXIT_FAILURE); }
-  }
+  kill(talk.cpid, 9);
 
-	int listener = network_bind(TALK_PORT, TALK_MAX_CONNECTION);
-	if (listener == -1) { log_msg("kann auf port "TALK_PORT" nicht binden... exit"); exit(EXIT_FAILURE); }
-
-  int net_fd = listener;
-
-  fd_set rfds, rfds_tmp;
-  struct timeval tv = {5, 0}; // 5 sec
-  int ret;
-
-  FD_ZERO(&rfds);
-//  FD_SET(pipe_fd, &rfds);
-  FD_SET(net_fd, &rfds);
-
-  int max_fd = net_fd;
-
-  for(;;) {
-    rfds_tmp = rfds;
-    ret = select(max_fd + 1, &rfds_tmp, NULL, NULL, &tv);
-
-    if (ret == -1) { log_perror("select"); exit(EXIT_FAILURE); }
-
-    if (ret == 0) {
-      // timer hat zugeschlagen
-//      net_timer(&tv);
-      tv.tv_sec = 5;
-      tv.tv_usec = 0;
-    } else {
-      int max_fd_tmp = max_fd;  // brauchen wir, da sich max_fd durch client-connects ??ndern kann
-      for (int fd = 0; fd <= max_fd_tmp; ++fd) {
-        if (FD_ISSET(fd, &rfds_tmp)) {
-//          if (fd == pipe_fd) {
-//            ret = net_pipe(fd, &tv);
-//            if (ret == -1) { return; } // papa-pipe redet nicht mehr mit uns
-//          } else 
-          if (fd == net_fd) {
-            // client connect
-            net_client_connect(net_fd, &rfds, &max_fd);
-          } else {
-            // client sagt irgendwas...
-            net_client_talk(fd, &rfds);
-          }
-        } // FD_SET
-      } // for
-    } // else
-  } // while
-
+  exit(EXIT_SUCCESS);
 }
 
 

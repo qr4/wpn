@@ -10,6 +10,7 @@
 #define TALK_MAX_USERS 100
 
 #define HOME "/opt/wpn"
+#define USER_HOME HOME"/user"
 #define USER_HOME_BY_NAME HOME"/user/by-name"
 #define USER_HOME_BY_ID HOME"/user/by-id"
 #define CONFIG_HOME HOME"/etc"
