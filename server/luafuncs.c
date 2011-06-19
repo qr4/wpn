@@ -8,6 +8,7 @@
 #include "entities.h"
 #include "ship.h"
 #include "storages.h"
+#include "types.h"
 #include "debug.h"
 #include "config.h"
 #include "route.h"
@@ -40,8 +41,10 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_get_position,     "get_position"},
 	{lua_get_distance,     "get_distance"},
 	{lua_get_docking_partner, "get_docking_partner"},
-	{lua_busy,             "busy"},
+	{lua_busy,             "is_busy"},
+	{lua_flying,           "is_flying"},
 	{lua_get_slots,        "get_slots"},
+	{lua_get_world_size,   "get_world_size"},
 };
 
 void register_lua_functions(entity_t *s) {
@@ -153,6 +156,11 @@ int lua_moveto(lua_State* L) {
 		return 0;
 	}
 
+	/* Bounds-check the coordinates */
+	if(x < map.left_bound || x > map.right_bound || y < map.upper_bound || y > map.lower_bound) {
+		return 0;
+	}
+
 	/* Now call the moveto-flightplanner */
 	moveto_planner(e, x, y);
 
@@ -197,6 +205,11 @@ int lua_set_autopilot_to(lua_State* L) {
 
 	/* If we are docked, or if we are a base, we can't move. */
 	if(e->ship_data->docked_to.id != INVALID_ID.id || e->type == BASE) {
+		return 0;
+	}
+
+	/* Bounds-check the coordinates */
+	if(x < map.left_bound || x > map.right_bound || y < map.upper_bound || y > map.lower_bound) {
 		return 0;
 	}
 
@@ -749,14 +762,59 @@ int lua_send_data(lua_State* L) {
 
 /* Determine whether you are currently waiting for some action to finish */
 int lua_busy(lua_State* L) {
-	entity_id_t self;
-	entity_t* eself;
+	entity_id_t id, self;
+	entity_t *e, *eself;
+	int n;
 
-	self=get_self(L);
+	n = lua_gettop(L);
+
+	/* Set self entity */
+	self = get_self(L);
 	eself = get_entity_by_id(self);
 
+	switch(n) {
+		case 0:
+			/* Get your own id */
+			id = self;
+			e = eself;
+			break;
+		case 1:
+			/* Get id of someone else */
+			if(!lua_islightuserdata(L,-1)) {
+				lua_pushstring(L, "Argument to is_busy is not an entity!");
+				lua_error(L);
+			}
+
+			id.id = (uint64_t) lua_touserdata(L,-1);
+			lua_pop(L,1);
+
+			e = get_entity_by_id(id);
+
+			/* If this entity doesn't exist -> return */
+			if(!e) {
+				return 0;
+			}
+
+			/* Check that entity is within scanner range */
+			if(dist(eself, e) > config_get_double("scanner_range")) {
+				return 0;
+			}
+
+			break;
+		default:
+			lua_pushstring(L, "is_busy expects no, or one entity argument");
+			lua_error(L);
+			return 0;
+	}
+
+	/* If the requested entity is not a ship or base, it is certainly idle. */
+	if(!(e->type & (SHIP|BASE))) {
+		lua_pushboolean(L,0);
+		return 1;
+	}
+
 	/* If no timer is set, we are idle. */
-	if(eself->ship_data->timer_value == -1) {
+	if(e->ship_data->timer_value == -1) {
 		lua_pushboolean(L,0);
 		return 1;
 	} else {
@@ -764,6 +822,70 @@ int lua_busy(lua_State* L) {
 		lua_pushboolean(L,1);
 		return 1;
 	}
+}
+
+/* Determine whether another entity, or yourself, is currently flying or stationary */
+int lua_flying(lua_State* L) {
+	entity_id_t id, self;
+	entity_t *e, *eself;
+	int n;
+
+	n = lua_gettop(L);
+
+	/* Set self entity */
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	switch(n) {
+		case 0:
+			/* Get your own id */
+			id = self;
+			e = eself;
+			break;
+		case 1:
+			/* Get id of someone else */
+			if(!lua_islightuserdata(L,-1)) {
+				lua_pushstring(L, "Argument to is_flying is not an entity!");
+				lua_error(L);
+			}
+
+			id.id = (uint64_t) lua_touserdata(L,-1);
+			lua_pop(L,1);
+
+			e = get_entity_by_id(id);
+
+			/* If this entity doesn't exist -> return */
+			if(!e) {
+				return 0;
+			}
+
+			/* Check that entity is within scanner range */
+			if(dist(eself, e) > config_get_double("scanner_range")) {
+				return 0;
+			}
+
+			break;
+		default:
+			lua_pushstring(L, "is_flying expects no, or one entity argument");
+			lua_error(L);
+			return 0;
+	}
+
+	/* If the entity is not a ship, it's always stationary */
+	if(e->type != SHIP) {
+		lua_pushboolean(L,0);
+		return 1;
+	}
+
+	/* If the autopilot has a NULL waypoint list, the entity is stationary */
+	if(e->ship_data->flightplan == NULL) {
+		lua_pushboolean(L,0);
+		return 1;
+	}
+
+	/* otherwise it's flying */
+	lua_pushboolean(L,1);
+	return 1;
 }
 
 /* Return the content of another (or your own) entities' slots */
@@ -826,7 +948,7 @@ int lua_get_slots(lua_State* L) {
  * A number of resource slot has to be specified and will be consumed in the process.
  * The new ship will then be the new docking partner */
 int lua_build_ship(lua_State* L) {
-	
+
 	entity_id_t id, self;
 	entity_t *eself;
 	int n,a;
@@ -897,7 +1019,7 @@ int lua_build_ship(lua_State* L) {
 	pos.x = eself->pos.x +  config_get_double("build_offset_x");
 	pos.y = eself->pos.y + config_get_double("build_offset_y");
 	id = init_ship(ship_storage, pos, n);
-	
+
 	/* Zero out the slots */
 	for(int i=0; i<n; i++) {
 		eself->slot_data->slot[used_slots[i]] = EMPTY;
@@ -909,4 +1031,14 @@ int lua_build_ship(lua_State* L) {
 	/* Return the ship's id to the caller */
 	lua_pushlightuserdata(L, (void*)(id.id));
 	return 1;
+}
+
+/* Push the map extents to the lua state */
+int lua_get_world_size(lua_State* L) {
+	
+	lua_pushnumber(L, map.left_bound);
+	lua_pushnumber(L, map.right_bound);
+	lua_pushnumber(L, map.upper_bound);
+	lua_pushnumber(L, map.lower_bound);
+	return 4;
 }

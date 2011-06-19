@@ -64,6 +64,9 @@ int lua_get_distance(lua_State* L);
 /* Determine wether you're busy (waiting for some action to finish */
 int lua_busy(lua_State* L);
 
+/* Determine whether you're flying or stationary */
+int lua_flying(lua_State* L);
+
 /* Get the slot contents of an entity */
 int lua_get_slots(lua_State* L);
 
@@ -73,5 +76,8 @@ void register_lua_functions(entity_t *s);
 
 /* Debugging helper function, creating a string description of the given entity */
 extern int lua_entity_to_string(lua_State* L);
+
+/* Get the world size */
+int lua_get_world_size(lua_State* L);
 
 #endif /* _LUAFUNCS_H */
