@@ -97,4 +97,9 @@ const char *type_string(type_t type);
  * slots. One byte per Slot. */
 char* slots_to_string(entity_t* e);
 
+/* Manage timestep-wide ship explosions */
+extern char** current_explosions;
+extern size_t n_current_explosions;
+void explode_entity(entity_t* e);
+
 #endif /* ENTITIES_H */

@@ -9,11 +9,6 @@
 #include "storages.h"
 #include "../net/net.h"
 
-extern entity_storage_t* asteroid_storage;
-extern entity_storage_t* base_storage;
-extern entity_storage_t* planet_storage;
-extern entity_storage_t* ship_storage;
-
 // Joins strings separated by sep until strings contain a NULL element
 // Arguments and return string need to be freed by the caller
 char* join(char** strings, char* sep) {
@@ -297,6 +292,36 @@ char* ships_to_json() {
 	free(ship_strings);
 
 	return retval;
+}
+
+void explosions_to_network() {
+
+	char *joined_explosions;
+	/* Collect all explosion-json strings */
+
+	if(n_current_explosions <= 0) {
+		/* No explosions => send nothing */
+		return;
+	} else {
+		asprintf(&joined_explosions, "\"explosions\": [\n%s\n]\n", join(current_explosions, ",\n"));
+	}
+
+	/* Free the temp strings */
+	for(int i=0; i<n_current_explosions; i++) {
+		free(current_explosions[i]);
+	}
+	free(current_explosions);
+
+	n_current_explosions = 0;
+	current_explosions = NULL;
+
+	/* Push it to the network */
+	update_printf("{ \"update\":\n{ %s}\n}\n\n", joined_explosions);
+	update_flush();
+
+	free(joined_explosions);
+
+	return;
 }
 
 void asteroids_to_network() {

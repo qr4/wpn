@@ -22,6 +22,7 @@ void bases_to_network();
 void planets_to_network();
 void ships_to_network();
 void ship_updates_to_network(char** updated_ships, int updates);
+void explosions_to_network();
 void map_to_network();
 
 

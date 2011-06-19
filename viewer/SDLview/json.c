@@ -171,7 +171,7 @@ void jsonExplosion(json_t* explosion) {
 	int id = 0;
 	float x,y;
 
-	json_t* j_id = json_object_get(explosion, "id");
+	json_t* j_id = json_object_get(explosion, "exploding_entity");
 	if(!j_id || !json_is_integer(j_id)) return;
 	id = json_integer_value(j_id);
 	// Invalidate the ship with this id
@@ -189,6 +189,7 @@ void jsonExplosion(json_t* explosion) {
 	if(!j_y || !json_is_real(j_y)) return;
 	y = json_real_value(j_y);
 
+	fprintf(stderr, "Bäm! x=%f, y=%f\n",x,y);
 	createExplosion(x, y);
 }
 

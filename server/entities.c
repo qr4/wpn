@@ -9,6 +9,7 @@
 #include "debug.h"
 #include "entity_storage.h"
 #include "storages.h"
+#include "json_output.h"
 
 extern double asteroid_radius_to_slots_ratio;
 extern double planet_size;
@@ -138,6 +139,7 @@ void destroy_entity(entity_t *e) {
 
 	if(e->lua != NULL) {
 		lua_close(e->lua);
+		e->lua = NULL;
 	}
 
 	switch (type) {
@@ -255,5 +257,48 @@ void move_ship(entity_t *ship) {
 				call_entity_callback(ship, AUTOPILOT_ARRIVED);
 			}
 		}
+	}
+}
+
+/* Json strings of explosions in this timestep */
+char** current_explosions = NULL;
+size_t n_current_explosions = 0;
+
+/* And boom goes the entity! */
+/* (Note: this removes the entity from it's storage object. No accesses via the
+ * entity pointer should be performed after this function call) */
+void explode_entity(entity_t* e) {
+
+	if(!e) {
+		ERROR("Attempting to explode a NULL entity!");
+		return;
+	}
+
+	/* Only ships and bases should be able to explode */
+	if(!(e->type & BASE|SHIP)) {
+		ERROR("Attempting to explode something not a ship or a base!");
+		return;
+	}
+
+	/* Record the explosion-json-update for later */
+	current_explosions = realloc(current_explosions, sizeof(char*) * (n_current_explosions+2));
+	if(!current_explosions) {
+		ERROR("Out of memory for explosion json-strings.");
+		return;
+	}
+	current_explosions[n_current_explosions++] = explosion_to_json(e);
+	current_explosions[n_current_explosions] = NULL;
+
+	/* Remove the exploding entity */
+	switch(e->type) {
+		case SHIP:
+			free_entity(ship_storage, e->unique_id);
+			return;
+		case BASE:
+			free_entity(base_storage, e->unique_id);
+			return;
+		default:
+			ERROR("How the hell did we end up HERE? Your computer is broken.");
+			return;
 	}
 }

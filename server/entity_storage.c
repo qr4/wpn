@@ -73,16 +73,19 @@ entity_t* get_entity_from_storage_by_id(entity_storage_t* s, entity_id_t id) {
 
 	if(index >= s->max) {
 		/* Entity out of bounds for this storage. Well, what do we care. */
+		DEBUG("Index %i is out of bounds!\n", id.index);
 		return NULL;
 	}
 
 	if(s->offsets[index] >= s->first_free) {
 		/* This entity is already dead. */
+		DEBUG("Entity %i is dead.", id.id);
 		return NULL;
 	}
 
 	if(s->entities[s->offsets[index]].unique_id.id != id.id) {
 		/* There is an entity here, but it's from a different generation */
+		DEBUG("This entity is a thing of the past.\n");
 		return NULL;
 	}
 
@@ -120,7 +123,7 @@ void free_entity(entity_storage_t* s, entity_id_t id) {
 	destroy_entity(e);
 
 	/* Get array index of this entity */
-	index = id.index;
+	index = s->offsets[id.index];
 
 	/* Also get array index of the last occupied entity */
 	last_index = s->first_free - 1;
@@ -129,7 +132,7 @@ void free_entity(entity_storage_t* s, entity_id_t id) {
 		DEBUG("Warning: Invalid first_free index in entity storage.\n");
 	}
 
-	o = &(s->entities[s->offsets[last_index]]);
+	o = &(s->entities[last_index]);
 
 	/* Increment respawn-count of this entity */
 	e->unique_id.reincarnation++;
@@ -141,9 +144,8 @@ void free_entity(entity_storage_t* s, entity_id_t id) {
 		*e = temp_entity;
 
 		/* Also switch their offset-table-pointers*/
-		temp = s->offsets[index];
-		s->offsets[index]=s->offsets[last_index];
-		s->offsets[last_index]=temp;
+		s->offsets[o->unique_id.index]=last_index;
+		s->offsets[e->unique_id.index]=index;
 	}
 
 	/* And let the pointer to the first free entity now point at this one. */
