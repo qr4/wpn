@@ -8,7 +8,6 @@ CFLAGS = -Wall -g3 -O2 -march=native -mtune=native -pipe `pkg-config $(LUA_PKG) 
 LDFLAGS = -lm -lrt `pkg-config $(LUA_PKG) --libs` -Wl,-O1 -Wl,--as-needed
 
 # Debug builds get this define set, so the DEBUG() macro does something
-debug: CFLAGS += -DENABLE_DEBUG -fsignaling-nans
+dbg: CFLAGS += -DENABLE_DEBUG -fsignaling-nans
 
-debug: all
-
+dbg: all

@@ -4,7 +4,7 @@ include settings.mak
 
 SUBDIRS = logging net server
 
-.PHONY: clean subdirs $(SUBDIRS)
+.PHONY: clean debug subdirs $(SUBDIRS)
 
 subdirs: $(SUBDIRS)
 
@@ -22,3 +22,10 @@ clean:
 	for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir clean; \
 	done
+
+debug:
+	echo "Debug build"
+	for dir in $(SUBDIRS); do \
+		$(MAKE) -C $$dir dbg; \
+	done
+	$(CC) $(CFLAGS) -DENABLE_DEBUG -fsignaling-nans -o gameserver ./logging/logging.o ./net/net.o ./net/network.o ./server/config.o ./server/entities.o ./server/entity_storage.o ./server/json_output.o ./server/luafuncs.o ./server/luastate.o ./server/main.o ./server/map.o ./server/physics.o ./server/route.o ./server/ship.o ./server/storages.o ./server/vector.o

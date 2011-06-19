@@ -5,6 +5,8 @@ all:
 		$(CC) $(CFLAGS) -c logging.c -o logging.o
 		# ar cr liblogging.a logging.o
 
+dbg: all
+
 .PHONY: clean
 
 clean:

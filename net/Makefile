@@ -6,6 +6,8 @@ OBJ_TALK = network.o pstr.o userstuff.o talk.o ../logging/logging.o
 
 all: talk net
 
+dbg: all
+
 talk: $(OBJ_TALK)
 		$(CC) $(LDFLAGS) -o $@ $(OBJ_TALK)
 
