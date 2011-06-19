@@ -668,6 +668,8 @@ int _lua_get_code(char* data, int len, struct userstate* us, int write_fd) {
       return -1;
     }
 
+    write(talk.pipe_fd[1], &current_version, sizeof(int));
+
     return set_state(MENU_MAIN, us, write_fd);
   }
 
