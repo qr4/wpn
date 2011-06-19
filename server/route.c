@@ -15,6 +15,8 @@ extern entity_storage_t* planet_storage;
 extern map_t map; // cluster
 
 extern double dt;
+extern double MAXIMUM_PLANET_SIZE;
+extern double MAXIMUM_CLUSTER_SIZE;
 
 // Find a waypoint for the way between A and B avoiding C
 waypoint_t* go_around(vector_t* A, vector_t* B, entity_t* C, double r) {
@@ -28,6 +30,7 @@ waypoint_t* go_around(vector_t* A, vector_t* B, entity_t* C, double r) {
 	W.v = C->pos.v + (X.v - C->pos.v) * (v2d) {1.01, 1.01} * (v2d) {C->radius,  C->radius} / (v2d) {d, d};
 	waypoint_t* wp = create_waypoint(W.x, W.y, 0, 0, 0, WP_TURN_VIA);
 	wp->obs = C->pos;
+	wp->swingbydist = 1.01 * C->radius;
 	return wp;
 }
 
@@ -58,7 +61,7 @@ waypoint_t* _route(vector_t* start, vector_t* stop, int level) {
 		}
 		waypoint_t* wp = go_around(start, stop, map.cluster + i_min, r_min);
 		if(level > 20) {
-			fprintf(stderr, "wp = (%f, %f)\n", wp->point.x, wp->point.y);
+			fprintf(stderr, "wp = (%f, %f) dist = %f\n", wp->point.x, wp->point.y, hypot(wp->point.x-map.cluster[i_min].pos.x, wp->point.y-map.cluster[i_min].pos.y));
 		}
 
 		waypoint_t* part1 = _route(start, &(wp->point), level+1);
@@ -342,6 +345,11 @@ void autopilot_planner(entity_t* e, double x, double y) {
 		fprintf(stderr, "Flying without engines? Talk to Mr. Scott first.\n");
 		return;
 	}
+	if(e->pos.x == x && e->pos.y == y) {
+		// Already there
+		fprintf(stderr, "We are already there\n");
+		return;
+	}
 	if(e->ship_data->flightplan != NULL) {
 		free_route(e->ship_data->flightplan);
 		e->ship_data->flightplan = NULL;
@@ -352,6 +360,20 @@ void autopilot_planner(entity_t* e, double x, double y) {
 	vector_t stop;
 	stop.x = x;
 	stop.y = y;
+
+	entity_t* se = find_closest_by_position(stop, 0, 2*MAXIMUM_PLANET_SIZE, ASTEROID|PLANET);
+	if(se) {
+		double dist = hypot(x - se->pos.x, y - se->pos.y);
+		if(dist < (se->radius+1)) {
+			fprintf(stderr, "This move brings you within %f of an object\n", hypot(x - se->pos.x, y - se->pos.y));
+			double flight_dist = hypot(start.x - stop.x, start.y - stop.y);
+			double r = (flight_dist - (se->radius+2)) / flight_dist;
+			stop.x = start.x + r * (stop.x - start.x);
+			stop.y = start.y + r * (stop.y - start.y);
+			fprintf(stderr, "Stopping early at (%f, %f), dist = %f\n", stop.x, stop.y, hypot(stop.x - se->pos.x, stop.y - se->pos.y));
+		}
+	}
+
 	e->ship_data->flightplan = plotCourse(&start, &stop);
 	complete_flightplan(e);
 }

@@ -139,6 +139,7 @@ struct wp_t {
 	double t;
 	wptype type;
 	vector_t obs;
+	double swingbydist;
 	waypoint_t* next;
 };
 
@@ -148,6 +149,7 @@ struct slot_data_t {
 
 struct planet_data_t {
 	slot_t *slot;
+	entity_t* cluster;
 };
 
 struct ship_data_t {

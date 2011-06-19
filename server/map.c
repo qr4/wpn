@@ -57,8 +57,10 @@ void init_map() {
 
 		if (r < PLANET_DENSITY) {
 			working->cluster_data->planet = alloc_entity(planet_storage);
+			entity_t* e = get_entity_by_id(working->cluster_data->planet);
 			init_entity(get_entity_by_id(working->cluster_data->planet), working->pos, PLANET, 0);
-			working->radius = get_entity_by_id(working->cluster_data->planet)->radius;
+			e->planet_data->cluster = working;
+			working->radius = MAXIMUM_CLUSTER_SIZE;
 		} else if (r < PLANET_DENSITY + ASTEROID_DENSITY) {
 			distribute_asteroids(working, AVERAGE_ASTEROID_NUMBER + rand()%4 - 2);
 		} else {
@@ -101,7 +103,7 @@ void distribute_asteroids(entity_t *cluster, const unsigned int n) {
 
 		// Check for overlapping asteroids or too great distance to cluster-center
 		for (j = 0; j < i;) {
-			if (dist(asteroid, cluster) > MAXIMUM_CLUSTER_SIZE
+			if (dist(asteroid, cluster) > (0.8 * MAXIMUM_CLUSTER_SIZE - 10)
 					|| collision_dist(asteroid, get_entity_by_id(cluster->cluster_data->asteroid[j])) < 0) {
 				asteroid->pos.v = cluster->pos.v + randv().v * vector(MAXIMUM_CLUSTER_SIZE).v;
 				j = 0;
@@ -113,14 +115,14 @@ void distribute_asteroids(entity_t *cluster, const unsigned int n) {
 		init_entity(asteroid, asteroid->pos, ASTEROID, asteroid->slots);
 
 		// find maximum distance to cluster-center
-		dist_to_cluster_center = dist(cluster, asteroid) + asteroid->radius;
+		dist_to_cluster_center = dist(cluster, asteroid) + asteroid->radius + 5;
 		if (dist_to_cluster_center > max_distance) {
 			max_distance = dist_to_cluster_center;
 		}
 	}
 
 	// set safety-radius as maximum distance of a asteroid to cluster-center
-	cluster->radius = max_distance;
+	cluster->radius = 1.25 * max_distance;
 }
 
 void set_limits() {

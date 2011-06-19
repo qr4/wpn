@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
 	asteroid_radius_to_slots_ratio = config_get_double("asteroid_radius_to_slots_ratio");
 	planet_size = config_get_double("planet_size");
 
-#ifdef ENABLE_DEBU
+#ifdef ENABLE_DEBUG
 	DEBUG("Listen to your mum kids. Never devide by zero. I'm watching you.\n");
 	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 #endif
@@ -179,14 +179,22 @@ int main(int argc, char *argv[]) {
 				free_waypoint(ship_storage->entities[i].ship_data->flightplan);
 				ship_storage->entities[i].ship_data->flightplan = next;
 
-				quad_index_t old_quad = get_quad_index_by_pos(ship_storage->entities[i].pos);
-				ship_storage->entities[i].pos.v = next->point.v;
-				quad_index_t new_quad = get_quad_index_by_pos(ship_storage->entities[i].pos);
-				if((old_quad.quad_x != new_quad.quad_x) || (old_quad.quad_y != new_quad.quad_y)) {
-					update_quad_object(&(ship_storage->entities[i]));
-				}
+				if(next) {
+					quad_index_t old_quad = get_quad_index_by_pos(ship_storage->entities[i].pos);
+					if(next->point.x < map.left_bound || next->point.x > map.right_bound || next->point.y < map.upper_bound || next->point.y > map.lower_bound) {
+						log_msg("%d is outside the map\n", ship_storage->entities[i].unique_id);
+						//explode(ship_storage->entities[i]);
+					}
+					ship_storage->entities[i].pos.v = next->point.v;
+					quad_index_t new_quad = get_quad_index_by_pos(ship_storage->entities[i].pos);
+					if((old_quad.quad_x != new_quad.quad_x) || (old_quad.quad_y != new_quad.quad_y)) {
+						update_quad_object(&(ship_storage->entities[i]));
+					}
 
-				ship_storage->entities[i].v.v = next->speed.v;
+					ship_storage->entities[i].v.v = next->speed.v;
+				} else {
+					ship_storage->entities[i].v.v = (v2d) {0, 0};
+				}
 				updated_ships[updates] = ship_to_json(&(ship_storage->entities[i]));
 				updates++;
 			}

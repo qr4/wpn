@@ -19,7 +19,7 @@ entity_id_t init_ship(entity_storage_t* s, vector_t pos, uint8_t size) {
 	/* TODO: Calculate radius from size */
 	e->radius = 1;
 
-	/* TODO: Initialize mass 'n stuff */
+	/* TODO: Initialize stuff */
 	e->player_id = 0;
 
 	/* TODO: init content */
