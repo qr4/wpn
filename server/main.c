@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
 	asteroid_radius_to_slots_ratio = config_get_double("asteroid_radius_to_slots_ratio");
 	planet_size = config_get_double("planet_size");
 
-#ifdef ENABLE_DEBU
+#ifdef ENABLE_DEBUG
 	DEBUG("Listen to your mum kids. Never devide by zero. I'm watching you.\n");
 	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 #endif
