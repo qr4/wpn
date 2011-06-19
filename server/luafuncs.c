@@ -45,6 +45,9 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_flying,           "is_flying"},
 	{lua_get_slots,        "get_slots"},
 	{lua_get_world_size,   "get_world_size"},
+
+	/* More lowlevel stuff */
+	{lua_print,            "print"},
 };
 
 void register_lua_functions(entity_t *s) {
@@ -1041,4 +1044,19 @@ int lua_get_world_size(lua_State* L) {
 	lua_pushnumber(L, map.upper_bound);
 	lua_pushnumber(L, map.lower_bound);
 	return 4;
+}
+
+/* Override lua's "print" function, so that output is not going to a terminal,
+ * but rather the player's console buffer */
+int lua_print(lua_State* L) {
+	int n=lua_gettop(L);
+	const char* s;
+
+	for(int i=1; i<=n; i++) {
+		s = lua_tostring(L,i);
+		fprintf(stderr, "Lua says: %s\n",s);
+	}
+
+	lua_pop(L,n);
+	return 0;
 }

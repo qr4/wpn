@@ -70,6 +70,9 @@ int lua_flying(lua_State* L);
 /* Get the slot contents of an entity */
 int lua_get_slots(lua_State* L);
 
+/* Get the world size */
+int lua_get_world_size(lua_State* L);
+
 /* --- Debugging and administrative functions --- */
 /* Registers all lua_functions available through c-api */
 void register_lua_functions(entity_t *s);
@@ -77,7 +80,8 @@ void register_lua_functions(entity_t *s);
 /* Debugging helper function, creating a string description of the given entity */
 extern int lua_entity_to_string(lua_State* L);
 
-/* Get the world size */
-int lua_get_world_size(lua_State* L);
+/* Override lua's "print" function, so that output is not going to a terminal,
+ * but rather the player's console buffer */
+int lua_print(lua_State* L);
 
 #endif /* _LUAFUNCS_H */
