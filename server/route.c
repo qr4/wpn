@@ -15,6 +15,8 @@ extern entity_storage_t* planet_storage;
 extern map_t map; // cluster
 
 extern double dt;
+extern double MAXIMUM_PLANET_SIZE;
+extern double MAXIMUM_CLUSTER_SIZE;
 
 // Find a waypoint for the way between A and B avoiding C
 waypoint_t* go_around(vector_t* A, vector_t* B, entity_t* C, double r) {
@@ -358,6 +360,20 @@ void autopilot_planner(entity_t* e, double x, double y) {
 	vector_t stop;
 	stop.x = x;
 	stop.y = y;
+
+	entity_t* se = find_closest_by_position(stop, 0, 2*MAXIMUM_PLANET_SIZE, ASTEROID|PLANET);
+	if(se) {
+		double dist = hypot(x - se->pos.x, y - se->pos.y);
+		if(dist < (se->radius+1)) {
+			fprintf(stderr, "This move brings you within %f of an object\n", hypot(x - se->pos.x, y - se->pos.y));
+			double flight_dist = hypot(start.x - stop.x, start.y - stop.y);
+			double r = (flight_dist - (se->radius+2)) / flight_dist;
+			stop.x = start.x + r * (stop.x - start.x);
+			stop.y = start.y + r * (stop.y - start.y);
+			fprintf(stderr, "Stopping early at (%f, %f), dist = %f\n", stop.x, stop.y, hypot(stop.x - se->pos.x, stop.y - se->pos.y));
+		}
+	}
+
 	e->ship_data->flightplan = plotCourse(&start, &stop);
 	complete_flightplan(e);
 }
