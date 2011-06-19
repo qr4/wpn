@@ -343,6 +343,11 @@ void autopilot_planner(entity_t* e, double x, double y) {
 		fprintf(stderr, "Flying without engines? Talk to Mr. Scott first.\n");
 		return;
 	}
+	if(e->pos.x == x && e->pos.y == y) {
+		// Already there
+		fprintf(stderr, "We are already there\n");
+		return;
+	}
 	if(e->ship_data->flightplan != NULL) {
 		free_route(e->ship_data->flightplan);
 		e->ship_data->flightplan = NULL;
