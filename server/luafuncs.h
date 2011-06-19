@@ -77,4 +77,7 @@ void register_lua_functions(entity_t *s);
 /* Debugging helper function, creating a string description of the given entity */
 extern int lua_entity_to_string(lua_State* L);
 
+/* Get the world size */
+int lua_get_world_size(lua_State* L);
+
 #endif /* _LUAFUNCS_H */

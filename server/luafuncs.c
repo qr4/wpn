@@ -44,6 +44,7 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_busy,             "is_busy"},
 	{lua_flying,           "is_flying"},
 	{lua_get_slots,        "get_slots"},
+	{lua_get_world_size,   "get_world_size"},
 };
 
 void register_lua_functions(entity_t *s) {
@@ -1030,4 +1031,14 @@ int lua_build_ship(lua_State* L) {
 	/* Return the ship's id to the caller */
 	lua_pushlightuserdata(L, (void*)(id.id));
 	return 1;
+}
+
+/* Push the map extents to the lua state */
+int lua_get_world_size(lua_State* L) {
+	
+	lua_pushnumber(L, map.left_bound);
+	lua_pushnumber(L, map.right_bound);
+	lua_pushnumber(L, map.upper_bound);
+	lua_pushnumber(L, map.lower_bound);
+	return 4;
 }
