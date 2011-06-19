@@ -191,7 +191,7 @@ int lua_set_autopilot_to(lua_State* L) {
 
 			/* Get coordinates */
 			if(!lua_isnumber(L,-1) || !lua_isnumber(L,-2)) {
-				lua_pushstring(L, "coordinates to set_autopilot_to must me numeric");
+				lua_pushstring(L, "coordinates to set_autopilot_to must be numeric");
 				lua_error(L);
 			}
 			y = lua_tonumber(L,-1);
