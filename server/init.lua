@@ -22,11 +22,12 @@ pcall = nil   -- Lua errors can't be caught, but lead to distruption of the ship
 --  ********* Everything below here is debugging code *********
 
 -- A default, out of the box autopilot arrival handler.
-function on_autopilot_arrived() 
+function on_autopilot_arrived()
 	print "I arrived somewhere! Yay I'm awesome!"
 	--print "I will now proceed to do nothing."
-	x = math.random(20000)
-	y = math.random(20000)
+	xmin, xmax, ymin, ymax = get_world_size()
+	x = xmin+ math.random(xmax-xmin)
+	y = ymin+ math.random(ymax-ymin)
 	print("Going to "..x..", "..y)
 	set_autopilot_to(x,y)
 	--moveto(x, y)
@@ -95,12 +96,12 @@ set_timer(3)
 function on_timer_expired()
 	-- set new timer
 	--set_timer(3)
-	set_autopilot_to(math.random()*10000, math.random()*10000)
+	xmin, xmax, ymin, ymax = get_world_size()
+	set_autopilot_to(xmin+math.random(xmax-xmin), ymin+math.random(ymax-ymin))
 	set_timer(1)
 	on_timer_expired = function()
 		x,y = get_position()
 		-- print("I'm now at "..x..", "..y)
 		set_timer(1)
 	end
-	
 end
