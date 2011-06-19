@@ -139,6 +139,7 @@ struct wp_t {
 	double t;
 	wptype type;
 	vector_t obs;
+	double swingbydist;
 	waypoint_t* next;
 };
 

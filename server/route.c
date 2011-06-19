@@ -28,6 +28,7 @@ waypoint_t* go_around(vector_t* A, vector_t* B, entity_t* C, double r) {
 	W.v = C->pos.v + (X.v - C->pos.v) * (v2d) {1.01, 1.01} * (v2d) {C->radius,  C->radius} / (v2d) {d, d};
 	waypoint_t* wp = create_waypoint(W.x, W.y, 0, 0, 0, WP_TURN_VIA);
 	wp->obs = C->pos;
+	wp->swingbydist = 1.01 * C->radius;
 	return wp;
 }
 
@@ -58,7 +59,7 @@ waypoint_t* _route(vector_t* start, vector_t* stop, int level) {
 		}
 		waypoint_t* wp = go_around(start, stop, map.cluster + i_min, r_min);
 		if(level > 20) {
-			fprintf(stderr, "wp = (%f, %f)\n", wp->point.x, wp->point.y);
+			fprintf(stderr, "wp = (%f, %f) dist = %f\n", wp->point.x, wp->point.y, hypot(wp->point.x-map.cluster[i_min].pos.x, wp->point.y-map.cluster[i_min].pos.y));
 		}
 
 		waypoint_t* part1 = _route(start, &(wp->point), level+1);

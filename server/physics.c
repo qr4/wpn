@@ -148,7 +148,7 @@ void fprint_waypoint(FILE *stream, waypoint_t* wp) {
 		}
 		fprintf(stream, "t=%f, x=(%f,%f), v=(%f,%f) [%s]\n", wp->t, wp->point.x, wp->point.y, wp->speed.x, wp->speed.y, type);
 		if(wp->type == WP_TURN_START || wp->type == WP_TURN_VIA || wp->type == WP_TURN_STOP) {
-			fprintf(stream, "    (trying to avoid (%f, %f)\n", wp->obs.x, wp->obs.y);
+			fprintf(stream, "    (trying to avoid (%f, %f) by %f\n", wp->obs.x, wp->obs.y, wp->swingbydist);
 		}
 	}
 }
