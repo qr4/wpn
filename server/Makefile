@@ -1,5 +1,5 @@
 
-OBJ = main.o entities.o vector.o map.o ship.o luastate.o luafuncs.o physics.o config.o entity_storage.o storages.o json_output.o route.o
+OBJ = main.o entities.o vector.o map.o ship.o luastate.o luafuncs.o physics.o config.o entity_storage.o storages.o json_output.o route.o player.o base.o
 
 all: $(OBJ)
 

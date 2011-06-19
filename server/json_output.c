@@ -6,6 +6,7 @@
 #include "entities.h"
 #include "entity_storage.h"
 #include "json_output.h"
+#include "player.h"
 #include "storages.h"
 #include "../net/net.h"
 
@@ -166,6 +167,18 @@ char* explosion_to_json(entity_t* e) {
 	return retval;
 }
 
+char* player_to_json(player_data_t* p) {
+	char* retval;
+
+	if(!p) {
+		DEBUG("Trying to json-ify a NULL player");
+		return NULL;
+	} else {
+		asprintf(&retval, "{\"id\": %i, \"name\": \"%s\"}", p->player_id, p->name);
+		return retval;
+	}
+}
+
 char* asteroids_to_json() {
 	int num_asteroids = asteroid_storage->first_free;
 	char* retval;
@@ -324,6 +337,37 @@ void explosions_to_network() {
 	return;
 }
 
+char* players_to_json() {
+	char* retval;
+	char** player_strings = malloc((n_players+1)*sizeof(char*));
+	if(!player_strings) {
+		fprintf(stderr, "No space left for player  descripitons\n");
+		exit(1);
+	}
+
+	int i;
+	for(i = 0; i < n_players; i++) {
+		player_strings[i] = player_to_json(&(players[i]));
+	}
+	player_strings[n_players] = NULL;
+
+	if(n_players <= 0) {
+		asprintf(&retval, "\"players\": []\n");
+	} else {
+		char* p = join(player_strings, ",\n");
+		asprintf(&retval, "\"players\": [\n%s\n]\n", p);
+		free(p);
+	}
+
+	for(i = 0; i < n_players; i++) {
+		free(player_strings[i]);
+	}
+
+	free(player_strings);
+
+	return retval;
+}
+
 void asteroids_to_network() {
 	char* p = asteroids_to_json();
 	if(p) {
@@ -379,6 +423,17 @@ void ships_to_network() {
 	}
 }
 
+void players_to_network() {
+	char* p = players_to_json();
+	if(p) {
+		map_printf("%s",p);
+		free(p);
+	} else {
+		ERROR("players_to_network produced a NULL string");
+		exit(1);
+	}
+}
+
 void ship_updates_to_network(char** updated_ships, int updates) {
 	char* joined_updates;
 	updated_ships[updates] = NULL;
@@ -413,6 +468,8 @@ void map_to_network() {
 	planets_to_network();
 	map_printf(",\n");
 	ships_to_network();
+	map_printf(",\n");
+	players_to_network();
 	map_printf("}\n}\n\n");
 	map_flush();
 }

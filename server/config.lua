@@ -44,3 +44,6 @@ planet_size = 50
 -- amount. (This should always be larger than the collision distance)
 build_offset_x = -0.5
 build_offset_y = 0
+
+-- A new player starts with a base of this size
+initial_base_size = 12

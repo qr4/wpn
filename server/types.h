@@ -194,4 +194,11 @@ struct base_data_t {
 	event_t timer_event;
 };
 
+/* Information belonging to a player */
+typedef struct player_data_t {
+	unsigned int player_id;
+	char* name;
+	entity_id_t homebase;
+} player_data_t;
+
 #endif  /*TYPES_H*/

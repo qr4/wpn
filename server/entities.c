@@ -275,7 +275,7 @@ void explode_entity(entity_t* e) {
 	}
 
 	/* Only ships and bases should be able to explode */
-	if(!(e->type & BASE|SHIP)) {
+	if(!(e->type & (BASE|SHIP))) {
 		ERROR("Attempting to explode something not a ship or a base!");
 		return;
 	}

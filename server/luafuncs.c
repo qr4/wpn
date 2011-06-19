@@ -954,7 +954,7 @@ int lua_get_slots(lua_State* L) {
 int lua_build_ship(lua_State* L) {
 
 	entity_id_t id, self;
-	entity_t *eself;
+	entity_t *eself, *e;
 	int n,a;
 	int used_slots[24];
 	vector_t pos;
@@ -1023,8 +1023,11 @@ int lua_build_ship(lua_State* L) {
 	pos.x = eself->pos.x +  config_get_double("build_offset_x");
 	pos.y = eself->pos.y + config_get_double("build_offset_y");
 	id = init_ship(ship_storage, pos, n);
+	e = get_entity_by_id(id);
 
-	/* Zero out the slots */
+	e->player_id = eself->player_id;
+
+	/* Zero out the slots we used for building. */
 	for(int i=0; i<n; i++) {
 		eself->slot_data->slot[used_slots[i]] = EMPTY;
 	}

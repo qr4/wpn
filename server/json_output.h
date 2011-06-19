@@ -17,12 +17,15 @@ char* bases_to_json();
 char* planets_to_json();
 char* ships_to_json();
 char* explosion_to_json(entity_t* e);
+char* player_to_json(player_data_t* p);
+char* players_to_json();
 void asteroids_to_network();
 void bases_to_network();
 void planets_to_network();
 void ships_to_network();
 void ship_updates_to_network(char** updated_ships, int updates);
 void explosions_to_network();
+void players_to_network();
 void map_to_network();
 
 

@@ -16,6 +16,7 @@
 #include "../net/talk.h"
 #include "../logging/logging.h"
 #include "physics.h"
+#include "player.h"
 #include <fenv.h>
 
 
@@ -79,7 +80,8 @@ int main(int argc, char *argv[]) {
 	/* Allow users to connect */
 	init_talk();
 
-	/* Create a testship */
+	/* Create a test user and -ships */
+	new_player(100);
 	entity_id_t ship1;
 	for(int i=0; i<200; i++)  {
 		vector_t v1 = vector(i);
