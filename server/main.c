@@ -13,6 +13,7 @@
 #include "storages.h"
 #include "debug.h"
 #include "../net/net.h"
+#include "../net/talk.h"
 #include "../logging/logging.h"
 #include "physics.h"
 #include <fenv.h>
@@ -74,21 +75,22 @@ int main(int argc, char *argv[]) {
 	init_all_storages();
 
 	init_map();
+
+	/* Allow users to connect */
+	init_talk();
+
 	/* Create a testship */
-	vector_t v1 = vector(1000);
-	entity_id_t ship1 = init_ship(ship_storage, v1, 6);
-	vector_t v2 = vector(2000);
-	entity_id_t ship2 = init_ship(ship_storage, v2, 6);
-
-	/* Test json-output with the testship */
-	temp = ship_to_json(get_entity_from_storage_by_id(ship_storage, ship1));
-	DEBUG("In json, this is:\n%s\n", temp);
-	free(temp);
-
-	e = get_entity_by_id(ship1);
-	e->ship_data->slot[0] = DRIVE;
-	e = get_entity_by_id(ship2);
-	e->ship_data->slot[0] = DRIVE;
+	entity_id_t ship1;
+	for(int i=0; i<200; i++)  {
+		vector_t v1 = vector(i);
+		ship1 = init_ship(ship_storage, v1, 6);
+		e = get_entity_by_id(ship1);
+		if(e) {
+			e->player_id = 100;
+			e->ship_data->slot[0] = DRIVE;
+			register_object(e);
+		}
+	}
 
 	map_to_network();
 
@@ -188,9 +190,15 @@ int main(int argc, char *argv[]) {
 				updated_ships[updates] = ship_to_json(&(ship_storage->entities[i]));
 				updates++;
 			}
+
+			if(rand() < RAND_MAX/1000) {
+				explode_entity(&(ship_storage->entities[i]));
+				i--;
+			}
 		}
 		// Send JSON to network and free strings
 		ship_updates_to_network(updated_ships, updates);
+		explosions_to_network();
 
 		/* Look for any collisions in spacecraft */
 		/* TODO: Implement collisions */

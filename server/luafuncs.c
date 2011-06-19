@@ -12,6 +12,7 @@
 #include "debug.h"
 #include "config.h"
 #include "route.h"
+#include "../net/talk.h"
 
 /* Type of functions which we make available to lua states */
 typedef struct {
@@ -1050,11 +1051,17 @@ int lua_get_world_size(lua_State* L) {
  * but rather the player's console buffer */
 int lua_print(lua_State* L) {
 	int n=lua_gettop(L);
-	const char* s;
+	entity_id_t self;
+	entity_t* eself;
+	char* s;
+
+	self = get_self(L);
+	eself = get_entity_by_id(self);
 
 	for(int i=1; i<=n; i++) {
-		s = lua_tostring(L,i);
-		fprintf(stderr, "Lua says: %s\n",s);
+		asprintf(&s, "%s\n", lua_tostring(L,i));
+		talk_log_lua_msg(eself->player_id, s, strlen(s));
+		free(s);
 	}
 
 	lua_pop(L,n);
