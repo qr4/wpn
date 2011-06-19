@@ -807,7 +807,7 @@ int lua_busy(lua_State* L) {
 	}
 
 	/* If the requested entity is not a ship or base, it is certainly idle. */
-	if(!(e->type & SHIP|BASE)) {
+	if(!(e->type & (SHIP|BASE))) {
 		lua_pushboolean(L,0);
 		return 1;
 	}
