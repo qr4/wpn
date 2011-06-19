@@ -635,6 +635,39 @@ int _lua_console(char* data, int len, struct userstate* us, int write_fd) {
 int _lua_get_code(char* data, int len, struct userstate* us, int write_fd) {
 
   if ((len == 8) && (strncasecmp(data, "-- .quit", 8) == 0)) {
+    struct pstr revision_id = { .used = 0 };
+    pstr_append_printf(&revision_id, USER_HOME_BY_ID"/%d/revision", us->id);
+
+    int current_version = get_id(&revision_id);
+    if (current_version == -1) { 
+      current_version = 0; // da gabs dann wohl noch keinen code...
+    } else {
+      current_version++;
+    }
+
+    if (set_id(&revision_id, current_version) == -1){
+      log_perror("revision");
+      return -1;
+    }
+
+    struct pstr file = { .used = 0 };
+    pstr_append_printf(&file, USER_HOME_BY_ID"/%d/rev_%.6d", us->id, current_version);
+    if (dstr_write_file(&file, &us->tmp, O_WRONLY | O_CREAT) == -1) {
+      log_perror("write new revision");
+      return -1;
+    }
+
+    struct pstr link = { .used = 0 };
+    pstr_append_printf(&link, USER_HOME_BY_ID"/%d/current", us->id, current_version);
+    unlink(pstr_as_cstr(&link));
+    
+    pstr_clear(&file);
+    pstr_append_printf(&file, "rev_%.6d", current_version);
+    if (symlink(pstr_as_cstr(&file), pstr_as_cstr(&link)) == -1) {
+      log_perror("symlink new revision");
+      return -1;
+    }
+
     return set_state(MENU_MAIN, us, write_fd);
   }
 
@@ -784,7 +817,6 @@ static void net_client_talk(int fd, fd_set* master) {
 }
 
 
-
 static void socket_talk(fd_set* master) {
   if (talk.lua_log_size < sizeof(talk.lua_log.head)) {
     // "header" noch nicht vollstaendig
@@ -792,6 +824,7 @@ static void socket_talk(fd_set* master) {
         talk.lua_log.data + talk.lua_log_size,  // position - evtl. append
         sizeof(talk.lua_log.head) - talk.lua_log_size /* nicht ueber id und len hinausschreiben */);
     if (read_len == -1) { log_perror("read from pipe"); exit(EXIT_FAILURE); }
+    if (read_len == 0) { log_msg("keine verbindung zum vater (2)"); exit(EXIT_FAILURE); }
     talk.lua_log_size += read_len;
     talk.log_read = 0;
   } else {
@@ -803,6 +836,8 @@ static void socket_talk(fd_set* master) {
 
     // daten lesen
     ssize_t read_len = read(talk.pipe_fd[0], buffer, buffer_size);
+    if (read_len == -1) { log_perror("read from pipe"); exit(EXIT_FAILURE); }
+    if (read_len == 0) { log_msg("keine verbindung zum vater (2)"); exit(EXIT_FAILURE); }
     talk.log_read += read_len;
 
     // alle offenen konsolen suchen meldung ausgeben
@@ -822,7 +857,6 @@ static void socket_talk(fd_set* master) {
     }
   }
 }
-
 
 
 static void talk_client_loop(int net_fd) {
@@ -850,10 +884,6 @@ static void talk_client_loop(int net_fd) {
       if (FD_ISSET(fd, &rfds_tmp)) {
         if (fd == talk.pipe_fd[0]) {
           socket_talk(&rfds);
-
-
-//          ret = net_pipe(fd, &tv);
-//          if (ret == -1) { return; } // papa-pipe redet nicht mehr mit uns
         } else if (fd == net_fd) {
           // client connect
           net_client_connect(net_fd, &rfds, &max_fd);
@@ -888,12 +918,14 @@ void init_talk() {
   if (get_id(&file_last_id) == -1) {
     if (errno == ENOENT) {
       log_msg("creating new last_id-file");
-      struct pstr default_id = { .used = 3, .str = "99\n" };
-      if (pstr_write_file(&file_last_id, &default_id, O_WRONLY | O_CREAT ) == -1) {
+      if (set_id(&file_last_id, 99) == -1) {
+//      struct pstr default_id = { .used = 3, .str = "99\n" };
+//      if (pstr_write_file(&file_last_id, &default_id, O_WRONLY | O_CREAT ) == -1) {
         log_perror("create new last_id");
         exit(EXIT_FAILURE);
       }
     } else {
+      log_perror("get_id...");
       exit(EXIT_FAILURE);
     }
   }
@@ -911,9 +943,9 @@ void init_talk() {
     // wir sind der client
     
     // brauchen wir nicht mehr
-//    close(STDIN_FILENO);
-//    close(STDOUT_FILENO);
-//    close(STDERR_FILENO);
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
 
     // speicher holen
     us = (struct userstate*)malloc(sizeof(struct userstate) * TALK_MAX_USERS);

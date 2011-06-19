@@ -21,7 +21,7 @@
 
 
 
-// schaut unter USER_HOME/$name nach ob es ein verzeichnis (oder eine andere datei) gibt 
+// schaut unter USER_HOME_BY_NAME/$name nach ob es ein verzeichnis (oder eine andere datei) gibt 
 // 1 = ja, 0 = nein
 int have_user(struct pstr* name) {
   struct pstr path = { .used = sizeof(USER_HOME_BY_NAME), .str = USER_HOME_BY_NAME "/" };
@@ -44,7 +44,6 @@ int have_user(struct pstr* name) {
 }
 
 
-
 int get_id(struct pstr* file) {
   struct pstr id = { .used = 0 };
 
@@ -59,10 +58,26 @@ int get_id(struct pstr* file) {
   return ret;
 
 err:
-  log_msg("probleme beim lesen von %.*s", pstr_len(file), pstr_as_cstr(file));
+  log_msg("probleme beim lesen von %s", pstr_as_cstr(file));
   log_perror("get_id");
   return -1;
 }
+
+
+int set_id(struct pstr* file, int id) {
+  struct pstr data = { .used = 0 };
+  pstr_append_printf(&data, "%d\n", id);
+
+  if (pstr_write_file(file, &data, O_WRONLY | O_CREAT | O_TRUNC) == -1) goto err;
+
+  return 0;
+
+err:
+  log_msg("probleme beim schreiben von %s", pstr_as_cstr(file));
+  log_perror("set_id");
+  return -1;
+}
+
 
 void crypt_passwd(const void* pw, unsigned long pw_len, struct pstr* hash) {
   pstr_clear(hash);
@@ -90,10 +105,7 @@ int add_user(char *name, int len_name, const void* pw, unsigned long pw_len, uns
 
     (*user_id)++;
 
-    struct pstr id = { .used = 0 };
-    pstr_append_printf(&id, "%d\n", *user_id);
-
-    if (pstr_write_file(&file_last_id, &id, O_WRONLY | O_TRUNC) == -1) {
+    if (set_id(&file_last_id, *user_id) == -1) {
       log_perror("kann "CONFIG_LAST_ID" nicht schreiben!");
       return -1;
     }
@@ -124,7 +136,22 @@ int add_user(char *name, int len_name, const void* pw, unsigned long pw_len, uns
 
     if (pstr_write_file(&file, &id, O_CREAT | O_EXCL | O_WRONLY) == -1) {
       log_perror("write user-id");
-      log_msg("write mag id nicht schreiben. id = %s", id);
+      log_msg("write mag id nicht schreiben. id = %s", pstr_as_cstr(&id));
+      return -1;
+    }
+  }
+
+  {
+    // user name schreiben
+    pstr_set(&file, &home_by_id);
+    pstr_append_cstr(&file, "/name", 5);
+
+    struct pstr user_name = { .used = 0 };
+    pstr_append_cstr(&user_name, name, len_name);
+
+    if (pstr_write_file(&file, &user_name, O_CREAT | O_EXCL | O_WRONLY) == -1) {
+      log_perror("write user-name");
+      log_msg("write mag name nicht schreiben. id = %s", name);
       return -1;
     }
   }
@@ -145,5 +172,6 @@ int add_user(char *name, int len_name, const void* pw, unsigned long pw_len, uns
 
   return 0;
 }
+
 
 
