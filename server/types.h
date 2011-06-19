@@ -149,6 +149,7 @@ struct slot_data_t {
 
 struct planet_data_t {
 	slot_t *slot;
+	entity_t* cluster;
 };
 
 struct ship_data_t {

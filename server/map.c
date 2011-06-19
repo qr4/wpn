@@ -57,8 +57,10 @@ void init_map() {
 
 		if (r < PLANET_DENSITY) {
 			working->cluster_data->planet = alloc_entity(planet_storage);
+			entity_t* e = get_entity_by_id(working->cluster_data->planet);
 			init_entity(get_entity_by_id(working->cluster_data->planet), working->pos, PLANET, 0);
 			working->radius = get_entity_by_id(working->cluster_data->planet)->radius;
+			e->planet_data->cluster = working;
 		} else if (r < PLANET_DENSITY + ASTEROID_DENSITY) {
 			distribute_asteroids(working, AVERAGE_ASTEROID_NUMBER + rand()%4 - 2);
 		} else {
