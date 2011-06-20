@@ -216,6 +216,9 @@ int main(int argc, char *argv[]) {
 		/* Push Map-Data out to clients */
 		//map_to_network();
 
+		/* Check whether any new player-provided lua code has arrived and evaluate it */
+		player_check_code_updates();
+
 		/* Wait until we reach our frametime-limit */
 		gettimeofday(&t, NULL);
 		timersub(&t, &t_prev, &t_diff);

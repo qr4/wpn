@@ -2,10 +2,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <poll.h>
+#include <unistd.h>
+#include <lauxlib.h>
 #include "types.h"
 #include "../net/config.h"
+#include "../net/talk.h"
 #include "debug.h"
 #include "config.h"
+#include "luastate.h"
 #include "storages.h"
 #include "base.h"
 
@@ -85,3 +90,51 @@ void new_player(unsigned int player_id) {
 	/* TODO: Send json update to the clients, informing about the new player */
 }
 
+/* Look if the network code provides us with some new shiny player data */
+void player_check_code_updates() {
+	int fd = talk_get_user_change_code_fd();
+	struct pollfd poll_data;
+	unsigned int user;
+	entity_id_t base;
+	entity_t* ebase;
+	int i;
+	char* lua_source_file;
+
+	poll_data.fd = fd;
+	poll_data.events=POLLIN;
+
+	/* Check if any data is present */
+	if(poll(&poll_data, 1, 1)) {
+
+		/* Read the id of a user */
+		read(fd, &user, sizeof(unsigned int));
+
+		DEBUG("Update for player %u", user);
+
+		/* Make sure this player exists */
+		new_player(user);
+
+		for(i=0; i<n_players; i++) {
+			if(players[i].player_id == user) {
+				break;
+			}
+		}
+
+		/* Get the location we're reading code from */
+		asprintf(&lua_source_file, USER_HOME_BY_ID "/%i/current", user);
+
+		/* TODO: Make certain a player's homebase never gets destroyed (or replace it) */
+		base = players[i].homebase;
+		ebase = get_entity_by_id(base);
+
+		/* Evaluate the code in the context of the player's homebase */
+		lua_active_entity = base;
+
+		if(!(ebase->lua)) {
+			ERROR("Player %u's homebase lua state is dead. This shouldn't happen.\n", user);
+			return;
+		}
+		DEBUG("Executing %s in the context of entity %lu\n", lua_source_file, base.id);
+		luaL_dofile(ebase->lua, lua_source_file);
+	}
+}
