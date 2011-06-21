@@ -13,6 +13,7 @@
 #include "config.h"
 #include "json_output.h"
 #include "luastate.h"
+#include "player.h"
 #include "storages.h"
 #include "base.h"
 
@@ -24,15 +25,10 @@ void new_player(unsigned int player_id) {
 
 	char* namefile;
 	FILE* f;
-	int i;
-	entity_id_t planet_id, base_id;
-	entity_t* b;
 
-	for(i=0; i<n_players; i++) {
-		if(players[i].player_id == player_id) {
-			/* This player already exists, our work here is unneccessary */
-			return;
-		}
+	/* if this player already exists, our work here is unneccessary */
+	if(find_player(player_id)) {
+		return;
 	}
 
 	/* Allocate space for a new one */
@@ -65,6 +61,29 @@ void new_player(unsigned int player_id) {
 	/* Close the file */
 	fclose(f);
 
+	DEBUG("New player '%s' connected with id %i\n", players[n_players].name, player_id);
+
+	/* create a homebase for this player */
+	create_homebase(&(players[n_players]));
+
+	n_players++;
+
+	/* Send json update to the clients, informing about the new player */
+	player_updates_to_network();
+}
+
+/* Create a new homebase for this player (either because he just joined, or
+ * just died) */
+void create_homebase(player_data_t* player) {
+	entity_id_t base_id;
+	entity_id_t planet_id;
+	entity_t* b;
+	int i;
+
+	if(get_entity_by_id(player->homebase)) {
+		ERROR("Player %u already has a homebase!\n", player->player_id);
+		return;
+	}
 
 	/* Find a nice, uninhabited planet */
 	while(1) {
@@ -76,21 +95,13 @@ void new_player(unsigned int player_id) {
 		}
 	}
 
-	DEBUG("New player '%s' connected with id %i\n", players[n_players].name, player_id);
-
-	/* create a homebase for this player */
 	base_id = init_base(base_storage, planet_id, config_get_int("initial_base_size"));
-	players[n_players].homebase=base_id;
+	player->homebase=base_id;
 
 	b = get_entity_by_id(base_id);
-	b->player_id = player_id;
+	b->player_id = player->player_id;
 
-	DEBUG("Created homebase %li for player %i.\n", base_id, player_id);
-
-	n_players++;
-
-	/* Send json update to the clients, informing about the new player */
-	player_updates_to_network();
+	DEBUG("Created homebase %li for player %i.\n", base_id, player->player_id);
 }
 
 /* Scan through the player-by-id directory and add all players marked there */
@@ -200,4 +211,15 @@ void player_check_code_updates(long usec_wait) {
       return;
     }
   }
+}
+
+player_data_t* find_player(unsigned int player_id) {
+	int i;
+	for(i=0; i<n_players; i++) {
+		if(players[i].player_id == player_id) {
+			return &players[i];
+		}
+	}
+
+	return NULL;
 }

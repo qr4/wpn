@@ -8,6 +8,7 @@
 #include "luastate.h"
 #include "debug.h"
 #include "entity_storage.h"
+#include "player.h"
 #include "storages.h"
 #include "json_output.h"
 
@@ -266,6 +267,8 @@ void move_ship(entity_t *ship) {
  * entity pointer should be performed after this function call) */
 void explode_entity(entity_t* e) {
 
+	player_data_t* p;
+
 	if(!e) {
 		ERROR("Attempting to explode a NULL entity!");
 		return;
@@ -285,6 +288,14 @@ void explode_entity(entity_t* e) {
 	}
 	current_explosions[n_current_explosions++] = explosion_to_json(e);
 	current_explosions[n_current_explosions] = NULL;
+
+	/* Care must be taken when destroying a player's homebase.
+	 * He will get a new one right away. */
+	p=find_player(e->player_id);
+	if(p && p->homebase.id == e->unique_id.id) {
+		p->homebase=INVALID_ID;
+		create_homebase(p);
+	}
 
 	/* Remove the exploding entity */
 	switch(e->type) {
