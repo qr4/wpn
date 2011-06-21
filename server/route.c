@@ -12,7 +12,7 @@
 
 extern entity_storage_t* asteroid_storage;
 extern entity_storage_t* planet_storage;
-extern map_t map; // cluster
+extern entity_storage_t* cluster_storage;
 
 extern double dt;
 extern double MAXIMUM_PLANET_SIZE;
@@ -42,11 +42,11 @@ waypoint_t* _route(vector_t* start, vector_t* stop, int level) {
 		exit(1);
 	}
 
-	for(int i = 0; i < map.clusters_x * map.clusters_y; i++) {
-		double r = vector_dividing_ratio(start, stop, &(map.cluster[i].pos));
+	for(int i = 0; i < cluster_storage->first_free; i++) {
+		double r = vector_dividing_ratio(start, stop, &(cluster_storage->entities[i].pos));
 		if (r > 0 && r < 1) {
-			double d = vector_dist_to_line(start, stop, &(map.cluster[i].pos));
-			if (fabs(d) < map.cluster[i].radius) {
+			double d = vector_dist_to_line(start, stop, &(cluster_storage->entities[i].pos));
+			if (fabs(d) < cluster_storage->entities[i].radius) {
 				if(fabs(r-0.5) < fabs(r_min-0.5)) {
 					i_min = i;
 					r_min = r;
@@ -57,11 +57,11 @@ waypoint_t* _route(vector_t* start, vector_t* stop, int level) {
 
 	if(i_min >= 0) {
 		if(level > 20) {
-			fprintf(stderr, "go around start = (%f, %f), stop = (%f, %f), cluster = (%f, %f) radius = %f, r = %f\n", start->x, start->y, stop->x, stop->y, map.cluster[i_min].pos.x, map.cluster[i_min].pos.y, map.cluster[i_min].radius, r_min);
+			fprintf(stderr, "go around start = (%f, %f), stop = (%f, %f), cluster = (%f, %f) radius = %f, r = %f\n", start->x, start->y, stop->x, stop->y, cluster_storage->entities[i_min].pos.x, cluster_storage->entities[i_min].pos.y, cluster_storage->entities[i_min].radius, r_min);
 		}
-		waypoint_t* wp = go_around(start, stop, map.cluster + i_min, r_min);
+		waypoint_t* wp = go_around(start, stop, cluster_storage->entities + i_min, r_min);
 		if(level > 20) {
-			fprintf(stderr, "wp = (%f, %f) dist = %f\n", wp->point.x, wp->point.y, hypot(wp->point.x-map.cluster[i_min].pos.x, wp->point.y-map.cluster[i_min].pos.y));
+			fprintf(stderr, "wp = (%f, %f) dist = %f\n", wp->point.x, wp->point.y, hypot(wp->point.x-cluster_storage->entities[i_min].pos.x, wp->point.y-cluster_storage->entities[i_min].pos.y));
 		}
 
 		waypoint_t* part1 = _route(start, &(wp->point), level+1);
