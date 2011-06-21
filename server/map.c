@@ -140,9 +140,6 @@ void init_cluster_with_asteroids(entity_t *cluster) {
 					(double) MAXIMUM_CLUSTER_SIZE 
 					- 2*config_get_double("max_ship_size") 
 					- asteroid_radius).v;
-			if (asteroid->pos.x < 0 || asteroid->pos.y < 0) {
-				ERROR("THIS SHOULD DEFENETLY NOT HAPPEN, FUCK!\n");
-			}
 		} while (check_for_asteroid_collisions(asteroid, cluster) == 1);
 
 		cluster->cluster_data->asteroids++;
