@@ -18,6 +18,8 @@
 #include "physics.h"
 #include "player.h"
 #include <fenv.h>
+#include <sys/types.h>
+#include <signal.h>
 
 
 #define print_sizeof(TYPE) \
@@ -35,13 +37,29 @@ double epsilon = 1e-10;
 double asteroid_radius_to_slots_ratio = 1;
 double planet_size = 50;
 
+extern int netpid = -1;
+extern int talkpid = -1;
+
+void kill_network(void) {
+	if(netpid != -1) {
+		fprintf(stderr, "Talk thread has pid %d\n", netpid);
+		kill(netpid, SIGTERM);
+	}
+	if(talkpid != -1) {
+		fprintf(stderr, "Talk thread has pid %d\n", talkpid);
+		kill(talkpid, SIGTERM);
+	}
+	wait(NULL);
+	wait(NULL);
+}
+
 int main(int argc, char *argv[]) {
 	ERROR("Error messages turned on!\n");
 	DEBUG("Debug messages turned on!\n");
 
-    /* init logging */
-    log_open("test_net_main.log");
-    log_msg("---------------- new start");
+	/* init logging */
+	log_open("test_net_main.log");
+	log_msg("---------------- new start");
 
 	entity_t *e;
 	entity_t *closest;
@@ -79,6 +97,9 @@ int main(int argc, char *argv[]) {
 
 	/* Allow users to connect */
 	init_talk();
+
+	/* set exit handler */
+	atexit(kill_network);
 
 	/* Create a test user and -ships */
 	new_player(100);

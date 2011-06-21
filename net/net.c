@@ -37,6 +37,8 @@
 // achtung: NET_UPDATE muss mit _A enden, da A hochgezaehlt wird biw Z
 #define NET_UPDATE "/wpn_update_A"
 
+int netpid;
+
 struct net_map_info net;
 
 //
@@ -418,6 +420,7 @@ void net_init() {
 
   // wir sind der papa!
   close(net.pipefd[0]); // schreiben reicht!
+  netpid = net.cpid;
 
   // leftovers beseitigen
   char map[] = NET_MAP;

@@ -46,6 +46,8 @@
 #define MAX(a, b)  (((a) > (b)) ? (a) : (b))
 
 
+int talkpid;
+
 //
 // fuer die kommunikation vater <-> sohn
 //
@@ -978,6 +980,7 @@ void init_talk() {
   }
 
   // wir sind der papa
+  talkpid = cpid;
   talk.user_change_code_pipe = user_change_code_pipe[0];
   close(user_change_code_pipe[1]);
   close(log_lua_msg_pipe[0]);
