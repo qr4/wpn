@@ -10,6 +10,7 @@
 #include "entities.h"
 #include "config.h"
 #include "debug.h"
+#include "player.h"
 #include "types.h"
 
 /* Currently active lua entity */
@@ -108,8 +109,16 @@ void init_ship_computer(entity_t* s) {
 
 /* Kill a ship computer (probably due to an error) */
 void kill_computer(entity_t* s) {
+	player_data_t* p;
+
 	if(s->lua == NULL) {
 		/* This ship is already dead. */
+		return;
+	}
+
+	/* Do not kill the lua state of a homebase */
+	p = find_player(s->player_id);
+	if(p && p->homebase.id == s->unique_id.id) {
 		return;
 	}
 
