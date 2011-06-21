@@ -101,8 +101,12 @@ int main(int argc, char *argv[]) {
 	/* set exit handler */
 	atexit(kill_network);
 
-	/* Create a test user and -ships */
+	/* Load all known players into the simulation,
+	 * and initialize their station code. */
 	add_all_known_players();
+	evaluate_all_player_code();
+
+	/* Create a test user and -ships */
 	entity_id_t ship1;
 	for(int i=0; i<200; i++)  {
 		vector_t v1 = vector(i);

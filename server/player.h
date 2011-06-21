@@ -14,6 +14,9 @@ void create_homebase(player_data_t* player);
 /* Add all players known in the directory */
 void add_all_known_players();
 
+/* Load the most recent versions of each player's lua code */
+void evaluate_all_player_code();
+
 /* Check for incoming code from a player */
 void player_check_code_updates();
 
