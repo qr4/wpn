@@ -253,7 +253,7 @@ void move_ship(entity_t *ship) {
 				ship->v = next->speed;
 			} else {
 				// *Bling* we arrived
-				call_entity_callback(ship, AUTOPILOT_ARRIVED);
+				call_entity_callback(ship, AUTOPILOT_ARRIVED, INVALID_ID);
 			}
 		}
 	}

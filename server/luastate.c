@@ -117,7 +117,7 @@ void kill_computer(entity_t* s) {
 }
 
 /* Call an entitie's callback function for a given type of event */
-void call_entity_callback(entity_t* e, event_t event) {
+void call_entity_callback(entity_t* e, event_t event, entity_id_t context) {
 
 	char* function_name;
 	entity_id_t prev_active_entity;
@@ -142,6 +142,13 @@ void call_entity_callback(entity_t* e, event_t event) {
 		return;
 	}
 
+	/* Push the "context" entity on the stack as well. If it is invalid, push self. */
+	if(context.id != INVALID_ID.id) {
+		lua_pushlightuserdata(e->lua, (void*)(context.id));
+	} else {
+		lua_pushlightuserdata(e->lua,(void*)(e->unique_id.id));
+	}
+
 	/* Make this entity "active" */
 	prev_active_entity = lua_active_entity;
 	lua_active_entity = e->unique_id;
@@ -150,10 +157,7 @@ void call_entity_callback(entity_t* e, event_t event) {
 	lua_sethook(e->lua, time_exceeded_hook, LUA_MASKCOUNT, config_get_int("lua_max_cycles"));
 
 	/* Call it.*/
-	/* TODO: Pass some relevant arguments to the event?
-	 * alternatively: set information of the craft's environment
-	 * as globals in it's lua state */
-	if(lua_pcall(e->lua, 0,0,0)) {
+	if(lua_pcall(e->lua, 1,0,0)) {
 
 		/* Lua errors send the ship adrift */
 		DEBUG("Entity %u killed due to lua error:\n%s\n", e->unique_id.id, lua_tostring(e->lua, -1));

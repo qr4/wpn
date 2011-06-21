@@ -443,7 +443,7 @@ int lua_fire(lua_State* L) {
 	}
 
 	/* Invoke "oh noes I've been hit" notifier on the other side */
-	call_entity_callback(e, SHOT_AT);
+	call_entity_callback(e, SHOT_AT, self);
 
 	/* TODO: Do we have to nudge the autopilot again? */
 

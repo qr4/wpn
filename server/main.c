@@ -150,8 +150,8 @@ int main(int argc, char *argv[]) {
 				/* Set the timer to -1 (== disabled) */
 				ship_storage->entities[i].ship_data->timer_value = -1;
 
-				/* Call it's handler */
-				call_entity_callback(&(ship_storage->entities[i]), ship_storage->entities[i].ship_data->timer_event);
+				/* Call it's handler (not passing any entity) */
+				call_entity_callback(&(ship_storage->entities[i]), ship_storage->entities[i].ship_data->timer_event, INVALID_ID);
 			}
 
 			/* Decrement timers */
@@ -166,8 +166,8 @@ int main(int argc, char *argv[]) {
 				/* Set the timer to -1 (== disabled) */
 				base_storage->entities[i].base_data->timer_value = -1;
 
-				/* Call it's handler */
-				call_entity_callback(&(base_storage->entities[i]), base_storage->entities[i].base_data->timer_event);
+				/* Call it's handler (not passing any entity) */
+				call_entity_callback(&(base_storage->entities[i]), base_storage->entities[i].base_data->timer_event, INVALID_ID);
 			}
 
 			/* Decrement timers */
@@ -183,7 +183,7 @@ int main(int argc, char *argv[]) {
 				if(ship_storage->entities[i].ship_data->flightplan->type == WP_STOP) {
 					free_waypoint(ship_storage->entities[i].ship_data->flightplan);
 					ship_storage->entities[i].ship_data->flightplan = NULL;
-					call_entity_callback(&(ship_storage->entities[i]), AUTOPILOT_ARRIVED);
+					call_entity_callback(&(ship_storage->entities[i]), AUTOPILOT_ARRIVED, INVALID_ID);
 				}
 			}
 		}
