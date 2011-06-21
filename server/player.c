@@ -137,6 +137,7 @@ void add_all_known_players() {
 void player_check_code_updates(long usec_wait) {
   fd_set rfds, rfds_tmp;
   struct timeval tv;
+	char* errortext;
   int ret;
 
   // auf talk_get_user_change_code_fd() hoeren
@@ -200,7 +201,12 @@ void player_check_code_updates(long usec_wait) {
               return;
             }
             DEBUG("Executing %s in the context of entity %lu\n", lua_source_file, base.id);
-            luaL_dofile(ebase->lua, lua_source_file);
+            if(luaL_dofile(ebase->lua, lua_source_file)) {
+							DEBUG("Execution failed.\n");
+							errortext = lua_tostring(ebase->lua, -1);
+							talk_log_lua_msg(user, errortext, strlen(errortext));
+							lua_pop(ebase->lua, 1);
+						}
 
             free(lua_source_file);
           }
