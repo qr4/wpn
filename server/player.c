@@ -11,6 +11,7 @@
 #include "../net/talk.h"
 #include "debug.h"
 #include "config.h"
+#include "json_output.h"
 #include "luastate.h"
 #include "storages.h"
 #include "base.h"
@@ -122,7 +123,7 @@ void add_all_known_players() {
 }
 
 /* Look if the network code provides us with some new shiny player data */
-void player_check_code_updates() {
+void player_check_code_updates(long usec_wait) {
   fd_set rfds, rfds_tmp;
   struct timeval tv;
   int ret;
@@ -133,7 +134,7 @@ void player_check_code_updates() {
 
   // timeout
   tv.tv_sec = 0;
-  tv.tv_usec = 0;
+  tv.tv_usec = usec_wait;
 
   int max_fd = talk_get_user_change_code_fd();
 

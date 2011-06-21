@@ -241,13 +241,13 @@ int main(int argc, char *argv[]) {
 		//map_to_network();
 
 		/* Check whether any new player-provided lua code has arrived and evaluate it */
-		player_check_code_updates();
+		player_check_code_updates(0);
 
 		/* Wait until we reach our frametime-limit */
 		gettimeofday(&t, NULL);
 		timersub(&t, &t_prev, &t_diff);
 		while(t_diff.tv_sec < 1 && t_diff.tv_usec < config_get_int("frametime")) {
-			usleep(1000);
+			player_check_code_updates(t_diff.tv_usec);
 			gettimeofday(&t, NULL);
 			timersub(&t, &t_prev, &t_diff);
 		}
