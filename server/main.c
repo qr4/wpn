@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
 	atexit(kill_network);
 
 	/* Create a test user and -ships */
-	new_player(100);
+	add_all_known_players();
 	entity_id_t ship1;
 	for(int i=0; i<200; i++)  {
 		vector_t v1 = vector(i);
@@ -224,10 +224,10 @@ int main(int argc, char *argv[]) {
 				updates++;
 			}
 
-			if(rand() < RAND_MAX/1000) {
-				explode_entity(&(ship_storage->entities[i]));
-				i--;
-			}
+			//if(rand() < RAND_MAX/1000) {
+			//	explode_entity(&(ship_storage->entities[i]));
+			//	i--;
+			//}
 		}
 		// Send JSON to network and free strings
 		ship_updates_to_network(updated_ships, updates);

@@ -132,7 +132,7 @@ void player_check_code_updates() {
 
   // timeout
   tv.tv_sec = 0;
-  tv.tv_usec = 50000;
+  tv.tv_usec = 0;
 
   int max_fd = talk_get_user_change_code_fd();
 
