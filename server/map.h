@@ -22,13 +22,21 @@ static inline map_quad_t *get_quad_by_pos(const vector_t pos) {
 	return get_quad_by_index(get_quad_index_by_pos(pos));
 }
 
+// register object in the grid
 map_quad_t *register_object(entity_t *e);
+// remove object from the grid
 void unregister_object(entity_t *e);
+// update position within the grid
 map_quad_t* update_quad_object(entity_t *e);
 
 
+/*
+ * find the closest object in the universe to e within a radius.
+ * filter is used to match only against certain types (ships, planets, etc)
+ */
 entity_t *find_closest(entity_t *e, const double radius, const unsigned int filter);
 
+// wrapper for find_closest
 static inline entity_t *find_closest_by_position(const vector_t pos, const double entity_radius, const double radius, const unsigned int filter) {
 	entity_t tmp;
 	tmp.pos = pos;

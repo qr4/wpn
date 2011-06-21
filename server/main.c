@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
-#include <sys/time.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "vector.h"
@@ -64,8 +64,6 @@ int main(int argc, char *argv[]) {
 	log_msg("---------------- new start");
 
 	entity_t *e;
-	entity_t *closest;
-	char* temp;
 	struct timeval t;
 	struct timeval t_prev;
 	struct timeval t_diff;
@@ -124,23 +122,6 @@ int main(int argc, char *argv[]) {
 
 	/* Main simulation loop */
 	for (uint64_t timestep=0;;timestep++) {
-
-		/* Legacy Debugging Code, still left in */
-		/*
-		e->pos.v = (randv().v + vector(1).v) * vector(2000).v;
-		closest = find_closest_by_position(e->pos, e->radius, 1000, PLANET);
-		DEBUG("Checking (%f, %f)\n", e->pos.x, e->pos.y);
-		if (closest != NULL) {
-			DEBUG("Found %s, at position (%f, %f). Collision distance: %f\n",
-					type_string(closest->type),
-					closest->pos.x,
-					closest->pos.y,
-					collision_dist(&e, closest));
-		} else {
-			DEBUG("Nothing\n");
-		}
-		*/
-
 		/* Iterate through all sentient entities (ships and bases) and determine if
 		 * any timer-based callbacks should be triggered (like completed actions or
 		 * expired explicit timers) */

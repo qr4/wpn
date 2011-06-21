@@ -155,6 +155,9 @@ struct planet_data_t {
 struct ship_data_t {
 	slot_t *slot;
 
+	/* store the last quad this ship was in. needed by unregister object*/
+	map_quad_t *quad;
+
 	/* If docked: ID of the docking partner */
 	entity_id_t docked_to;
 
