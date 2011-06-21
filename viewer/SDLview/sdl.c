@@ -25,11 +25,24 @@ extern int n_planets;
 extern int n_ships;
 extern int n_shots;
 
+unsigned int display_x = 640;
+unsigned int display_y = 480;
+extern bbox_t boundingbox;
+
 float zoom;
 float offset_x;
 float offset_y;
 
 float mag = 20;
+
+void screen_init() {
+	screen = SDL_SetVideoMode(display_x, display_y, 0, 0);
+
+	if (screen == NULL) {
+		fprintf(stderr, "SDL_SetVideoMode() failed: %s\n", SDL_GetError());
+		exit(1);
+	}
+}
 
 void SDLinit() {
 	if (SDL_Init(SDL_INIT_VIDEO) == -1) {
@@ -39,11 +52,7 @@ void SDLinit() {
 
 	atexit(SDL_Quit);
 
-	screen = SDL_SetVideoMode(640, 480, 0, 0);
-	if (screen == NULL) {
-		fprintf(stderr, "SDL_SetVideoMode() failed: %s\n", SDL_GetError());
-		exit(1);
-	}
+	screen_init();
 
 	// load support for the JPG and PNG image formats
 	int flags = IMG_INIT_JPG;
@@ -129,14 +138,14 @@ void checkSDLevent() {
 					case SDLK_PLUS:
 					case SDLK_KP_PLUS:
 						zoom *= 1.2;
-						offset_x = 320 + (offset_x - 320) * 1.2;
-						offset_y = 240 + (offset_y - 240) * 1.2;
+						offset_x = display_x / 2 + (offset_x - display_x / 2) * 1.2;
+						offset_y = display_y / 2 + (offset_y - display_y / 2) * 1.2;
 						break;
 					case SDLK_MINUS:
 					case SDLK_KP_MINUS:
 						zoom /= 1.2;
-						offset_x = 320 + (offset_x - 320) / 1.2;
-						offset_y = 240 + (offset_y - 240) / 1.2;
+						offset_x = display_x / 2 + (offset_x - display_x / 2) / 1.2;
+						offset_y = display_y / 2 + (offset_y - display_y / 2) / 1.2;
 						break;
 					case SDLK_q:
 						fprintf(stderr, "Closing by user request\n");
@@ -147,14 +156,14 @@ void checkSDLevent() {
 				break;
 			case SDL_MOUSEBUTTONDOWN:
 				if(event.button.button == 1) { // left button
-					if(SDL_GetTicks() - lastclickat < 500) {
+					if(SDL_GetTicks() - lastclickat < 200) {
 						// center
-						offset_x = offset_x - event.button.x + 320;
-						offset_y = offset_y - event.button.y + 240;
+						offset_x = offset_x - event.button.x + display_x / 2;
+						offset_y = offset_y - event.button.y + display_y / 2;
 						// and zoom
 						zoom *= 1.2;
-						offset_x = 320 + (offset_x - 320) * 1.2;
-						offset_y = 240 + (offset_y - 240) * 1.2;
+						offset_x = display_x / 2 + (offset_x - display_x/2) * 1.2;
+						offset_y = display_y / 2 + (offset_y - display_y/2) * 1.2;
 						// disarm
 						lastclickat = 0;
 					} else {
@@ -171,6 +180,11 @@ void checkSDLevent() {
 					offset_x += event.motion.xrel;
 					offset_y += event.motion.yrel;
 				}
+				break;
+            case SDL_VIDEORESIZE:
+				boundingbox.xmax = display_x = event.resize.w;
+				boundingbox.ymax = display_y = event.resize.h;
+				screen_init();
 				break;
 			case SDL_QUIT:
 				fprintf(stderr, "Closing by user request\n");
