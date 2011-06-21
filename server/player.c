@@ -92,49 +92,78 @@ void new_player(unsigned int player_id) {
 
 /* Look if the network code provides us with some new shiny player data */
 void player_check_code_updates() {
-	int fd = talk_get_user_change_code_fd();
-	struct pollfd poll_data;
-	unsigned int user;
-	entity_id_t base;
-	entity_t* ebase;
-	int i;
-	char* lua_source_file;
+  fd_set rfds, rfds_tmp;
+  struct timeval tv;
+  int ret;
 
-	poll_data.fd = fd;
-	poll_data.events=POLLIN;
+  // auf talk_get_user_change_code_fd() hoeren
+  FD_ZERO(&rfds);
+  FD_SET(talk_get_user_change_code_fd(), &rfds);
 
-	/* Check if any data is present */
-	if(poll(&poll_data, 1, 1)) {
+  // timeout
+  tv.tv_sec = 0;
+  tv.tv_usec = 50000;
 
-		/* Read the id of a user */
-		read(fd, &user, sizeof(unsigned int));
+  int max_fd = talk_get_user_change_code_fd();
 
-		DEBUG("Update for player %u", user);
+  for(;;) {
+    rfds_tmp = rfds;
+    ret = select(max_fd + 1, &rfds_tmp, NULL, NULL, &tv);
 
-		/* Make sure this player exists */
-		new_player(user);
+    if (ret == -1) { perror("select player_check_code_updates"); exit(EXIT_FAILURE); }
 
-		for(i=0; i<n_players; i++) {
-			if(players[i].player_id == user) {
-				break;
-			}
-		}
+    if (ret) {
+      // fd jammert rum
+      for (int fd = 0; fd <= max_fd; ++fd) {
+        if (FD_ISSET(fd, &rfds_tmp)) {
 
-		/* Get the location we're reading code from */
-		asprintf(&lua_source_file, USER_HOME_BY_ID "/%i/current", user);
+          int data[100];
 
-		/* TODO: Make certain a player's homebase never gets destroyed (or replace it) */
-		base = players[i].homebase;
-		ebase = get_entity_by_id(base);
+          ssize_t read_len = read(fd, data, sizeof(data));
+          if (read_len == -1) { perror("read player_check_code_updates"); exit(EXIT_FAILURE); }
+          if (read_len == 0) { printf("client tot...\n"); exit(EXIT_FAILURE); }
+          if (read_len & 0x3 != 0) { printf("oops. we lost an update. boeses socket, boeses!\n"); exit(EXIT_FAILURE); }
 
-		/* Evaluate the code in the context of the player's homebase */
-		lua_active_entity = base;
+          for (int i = 0; i < read_len / sizeof(unsigned int); ++i) {
+            unsigned int user = data[i];
+            entity_id_t base;
+            entity_t* ebase;
+            int j;
+            char* lua_source_file;
 
-		if(!(ebase->lua)) {
-			ERROR("Player %u's homebase lua state is dead. This shouldn't happen.\n", user);
-			return;
-		}
-		DEBUG("Executing %s in the context of entity %lu\n", lua_source_file, base.id);
-		luaL_dofile(ebase->lua, lua_source_file);
-	}
+            DEBUG("Update for player %d", user);
+
+            /* Make sure this player exists */
+            new_player(user);
+
+            for(j = 0; j < n_players; j++) {
+              if(players[j].player_id == user) {
+                break;
+              }
+            }
+
+            /* Get the location we're reading code from */
+            asprintf(&lua_source_file, USER_HOME_BY_ID "/%i/current", user);
+
+            /* TODO: Make certain a player's homebase never gets destroyed (or replace it) */
+            base = players[j].homebase;
+            ebase = get_entity_by_id(base);
+
+            /* Evaluate the code in the context of the player's homebase */
+            lua_active_entity = base;
+
+            if(!(ebase->lua)) {
+              ERROR("Player %u's homebase lua state is dead. This shouldn't happen.\n", user);
+              return;
+            }
+            DEBUG("Executing %s in the context of entity %lu\n", lua_source_file, base.id);
+            luaL_dofile(ebase->lua, lua_source_file);
+          }
+        }
+      }
+    } else {
+      // timer
+      return;
+    }
+  }
 }
