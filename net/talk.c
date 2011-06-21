@@ -184,7 +184,7 @@ struct automaton {
   },
   {
     .msg = "\n"
-      " Okay. Noch einmal - nur zur Sicherheit.\n",
+      " Okay. Noch einmal dein Passwort - nur zur Sicherheit.\n",
     .prompt = "112 passwort: ",
     .fkt = _new_account_pw2,
     .state = NEW_ACCOUNT_PW2
@@ -192,9 +192,10 @@ struct automaton {
   {
     .msg = "\n"
       " Hier kannst Du noch Informationen angeben, die Du uns mitteilen moechtest.\n"
-      " Z.B. E-Mail-Adresse, wo sitzt Du damit wir Dich schuetteln koennen wenn Du was boeses\n"
-      " machst, oder einfach nur: GEILES SPIEL WAS IHR DA GEBAUT HABT!! Ueber sowas freuen wir\n"
-      " uns natuerlich auch :-)\n"
+      " Z.B. eine E-Mail-Adresse, unter der Dich erreichen koenne, oder wo auf der\n"
+      " GPN Du sitzt damit wir Dich schuetteln koennen wenn Du was boeses machst.\n"
+      " Auch ueber Rueckmeldung wie GEILES SPIEL WAS IHR DA GEBAUT HABT!! freuen wir\n"
+      " uns natuerlich :-)\n"
       " Eine leere Zeile beendet die Eingabe.\n"
       "\n",
     .prompt = "120 info: ",
@@ -203,13 +204,13 @@ struct automaton {
   },
   {
     .msg = "\n"
-      " So, eine letzte Frage noch. Der noob, auch so ein komischer Nerd, möchte Deinen\n"
-      " LUA-Code verwenden/missbrauchen/andere schlimme Dinge damit machen, um seine\n"
-      " Plagiats-Erkennungs-Software zu verbessern. Die komplette entstehungsgeschichte\n"
-      " Deines Codes bekommt er aber nur, wenn Du ihm das erlaubst und hier \"JA\"\n"
-      " eintippst. Sonst nicht. Also jetzt hier \"JA\" ohne die Gänsefüßchen eintippen!!!1!!1!\n"
-      " (sonst kommen die bösen Space-Monster und machen Dich karp00t :P)\n"
-      " \n",
+      " So, eine letzte Frage noch. Der noob, (auch Wuerzburger Nerd) moechte gerne\n"
+      " Deinen LUA-Code verwenden, um seine Plagiats-Erkennungs-Software zu\n",
+      " verbessern. Deinen Code (inklusive der verschiedenen Versionen wie er sich\n"
+      " entwicklet bekommt er aber natuerlich nur, wenn Du ihm das erlaubst und hier\n"
+      " \"JA\" eintippst. Sonst nicht. Da du aber einem Mitnerd bestimmt helfen willst\n"
+      " gibst Du hier \"JA\" (ohne die Gaensefuesschen) ein, oder?\n"
+      "\n",
     .prompt = "130 noob: ",
     .fkt = _set_noob,
     .state = SET_NOOB
@@ -266,10 +267,10 @@ struct automaton {
     .msg = "\n"
       " The C O N F I G - M E N U\n"
       "\n"
-      " 1 Login-Passwort ändern\n"
-      " 2 User-Info ändern\n"
-      " 3 Noob-Mode ändern (-> Dein Code für Plagiatserkennungssoftware)\n"
-      " 4 ssh-key ändern\n"
+      " 1 Login-Passwort aendern\n"
+      " 2 User-Info aendern\n"
+      " 3 Noob-Mode aendern (-> Dein Code fuer Plagiatserkennungssoftware)\n"
+      " 4 ssh-key aendern\n"
       "\n"
       " 0 Main-Menu\n"
       "\n",
@@ -279,7 +280,7 @@ struct automaton {
   },
   {
     .msg = "\n"
-      " So, 1x Loginpasswort ändern\n"
+      " So, 1x Loginpasswort aendern\n"
       "\n",
     .prompt = "100 altes passwort: ",
     .fkt = _change_password_old,
@@ -299,7 +300,7 @@ struct automaton {
   },
   {
     .msg = "\n"
-      " User-Info ändern...\n"
+      " User-Info aendern...\n"
       " Eine leere Zeile beendet die Eingabe.\n"
       "\n",
     .prompt = "120 info: ",
@@ -443,7 +444,7 @@ int _new_account_name(char* data, int len, struct userstate* us, int write_fd) {
 
 err:
   {
-    const char msg[] = "500 Wie oft willst Du da noch was ungültiges eingeben??\n";
+    const char msg[] = "500 Wie oft willst Du da noch was ungueltiges eingeben??\n";
     print_msg_and_prompt(write_fd, msg, sizeof(msg), NULL);
     return -1;
   }
@@ -466,7 +467,7 @@ int _new_account_pw1(char* data, int len, struct userstate* us, int write_fd) {
 
 err:
   {
-    const char msg[] = "500 Wie oft willst Du da noch was ungültiges eingeben??\n";
+    const char msg[] = "500 Wie oft willst Du da noch was ungueltiges eingeben??\n";
     print_msg_and_prompt(write_fd, msg, sizeof(msg), NULL);
     return -1;
   }
@@ -518,7 +519,7 @@ int _set_user_info(char* data, int len, struct userstate* us, int write_fd) {
 
   if (dstr_len(&us->tmp) > 10000) {
     us->count++;
-    const char msg[] = "505 Das jetzt doch ein wenig viel für eine einfache Beschreibung.\n";
+    const char msg[] = "505 Das jetzt doch ein wenig viel fuer eine einfache Beschreibung.\n";
     return print_msg_and_prompt(write_fd, msg, sizeof(msg), NULL);
   }
 
