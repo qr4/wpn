@@ -32,6 +32,7 @@ typedef enum {
 	BEING_DOCKED,       // You are being docked
 	DOCKING_COMPLETE,   // The docking operation you requested has completed
 	UNDOCKING_COMPLETE, // Releasing the docking clamps has completed
+	BEING_UNDOCKED,     // The other ship is undocking us.
 	TRANSFER_COMPLETE,  // Transfer of a slot has completed.
 	BUILD_COMPLETE,  // Production of a new ship completed (for bases)
 	TIMER_EXPIRED,      // A fixed timer has expired
@@ -163,6 +164,10 @@ struct ship_data_t {
 	/* Event to trigger when the timer reaches zero */
 	event_t timer_event;
 
+	/* Possible context for this event (who have we just docked? What was I
+	 * shooting again?) */
+	entity_id_t timer_context;
+
 	waypoint_t *flightplan;
 };
 
@@ -191,6 +196,11 @@ struct base_data_t {
 
 	/* Event to trigger when the timer reaches zero */
 	event_t timer_event;
+
+	/* Possible context for this event (who have we just docked? What was I
+	 * shooting again?) */
+	entity_id_t timer_context;
+
 };
 
 /* Information belonging to a player */

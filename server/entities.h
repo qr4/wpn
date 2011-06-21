@@ -102,4 +102,7 @@ extern char** current_explosions;
 extern size_t n_current_explosions;
 void explode_entity(entity_t* e);
 
+/* Setup a timer for this entity, informing it when a certain action is complete */
+void set_entity_timer(entity_t* e, int timesteps, event_t event, entity_id_t context);
+
 #endif /* ENTITIES_H */

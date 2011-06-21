@@ -285,10 +285,10 @@ int lua_dock(lua_State* L) {
 	e->ship_data->docked_to.id = self.id;
 
 	/* Set up timer to inform the client once docking is complete */
-	e->ship_data->timer_value = config_get_int("docking_duration");
-	e->ship_data->timer_event = DOCKING_COMPLETE;
+	set_entity_timer(eself, config_get_int("docking_duration"), DOCKING_COMPLETE, id);
 
-	/* TODO: Inform the other entity that it is being docked */
+	/* Inform the other entity that it is being docked */
+	call_entity_callback(e, BEING_DOCKED, self);
 
 	/* Return one in order to denote successful initialization of docking process */
 	fprintf(stderr, "Success!\n");
@@ -336,11 +336,11 @@ int lua_undock(lua_State* L) {
 	eself->ship_data->docked_to.id = INVALID_ID.id;
 	e->ship_data->docked_to.id = INVALID_ID.id;
 
-	/* TODO: inform the other entity that it is being undocked */
+	/* inform the other entity that it is being undocked */
+	call_entity_callback(e, BEING_UNDOCKED, self);
 
 	/* Set up timer to inform the client once undocking is complete */
-	e->ship_data->timer_value = config_get_int("undocking_duration");
-	e->ship_data->timer_event = UNDOCKING_COMPLETE;
+	set_entity_timer(eself, config_get_int("undocking_duration"), UNDOCKING_COMPLETE, e->unique_id);
 
 	/* Return 1 to denote successful undocking */
 	lua_pushnumber(L,1);
@@ -448,17 +448,15 @@ int lua_fire(lua_State* L) {
 	/* TODO: Do we have to nudge the autopilot again? */
 
 	/* Now we are busy recharging our lasers */
-	eself->ship_data->timer_event = WEAPONS_READY;
-
 	/* Count lasers */
 	for(i=0; i<eself->slots; i++) {
 		if(eself->slot_data->slot[i] == WEAPON) {
 			num_lasers++;
 		}
 	}
-	eself->ship_data->timer_value = config_get_int("laser_recharge_duration")/num_lasers;
+	set_entity_timer(eself, config_get_int("laser_recharge_duration")/num_lasers, WEAPONS_READY, self);
 
-	/* TODO: Return hit? */
+	/* TODO: Return whether we hit? */
 	return 0;
 }
 
@@ -574,8 +572,7 @@ int lua_set_timer(lua_State* L) {
 	}
 
 	/* Setup the actual timer */
-	e->ship_data->timer_value = n;
-	e->ship_data->timer_event = TIMER_EXPIRED;
+	set_entity_timer(e, n, TIMER_EXPIRED, id);
 
 	/* Return 1 */
 	lua_pushnumber(L,1);
@@ -791,8 +788,7 @@ int lua_transfer_slot(lua_State* L) {
 	}
 
 	/* Now the little robognomes on board are busy carrying over the chests. */
-	eself->ship_data->timer_value = config_get_int("transfer_duration");
-	eself->ship_data->timer_event = TRANSFER_COMPLETE;
+	set_entity_timer(eself, config_get_int("transfer_duration"), TRANSFER_COMPLETE, self);
 
 	/* Return 1 to indicate successful initiation of transfer */
 	lua_pushnumber(L,1);

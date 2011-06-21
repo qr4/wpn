@@ -24,6 +24,7 @@ char* callback_names[NUM_EVENTS] = {
 	/* BEING_DOCKED */ "on_being_docked",
 	/* DOCKING_COMPLETE */ "on_docking_complete",
 	/* UNDOCKING_COMPLETE */ "on_undocking_complete",
+	/* BEING_UNDOCKED */ "on_being_undocked",
 	/* TRANSFER_COMPLETE */ "on_transfer_complete",
 	/* BUILD_COMPLETE */ "on_build_complete",
 	/* TIMER_EXPIRED */ "on_timer_expired",

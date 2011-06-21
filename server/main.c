@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
 				ship_storage->entities[i].ship_data->timer_value = -1;
 
 				/* Call it's handler (not passing any entity) */
-				call_entity_callback(&(ship_storage->entities[i]), ship_storage->entities[i].ship_data->timer_event, INVALID_ID);
+				call_entity_callback(&(ship_storage->entities[i]), ship_storage->entities[i].ship_data->timer_event, ship_storage->entities[i].ship_data->timer_context);
 			}
 
 			/* Decrement timers */
@@ -167,7 +167,7 @@ int main(int argc, char *argv[]) {
 				base_storage->entities[i].base_data->timer_value = -1;
 
 				/* Call it's handler (not passing any entity) */
-				call_entity_callback(&(base_storage->entities[i]), base_storage->entities[i].base_data->timer_event, INVALID_ID);
+				call_entity_callback(&(base_storage->entities[i]), base_storage->entities[i].base_data->timer_event, base_storage->entities[i].base_data->timer_context);
 			}
 
 			/* Decrement timers */

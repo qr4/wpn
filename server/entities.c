@@ -91,13 +91,15 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 			break;
 		case BASE :
 			e->base_data     = (base_data_t *)     malloc (sizeof(base_data_t));
-			e->base_data->timer_value = 0;
+			e->base_data->timer_value = -1;
+			e->base_data->timer_context = INVALID_ID;
 			e->base_data->docked_to = INVALID_ID;
 			break;
 		case SHIP :
 			e->ship_data     = (ship_data_t *)     malloc (sizeof(ship_data_t));
 			e->ship_data->flightplan = NULL;
-			e->ship_data->timer_value = 0;
+			e->ship_data->timer_value = -1;
+			e->ship_data->timer_context = INVALID_ID;
 			e->ship_data->docked_to = INVALID_ID;
 			break;
 		default :
@@ -300,4 +302,28 @@ void explode_entity(entity_t* e) {
 			ERROR("How the hell did we end up HERE? Your computer is broken.");
 			return;
 	}
+}
+
+/* Setup a timer for this entity, informing it when a certain action is complete */
+void set_entity_timer(entity_t* e, int timesteps, event_t event, entity_id_t context) {
+
+	/* Only sentient entities can have timers */
+	switch(e->type) {
+	case SHIP:
+	case BASE:
+		break;
+	default:
+		ERROR("Attempted to set a timer on a non-sentient entity!\n");
+		return;
+	}
+
+	if(e->ship_data->timer_value != -1) {
+		ERROR("Another timer was already ticking for entity %lu\n",  e->unique_id.id);
+		return;
+	}
+
+	e->ship_data->timer_value = timesteps;
+	e->ship_data->timer_event = event;
+	e->ship_data->timer_context = context;
+
 }
