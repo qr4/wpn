@@ -49,30 +49,47 @@
 int talkpid = -1;
 
 //
+// wird fuer die kommunikation via pipe verwendet um sicherzustellen, dass alle daten da sind
+//
+
+struct pipe_com {
+  union {
+    struct {
+      unsigned int id;
+      int len;
+    } head;
+    char _head[0];
+  } header;
+  int read_head;
+  int read_body;
+};
+
+//
 // fuer die kommunikation vater <-> sohn
 //
 
 struct talk_info {
   pid_t cpid;     // pid des sohnes
 
+  // menupunkt: 1 LUA-Konsole oeffen und Heimatwelt per Hand steuern
+  int user_code_pipe;         // schickt code vom user an den vater
+  int user_code_reply_pipe;   // antwort des interpreters auf den code
+
+  // menupunkt: 2 Deinen tollen Schiffchen-Code hochladen
   int user_change_code_pipe;  // sohn informiert vater ueber neu hochgeladenen code
                               // inhalt: unsigned int mit user-id
-  int log_lua_msg_pipe;       // vater informiert sohn uber logausgaben eines clients
-                              // inhalt: unsigned int userid; int anzahl der nutzbytes (len); char[] die nutzbytes;
-  // sohn
-  union {
-    struct {
-      int id;     // id des users fuer den die nachricht ist
-      int len;    // groesse der nachricht
-    } head;
-    char data[0];
-  } lua_log;
-  int lua_log_size; // = wie viele bytes vom "header" haben wir schon
 
-  int log_read;   // anzahl der bytes die von der nachrcht schon verschickt wurden
+  // menupunkt: 3 LUA-Monitor oeffnen - watching shit scroll by...
+  int log_lua_msg_pipe;       // vater informiert sohn uber logausgaben eines clients
+                              // inhalt: unsigned int userid; int anzahl der nutzbytes (len); char[] die nutzbytes
+
+  //
+  // sohn
+  //
+  struct pipe_com lua_log;
 };
 
-static struct talk_info talk = { .lua_log_size = 0 };
+static struct talk_info talk = { .lua_log.read_head = 0 };
 
 
 //
@@ -630,6 +647,10 @@ int _lua_console(char* data, int len, struct userstate* us, int write_fd) {
 
   if ((len == 5) && (strncasecmp(data, ".quit", 5) == 0)) return set_state(MENU_MAIN, us, write_fd);
 
+  write(talk.user_code_pipe, &us->id, sizeof(unsigned int));
+  write(talk.user_code_pipe, &len, sizeof(int));
+  write(talk.user_code_pipe, data, len);
+
   return print_msg_and_prompt(write_fd, NULL, 0, us); // nur den prompt anzeigen
 }
 
@@ -823,33 +844,32 @@ static void net_client_talk(int fd, fd_set* master) {
 }
 
 
-static void socket_talk(fd_set* master) {
-  if (talk.lua_log_size < sizeof(talk.lua_log.head)) {
+static void dispatch(struct pipe_com* pc, int read_pipe, fd_set* master) {
+  if (pc->read_head < sizeof((struct pipe_com*)0)->header) {
     // "header" noch nicht vollstaendig
-    ssize_t read_len = read(talk.log_lua_msg_pipe,    // socket read fd
-        talk.lua_log.data + talk.lua_log_size,        // position - evtl. append
-        sizeof(talk.lua_log.head) - talk.lua_log_size /* nicht ueber id und len hinausschreiben */);
+    ssize_t read_len = read(read_pipe,
+        pc->header._head + pc->read_head,   // header-position bestimmen, evtl. append
+        sizeof((struct pipe_com*)0)->header - pc->read_head); // nicht ueber den kopf hinaus lesen
     if (read_len == -1) { log_perror("read from pipe"); exit(EXIT_FAILURE); }
     if (read_len == 0) { log_msg("keine verbindung zum vater (2)"); exit(EXIT_FAILURE); }
-    talk.lua_log_size += read_len;
-    talk.log_read = 0;
+    pc->read_head += read_len;
+    pc->read_body = 0;
   } else {
-    // "header" ist da -> daten an user weiterleiten
+    // so, nutzdaten lesen und weiter schicken
     char buffer[4000];
-    int buffer_size = sizeof(buffer) < talk.lua_log.head.len - talk.log_read
+    int buffer_size = sizeof(buffer) < pc->header.head.len - pc->read_body
       ? sizeof(buffer)
-      : talk.lua_log.head.len - talk.log_read;
+      : pc->header.head.len - pc->read_body;
 
-    // daten lesen
-    ssize_t read_len = read(talk.log_lua_msg_pipe, buffer, buffer_size);
+    ssize_t read_len = read(read_pipe, buffer, buffer_size);
     if (read_len == -1) { log_perror("read from pipe"); exit(EXIT_FAILURE); }
     if (read_len == 0) { log_msg("keine verbindung zum vater (2)"); exit(EXIT_FAILURE); }
-    talk.log_read += read_len;
+    pc->read_body += read_len;
 
-    // alle offenen konsolen suchen meldung ausgeben
+    // alle offenen konsolen suchen und meldung ausgeben
     for (int i = 0; i < TALK_MAX_USERS; ++i) {
-      if ((us[i].id == talk.lua_log.head.id) && (us[i].fkt == _lua_monitor)){
-        if (write(i, buffer, buffer_size) == -1) {
+      if ((us[i].id == pc->header.head.id) && (us[i].fkt == _lua_monitor)) {
+        if (write(i, buffer, read_len) == -1) {
           // fail -> verbindung dicht machen
           close(i);
           FD_CLR(i, master);
@@ -858,10 +878,58 @@ static void socket_talk(fd_set* master) {
     }
 
     // alles an den client weiter gegeben
-    if (talk.log_read == talk.lua_log.head.len) {
+    if (pc->read_body == pc->header.head.len) {
+      pc->read_head = 0;
+    }
+  }
+}
+
+static void dispatch_code_reply(fd_set* master) {
+
+}
+
+static void dispatch_lua_msg(fd_set* master) {
+  dispatch(&talk.lua_log, talk.log_lua_msg_pipe, master);
+#if 0
+  if (talk.lua_log_size < sizeof(talk.lua_log.head)) {
+    // "header" noch nicht vollstaendig
+    ssize_t read_len = read(talk.log_lua_msg_pipe,    // socket read fd
+        talk.lua_log.data + talk.lua_log_size,        // position - evtl. append
+        sizeof(talk.lua_log.head) - talk.lua_log_size /* nicht ueber id und len hinausschreiben */);
+    if (read_len == -1) { log_perror("read from pipe"); exit(EXIT_FAILURE); }
+    if (read_len == 0) { log_msg("keine verbindung zum vater (2)"); exit(EXIT_FAILURE); }
+    talk.lua_log_size += read_len;
+    talk.lua_log_read = 0;
+  } else {
+    // "header" ist da -> daten an user weiterleiten
+    char buffer[4000];
+    int buffer_size = sizeof(buffer) < talk.lua_log.head.len - talk.lua_log_read
+      ? sizeof(buffer)
+      : talk.lua_log.head.len - talk.lua_log_read;
+
+    // daten lesen
+    ssize_t read_len = read(talk.log_lua_msg_pipe, buffer, buffer_size);
+    if (read_len == -1) { log_perror("read from pipe"); exit(EXIT_FAILURE); }
+    if (read_len == 0) { log_msg("keine verbindung zum vater (2)"); exit(EXIT_FAILURE); }
+    talk.lua_log_read += read_len;
+
+    // alle offenen konsolen suchen meldung ausgeben
+    for (int i = 0; i < TALK_MAX_USERS; ++i) {
+      if ((us[i].id == talk.lua_log.head.id) && (us[i].fkt == _lua_monitor)){
+        if (write(i, buffer, read_len) == -1) {
+          // fail -> verbindung dicht machen
+          close(i);
+          FD_CLR(i, master);
+        }
+      }
+    }
+
+    // alles an den client weiter gegeben
+    if (talk.lua_log_read == talk.lua_log.head.len) {
       talk.lua_log_size = 0;
     }
   }
+#endif
 }
 
 
@@ -874,10 +942,11 @@ static void talk_client_loop(int net_fd) {
   int ret;
 
   FD_ZERO(&rfds);
+  FD_SET(talk.user_code_reply_pipe, &rfds);
   FD_SET(talk.log_lua_msg_pipe, &rfds);
   FD_SET(net_fd, &rfds);
 
-  int max_fd = MAX(net_fd, talk.log_lua_msg_pipe);
+  int max_fd = MAX(talk.user_code_reply_pipe, MAX(talk.log_lua_msg_pipe, net_fd));
 
   for(;;) {
     rfds_tmp = rfds;
@@ -888,8 +957,10 @@ static void talk_client_loop(int net_fd) {
     int max_fd_tmp = max_fd;  // brauchen wir, da sich max_fd durch client-connects ??ndern kann
     for (int fd = 0; fd <= max_fd_tmp; ++fd) {
       if (FD_ISSET(fd, &rfds_tmp)) {
-        if (fd == talk.log_lua_msg_pipe) {
-          socket_talk(&rfds);
+        if (fd == talk.user_code_reply_pipe) {
+          dispatch_code_reply(&rfds);
+        } else if (fd == talk.log_lua_msg_pipe) {
+          dispatch_lua_msg(&rfds);
         } else if (fd == net_fd) {
           // client connect
           net_client_connect(net_fd, &rfds, &max_fd);
@@ -935,9 +1006,11 @@ void init_talk() {
   }
  
   // pipes basteln fuer kommunikation
-  int user_change_code_pipe[2], log_lua_msg_pipe[2];
+  int user_code_pipe[2], user_code_reply_pipe[2], user_change_code_pipe[2], log_lua_msg_pipe[2];
   // pipe[0] refers to the read end of the pipe. 
   // pipe[1] refers to the write end of the pipe
+  if (pipe(user_code_pipe) == -1) { log_perror("pipe"); exit(EXIT_FAILURE); }
+  if (pipe(user_code_reply_pipe) == -1) { log_perror("pipe"); exit(EXIT_FAILURE); }
   if (pipe(user_change_code_pipe) == -1) { log_perror("pipe"); exit(EXIT_FAILURE); }
   if (pipe(log_lua_msg_pipe) == -1) { log_perror("pipe"); exit(EXIT_FAILURE); }
 
@@ -947,8 +1020,15 @@ void init_talk() {
 
   if (cpid == 0) {
     // wir sind der client
+    close(user_code_pipe[0]);
+    talk.user_code_pipe = user_code_pipe[1];
+
+    talk.user_code_reply_pipe = user_code_reply_pipe[0];
+    close(user_code_reply_pipe[1]);
+
     close(user_change_code_pipe[0]);
     talk.user_change_code_pipe = user_change_code_pipe[1];
+
     talk.log_lua_msg_pipe = log_lua_msg_pipe[0];
     close(log_lua_msg_pipe[1]);
 
@@ -972,6 +1052,8 @@ void init_talk() {
 
     talk_client_loop(net_fd);
 
+    close(talk.user_code_pipe);
+    close(talk.user_code_reply_pipe);
     close(talk.user_change_code_pipe);
     close(talk.log_lua_msg_pipe);
     log_msg("talk client exit");
@@ -981,8 +1063,16 @@ void init_talk() {
 
   // wir sind der papa
   talkpid = cpid;
+
+  talk.user_code_pipe = user_code_pipe[0];
+  close(user_code_pipe[1]);
+
+  close(user_code_reply_pipe[0]);
+  talk.user_code_reply_pipe = user_code_reply_pipe[1];
+
   talk.user_change_code_pipe = user_change_code_pipe[0];
   close(user_change_code_pipe[1]);
+
   close(log_lua_msg_pipe[0]);
   talk.log_lua_msg_pipe = log_lua_msg_pipe[1];
 }
