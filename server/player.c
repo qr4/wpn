@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <dirent.h>
 #include <poll.h>
 #include <unistd.h>
 #include <lauxlib.h>
@@ -88,6 +89,35 @@ void new_player(unsigned int player_id) {
 	n_players++;
 
 	/* TODO: Send json update to the clients, informing about the new player */
+}
+
+/* Scan through the player-by-id directory and add all players marked there */
+/* This can for example be done at restart of a round, to supply all players with
+ * a new homebase */
+void add_all_known_players() {
+	DIR* playerdir;
+	struct dirent* direntry;
+	int number;
+
+	playerdir = opendir(USER_HOME_BY_ID);
+	if(!playerdir) {
+		ERROR("Unable to open player directory: %s\nNot adding players.", strerror(errno));
+		return;
+	}
+
+	/* add all players */
+	while(1) {
+		direntry = readdir(playerdir);
+		if(!direntry)
+			break;
+
+		/* Don't add direntrys that don't resolve to a number */
+		number = atoi(direntry->d_name);
+		if(number)
+			new_player(number);
+	}
+
+	closedir(playerdir);
 }
 
 /* Look if the network code provides us with some new shiny player data */
