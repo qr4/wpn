@@ -222,7 +222,7 @@ struct automaton {
     .msg = "\n"
       " Welcome to the   M A I N - M E N U\n"
       "\n"
-      " 1 LUA-Konsole oeffen und Schiffchen per Hand steuern\n"
+      " 1 LUA-Konsole oeffen und Heimatwelt per Hand steuern\n"
       " 2 Deinen tollen Schiffchen-Code hochladen\n"
       " 3 LUA-Monitor oeffnen - watching shit scroll by...\n"
       "\n"

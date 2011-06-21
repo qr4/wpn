@@ -158,6 +158,8 @@ void player_check_code_updates() {
             }
             DEBUG("Executing %s in the context of entity %lu\n", lua_source_file, base.id);
             luaL_dofile(ebase->lua, lua_source_file);
+
+            free(lua_source_file);
           }
         }
       }
