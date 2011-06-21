@@ -28,6 +28,7 @@ void ship_updates_to_network(char** updated_ships, int updates);
 void explosions_to_network();
 void shots_to_network();
 void players_to_network();
+void player_updates_to_network();
 void map_to_network();
 
 /* Json strings of explosions in this timestep */

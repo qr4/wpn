@@ -89,7 +89,7 @@ void new_player(unsigned int player_id) {
 	n_players++;
 
 	/* Send json update to the clients, informing about the new player */
-	players_to_network();
+	player_updates_to_network();
 }
 
 /* Scan through the player-by-id directory and add all players marked there */

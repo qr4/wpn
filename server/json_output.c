@@ -478,6 +478,16 @@ void players_to_network() {
 	}
 }
 
+void player_updates_to_network() {
+	/* Since we don't expect too many players, we just gonna push
+	 * the whole bunch on update */
+	char* p = players_to_json();
+	if(p) {
+		update_printf("{ \"update\":\n{ %s}\n}\n\n", p);
+		free(p);
+	}
+}
+
 void ship_updates_to_network(char** updated_ships, int updates) {
 	char* joined_updates;
 	updated_ships[updates] = NULL;
