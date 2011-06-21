@@ -37,8 +37,8 @@ double epsilon = 1e-10;
 double asteroid_radius_to_slots_ratio = 1;
 double planet_size = 50;
 
-extern int netpid = -1;
-extern int talkpid = -1;
+extern int netpid;
+extern int talkpid;
 
 void kill_network(void) {
 	if(netpid != -1) {

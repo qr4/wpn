@@ -46,7 +46,7 @@
 #define MAX(a, b)  (((a) > (b)) ? (a) : (b))
 
 
-int talkpid;
+int talkpid = -1;
 
 //
 // fuer die kommunikation vater <-> sohn

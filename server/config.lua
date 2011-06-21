@@ -40,6 +40,14 @@ epsilon    = 1e-10 -- // Missmatches im Kurs durch Rundungsfehler ab denen die P
 asteroid_radius_to_slots_ratio = 1
 planet_size = 50
 
+-- Stuff in astroids upon creation in percent
+-- First drives are filled, then weapons, then ore.
+-- Once the astroid is full we stop putting stuff in.
+-- Remaining slots are filled with "empty".
+initial_asteroid_drive = 2
+initial_asteroid_weapon = 2
+initial_asteroid_ore = 86
+
 -- When building a new ship, offset it from the building bases' position by this
 -- amount. (This should always be larger than the collision distance)
 build_offset_x = -0.5

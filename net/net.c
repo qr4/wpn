@@ -37,7 +37,7 @@
 // achtung: NET_UPDATE muss mit _A enden, da A hochgezaehlt wird biw Z
 #define NET_UPDATE "/wpn_update_A"
 
-int netpid;
+int netpid = -1;
 
 struct net_map_info net;
 

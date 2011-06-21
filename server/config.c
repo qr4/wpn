@@ -150,7 +150,7 @@ double config_get_double(char* param_name) {
 	/* If this parameter is no int, return 0 */
 	if(!lua_isnumber(config_state,-1)) {
 		lua_pop(config_state, 1);
-		DEBUG("Config parameter %s is not an int, returning 0\n", param_name);
+		DEBUG("Config parameter %s is not a double, returning 0\n", param_name);
 		return 0;
 	}
 
