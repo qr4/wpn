@@ -43,6 +43,8 @@ int lua_send_data(lua_State* L);
 /* As a base, build a new empty ship running the default bios. */
 int lua_build_ship(lua_State* L);
 
+/* Pew pew pew */
+int lua_fire(lua_State* L);
 
 /* --- QUERIES - with which entities get information about their surroundings */
 /* Search the closest entity in the search radius matchin the filter.

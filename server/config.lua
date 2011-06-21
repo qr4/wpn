@@ -27,6 +27,13 @@ scanner_range = 50
 docking_duration = 3
 undocking_duration = 3
 transfer_duration = 3
+-- This better be a multiple of 24, so a large ship can fire every x timesteps
+laser_recharge_duration = 24
+
+-- Hit probabilities when shooting at stuff
+ship_hit_probability = 0.3
+base_hit_probability = 0.3
+asteroid_hit_probability = 0.3
 
 -- Tunables of the physics engine
 dt = 0.5

@@ -34,6 +34,7 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_transfer_slot,    "transfer_slot"},
 	{lua_send_data,        "send_data"},
 	{lua_build_ship,       "build_ship"},
+	{lua_fire,             "fire"},
 
 	/* Queries */
 	{lua_entity_to_string, "entity_to_string"},
@@ -345,6 +346,120 @@ int lua_undock(lua_State* L) {
 	lua_pushnumber(L,1);
 
 	return 1;
+}
+
+/* Pew pew pew! */
+int lua_fire(lua_State* L) {
+	entity_id_t id, self;
+	entity_t *e, *eself;
+	int n;
+	unsigned int slot, num_occ_slots, i;
+	unsigned int num_lasers = 0;
+	double hit_probability;
+
+	n = lua_gettop(L);
+
+	if(n!=1 || !lua_islightuserdata(L,-1)) {
+		lua_pushstring(L, "fire must be called with exactly one entity argument");
+		lua_error(L);
+	}
+
+	/* Get self entity */
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	/* Get the target */
+	id.id = (uint64_t) lua_touserdata(L,-1);
+	lua_pop(L,1);
+	e = get_entity_by_id(id);
+
+	/* Check that we are not trying to shoot ourselves, because that's bullshit! */
+	if(id.id == self.id) {
+		DEBUG("Trying to shoot self! Excuse me, have you lost your marbles?\n");
+		return 0;
+	}
+
+	/* Check that we're not currently busy, or our lasers reloading. */
+	if(eself->ship_data->timer_value != -1) {
+		return 0;
+	}
+
+	/* Check that we are targetting something shootable and determine it's
+	 * hit probability */
+	switch(e->type) {
+		case SHIP:
+			hit_probability = config_get_double("ship_hit_probability");
+			break;
+		case BASE:
+			hit_probability = config_get_double("base_hit_probability");
+			break;
+		case ASTEROID:
+			/* Why would anyone want to shoot asteroids anyway?
+			 * Well, what do we care. */
+			hit_probability = config_get_double("asteroid_hit_probability");
+			break;
+		default:
+			DEBUG("Not shootable\n");
+			return 0;
+	}
+
+	/* Yay, let's break something! */
+	if((double)rand() / RAND_MAX < hit_probability) {
+
+		/* Select a random occupied slot on the target */
+		num_occ_slots = 0;
+		/* Count occupied slots */
+		for(i=0; i < e->slots; i++) {
+			if(e->slot_data->slot[i] != EMPTY) {
+				num_occ_slots++;
+			}
+		}
+
+		/* oh look, this ship is empty. We actually destroy it. */
+		if(num_occ_slots == 0) {
+			/* Bam! */
+			explode_entity(e);
+			return 0;
+		}
+
+		/* Otherwise we select a slot */
+		i = rand() % num_occ_slots;
+		for(slot=0; slot < e->slots; slot++) {
+			if(e->slot_data->slot[slot] != EMPTY) {
+				i--;
+				if(i<0)
+					break;
+			}
+		}
+
+		/* Functional components are turned into ore */
+		if(e->slot_data->slot[slot] != ORE) {
+			e->slot_data->slot[slot] = ORE;
+		} else {
+			/* Ore on the other hand, is vaporized */
+			e->slot_data->slot[slot] = EMPTY;
+		}
+
+	}
+
+	/* Invoke "oh noes I've been hit" notifier on the other side */
+	call_entity_callback(e, SHOT_AT);
+
+	/* TODO: Do we have to nudge the autopilot again? */
+
+	/* Now we are busy recharging our lasers */
+	eself->ship_data->timer_event = WEAPONS_READY;
+
+	/* Count lasers */
+	for(i=0; i<eself->slots; i++) {
+		if(eself->slot_data->slot[i] == WEAPON) {
+			num_lasers++;
+		}
+	}
+	eself->ship_data->timer_value = config_get_int("laser_recharge_duration")/num_lasers;
+
+	/* TODO: Return hit? */
+	return 0;
 }
 
 /*
