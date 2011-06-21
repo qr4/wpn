@@ -231,6 +231,7 @@ int main(int argc, char *argv[]) {
 		}
 		// Send JSON to network and free strings
 		ship_updates_to_network(updated_ships, updates);
+		shots_to_network();
 		explosions_to_network();
 
 		/* Look for any collisions in spacecraft */

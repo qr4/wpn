@@ -10,6 +10,15 @@
 #include "storages.h"
 #include "../net/net.h"
 
+/* Json strings of explosions in this timestep */
+char** current_explosions = NULL;
+size_t n_current_explosions = 0;
+
+/* Same for laser shots */
+char** current_shots = NULL;
+size_t n_current_shots = 0;
+
+
 // Joins strings separated by sep until strings contain a NULL element
 // Arguments and return string need to be freed by the caller
 char* join(char** strings, char* sep) {
@@ -167,6 +176,15 @@ char* explosion_to_json(entity_t* e) {
 	return retval;
 }
 
+char* shot_to_json(entity_t* source, entity_t* target) {
+	char* retval;
+
+	/* TODO: Unique-id for shots? */
+	asprintf(&retval, "{\"id\": %lu, \"owner\": %u, \"source\": %lu, \"target\": %lu}", INVALID_ID.id, source->player_id, source->unique_id.id, target->unique_id.id);
+
+	return retval;
+}
+
 char* player_to_json(player_data_t* p) {
 	char* retval;
 
@@ -305,6 +323,32 @@ char* ships_to_json() {
 	free(ship_strings);
 
 	return retval;
+}
+
+void shots_to_network() {
+	char* joined_shots;
+
+	if(n_current_shots <=0) {
+		/* no one shooting this timestep => send nothing */
+		return;
+	} else {
+		asprintf(&joined_shots, "\"shots\": [\n%s\n]\n", join(current_shots, ",\n"));
+	}
+
+	/* Free the temp strings */
+	for(int i=0; i<n_current_shots; i++) {
+		free(current_shots[i]);
+	}
+	free(current_shots);
+
+	n_current_shots=0;
+	current_shots = NULL;
+
+	/* Push it to the network */
+	update_printf("{ \"update\":\n{ %s}\n}\n\n", joined_shots);
+	update_flush();
+
+	free(joined_shots);
 }
 
 void explosions_to_network() {

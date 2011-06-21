@@ -261,10 +261,6 @@ void move_ship(entity_t *ship) {
 	}
 }
 
-/* Json strings of explosions in this timestep */
-char** current_explosions = NULL;
-size_t n_current_explosions = 0;
-
 /* And boom goes the entity! */
 /* (Note: this removes the entity from it's storage object. No accesses via the
  * entity pointer should be performed after this function call) */

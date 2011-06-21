@@ -9,6 +9,7 @@
 #include "ship.h"
 #include "storages.h"
 #include "types.h"
+#include "json_output.h"
 #include "debug.h"
 #include "config.h"
 #include "route.h"
@@ -403,6 +404,17 @@ int lua_fire(lua_State* L) {
 			return 0;
 	}
 
+
+	/* Record the shot in a json update */
+	current_shots = realloc(current_shots, sizeof(char*) * (n_current_shots+2));
+	if(!current_shots) {
+		ERROR("Out of memory for shot json-strings.\n");
+		return 0;
+	}
+
+	current_shots[n_current_shots++] = shot_to_json(eself, e);
+	current_shots[n_current_shots] = NULL;
+
 	/* Yay, let's break something! */
 	if((double)rand() / RAND_MAX < hit_probability) {
 
@@ -419,6 +431,16 @@ int lua_fire(lua_State* L) {
 		if(num_occ_slots == 0) {
 			/* Bam! */
 			explode_entity(e);
+
+			/* Now we are busy recharging our lasers */
+			/* Count lasers */
+			for(i=0; i<eself->slots; i++) {
+				if(eself->slot_data->slot[i] == WEAPON) {
+					num_lasers++;
+				}
+			}
+			set_entity_timer(eself, config_get_int("laser_recharge_duration")/num_lasers, WEAPONS_READY, self);
+
 			return 0;
 		}
 

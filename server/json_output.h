@@ -19,14 +19,23 @@ char* ships_to_json();
 char* explosion_to_json(entity_t* e);
 char* player_to_json(player_data_t* p);
 char* players_to_json();
+char* shot_to_json(entity_t* source, entity_t* target);
 void asteroids_to_network();
 void bases_to_network();
 void planets_to_network();
 void ships_to_network();
 void ship_updates_to_network(char** updated_ships, int updates);
 void explosions_to_network();
+void shots_to_network();
 void players_to_network();
 void map_to_network();
 
+/* Json strings of explosions in this timestep */
+extern char** current_explosions;
+extern size_t n_current_explosions;
+
+/* Same for laser shots */
+extern char** current_shots;
+extern size_t n_current_shots;
 
 #endif /* _JSON_OUTPUT_H */
