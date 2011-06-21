@@ -107,7 +107,6 @@ void free_entity(entity_storage_t* s, entity_id_t id) {
 
 	off_t index;
 	off_t last_index;
-	off_t temp;
 	entity_t temp_entity;
 	entity_t *o;
 	entity_t *e = get_entity_from_storage_by_id(s, id);

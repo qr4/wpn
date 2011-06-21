@@ -10,7 +10,6 @@
 #include "entity_storage.h"
 #include "storages.h"
 #include "json_output.h"
-#include "config.h"
 
 extern double asteroid_radius_to_slots_ratio;
 extern double planet_size;
@@ -84,7 +83,6 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 			break;
 		case PLANET :
 			e->planet_data   = (planet_data_t *)   malloc (sizeof(planet_data_t));
-			e->radius = planet_size;
 			break;
 		case ASTEROID :
 			e->asteroid_data = (asteroid_data_t *) malloc (sizeof(asteroid_data_t));
@@ -117,27 +115,7 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 		e->slot_data->slot = malloc(sizeof(slot_t) * slots);
 
 		for (i = 0; i < slots; i++) {
-			if(type != ASTEROID) {
-				e->slot_data->slot[i] = EMPTY;
-			} else {
-				double rnd = 100 * drand48();
-				rnd -= config_get_double("initial_asteroid_drive");
-				if(rnd < 0) {
-					e->slot_data->slot[i] = DRIVE;
-					continue;
-				}
-				rnd -= config_get_double("initial_asteroid_weapon");
-				if(rnd < 0) {
-					e->slot_data->slot[i] = WEAPON;
-					continue;
-				}
-				rnd -= config_get_double("initial_asteroid_ore");
-				if(rnd < 0) {
-					e->slot_data->slot[i] = ORE;
-					continue;
-				}
-				e->slot_data->slot[i] = EMPTY;
-			}
+			e->slot_data->slot[i] = EMPTY;
 		}
 	}
 

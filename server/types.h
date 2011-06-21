@@ -82,8 +82,7 @@ struct map_quad_t {
 struct map_t {
 	entity_t     *cluster;
 	map_quad_t   *quad;
-	size_t clusters_x;
-	size_t clusters_y;
+	size_t clusters;
 	size_t quad_size;
 	size_t quads_x;
 	size_t quads_y;

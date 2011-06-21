@@ -122,7 +122,7 @@ void player_check_code_updates() {
           ssize_t read_len = read(fd, data, sizeof(data));
           if (read_len == -1) { perror("read player_check_code_updates"); exit(EXIT_FAILURE); }
           if (read_len == 0) { printf("client tot...\n"); exit(EXIT_FAILURE); }
-          if (read_len & 0x3 != 0) { printf("oops. we lost an update. boeses socket, boeses!\n"); exit(EXIT_FAILURE); }
+          if ((read_len & 0x3) != 0) { printf("oops. we lost an update. boeses socket, boeses!\n"); exit(EXIT_FAILURE); }
 
           for (int i = 0; i < read_len / sizeof(unsigned int); ++i) {
             unsigned int user = data[i];

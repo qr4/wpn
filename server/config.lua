@@ -14,6 +14,7 @@ ship_init_code_file = "init.lua"
 
 -- Estimated maximum amount of ships and bases. These do not have to be really realistic,
 -- and are just a hint for memory allocation
+max_ship_size = 1 -- Do not change, or everything will be blown into pieces (this is the radius btw)
 max_ship_estimation = 8192
 max_base_estimation = 32
 
@@ -29,7 +30,7 @@ transfer_duration = 3
 
 -- Tunables of the physics engine
 dt = 0.5
-vmax = 25
+vmax = 250
 m0_small   =  1 -- Leergewicht eines kleinen Schiffs (3 slots)
 m0_medium  =  2 -- Leergewicht eines mittleren Schiffs (6 slots)
 m0_large   =  4 -- Leergewicht eines grossen Schiffs (12 slots)

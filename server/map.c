@@ -2,79 +2,161 @@
 #include <stdio.h>
 
 #include "map.h"
+#include "config.h"
 #include "entity_storage.h"
 #include "storages.h"
 #include "debug.h"
 
 extern double asteroid_radius_to_slots_ratio;
 
-double AVERAGE_CLUSTER_DISTANCE = 500;
-double MAXIMUM_CLUSTER_SIZE = 500 / 4.1;
+double MAXIMUM_CLUSTER_SIZE = 500;
 
 double MINIMUM_PLANET_SIZE = 30;
 double MAXIMUM_PLANET_SIZE = 50;
-double PLANET_DENSITY = 0.25;
+double PLANETS = 25;
 
-double ASTEROID_DENSITY = 0.60;
-double AVERAGE_ASTEROID_NUMBER = 5;
-double ASTEROID_VARIANCE;
+double ASTEROIDS = 60;
+double MINIMUM_ASTEROIDS = 5;
+double MAXIMUM_ASTEROIDS = 5;
 
 double AVERAGE_GRID_SIZE = 500;
+
+double MAP_SIZE_X = 100000.;
+double MAP_SIZE_Y = 100000.;
 
 size_t CLUSTERS_X = 40;
 size_t CLUSTERS_Y = 40;
 
 void distribute_asteroids(entity_t *cluster, const unsigned int n);
-void set_limits();
+int check_for_cluster_collisions(entity_t *cluster);
+int check_for_asteroid_collisions(entity_t *asteroid, entity_t *cluster);
+void init_cluster_with_planet(entity_t *cluster);
+void init_cluster_with_asteroids(entity_t *cluster);
+void move_cluster_to_pos(entity_t *cluster, vector_t pos);
 void build_quads();
 
 map_t map;
 
 void init_map() {
 	srand48(1);
-	size_t x, y, i;
+	size_t i;
 	vector_t pos;
-	entity_t *working;
+	vector_t map_size = (vector_t) {{MAP_SIZE_X, MAP_SIZE_Y}};
+	entity_t *cluster;
 
-	map.clusters_x = CLUSTERS_X;
-	map.clusters_y = CLUSTERS_Y;
-	//map.cluster = (entity_t *) malloc(sizeof(entity_t) * map.clusters_x * map.clusters_y);
 	map.quad_size = AVERAGE_GRID_SIZE;
 
-	// position clusters at initial grid positions, try to avoid x,y values < 0
-	for (y = 0, pos.y = AVERAGE_CLUSTER_DISTANCE; y < map.clusters_y ; y++, pos.y += AVERAGE_CLUSTER_DISTANCE) {
-		for (x = 0, pos.x = AVERAGE_CLUSTER_DISTANCE; x < map.clusters_x; x++, pos.x += AVERAGE_CLUSTER_DISTANCE) {
-			working = get_entity_by_id(alloc_entity(cluster_storage));
-			vector_t cluster_pos = pos;
-			cluster_pos.v += randv().v * vector(MAXIMUM_CLUSTER_SIZE).v;
-			init_entity(working, cluster_pos, CLUSTER, 0);
-		}
+	for (i = 0; i < PLANETS; i++) {
+		cluster = get_entity_by_id(alloc_entity(cluster_storage));
+		init_entity(cluster, vector(0), CLUSTER, 0);
+		init_cluster_with_planet(cluster);
+		do {
+			pos.v = map_size.v * (vector(0.5).v + vector(0.4).v * randv().v);
+			move_cluster_to_pos(cluster, pos);
+		} while (check_for_cluster_collisions(cluster) == 1);
 	}
-
-	// fill with planets / asteroids, set radius
-	for (i = 0; (working = get_entity_by_index(cluster_storage, i)) != NULL; i++) {
-		double r = drand48();
-
-		if (r < PLANET_DENSITY) {
-			working->cluster_data->planet = alloc_entity(planet_storage);
-			entity_t* e = get_entity_by_id(working->cluster_data->planet);
-			init_entity(get_entity_by_id(working->cluster_data->planet), working->pos, PLANET, 0);
-			e->planet_data->cluster = working;
-			working->radius = MAXIMUM_CLUSTER_SIZE;
-		} else if (r < PLANET_DENSITY + ASTEROID_DENSITY) {
-			distribute_asteroids(working, AVERAGE_ASTEROID_NUMBER + rand()%4 - 2);
-		} else {
-			// Empty cluster
-		}
+	
+	for (i = 0; i < ASTEROIDS; i++) {
+		cluster = get_entity_by_id(alloc_entity(cluster_storage));
+		init_entity(cluster, vector(0), CLUSTER, 0);
+		init_cluster_with_asteroids(cluster);
+		do {
+			pos.v = map_size.v * (vector(0.5).v + vector(0.4).v * randv().v);
+			move_cluster_to_pos(cluster, pos);
+		} while (check_for_cluster_collisions(cluster) == 1);
 	}
-
-	map.cluster = cluster_storage->entities;
-
-	// find area of the map
-	set_limits();
+	
+	map.left_bound = 0;
+	map.upper_bound = 0;
+	map.right_bound = MAP_SIZE_X;
+	map.lower_bound = MAP_SIZE_Y;
 
 	// build quads
 	build_quads(map);
+}
+
+int check_for_cluster_collisions(entity_t *cluster) {
+	size_t i;
+
+	for (i = 0; i < cluster_storage->first_free; i++) {
+		// check if one ship can pass safely between 2 clusters
+		if (cluster_storage->entities + i != cluster &&
+				collision_dist(cluster_storage->entities + i, cluster) < 2 * config_get_double("max_ship_size")) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int check_for_asteroid_collisions(entity_t *asteroid, entity_t *cluster) {
+	size_t i;
+	entity_t *to_check;
+
+	for (i = 0; i < cluster->cluster_data->asteroids; i++) {
+		to_check = get_entity_by_id(cluster->cluster_data->asteroid[i]);
+		if (to_check != asteroid &&
+				collision_dist(to_check, asteroid) < 2 * config_get_double("max_ship_size")) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+	
+void move_cluster_to_pos(entity_t *cluster, vector_t pos) {
+	entity_t *planet, *asteroid;
+	vector_t diff;
+	diff.v = pos.v - cluster->pos.v;
+
+	cluster->pos = pos;
+
+	if ((planet = get_entity_by_id(cluster->cluster_data->planet)) != NULL) {
+		planet->pos = pos;
+	}
+
+	for (int i = 0; i < cluster->cluster_data->asteroids; i++) {
+		asteroid = get_entity_by_id(cluster->cluster_data->asteroid[i]);
+		asteroid->pos.v += diff.v;
+	}
+}
+
+void init_cluster_with_asteroids(entity_t *cluster) {
+	entity_t *asteroid;
+	size_t i;
+	size_t asteroids = MINIMUM_ASTEROIDS + (MAXIMUM_ASTEROIDS - MINIMUM_ASTEROIDS) * drand48();
+	double asteroid_radius;
+
+	cluster->cluster_data->asteroid = realloc(cluster->cluster_data->asteroid, asteroids * sizeof(entity_id_t));
+
+	for (i = 0; i < asteroids; i++) {
+		asteroid = get_entity_by_id(alloc_entity(asteroid_storage));
+		cluster->cluster_data->asteroid[i] = asteroid->unique_id;
+		init_entity(asteroid, vector(0), ASTEROID, 5);
+		asteroid_radius = asteroid->radius;
+
+		do {
+			asteroid->pos.v = cluster->pos.v + randv().v * vector(
+					(double) MAXIMUM_CLUSTER_SIZE 
+					- 2*config_get_double("max_ship_size") 
+					- asteroid_radius).v;
+			if (asteroid->pos.x < 0 || asteroid->pos.y < 0) {
+				ERROR("THIS SHOULD DEFENETLY NOT HAPPEN, FUCK!\n");
+			}
+		} while (check_for_asteroid_collisions(asteroid, cluster) == 1);
+
+		cluster->cluster_data->asteroids++;
+	}
+}
+
+void init_cluster_with_planet(entity_t *cluster) {
+	cluster->cluster_data->planet = alloc_entity(planet_storage);
+	init_entity(get_entity_by_id(cluster->cluster_data->planet), vector(0), PLANET, 0);
+	entity_t* e = get_entity_by_id(cluster->cluster_data->planet);
+	init_entity(get_entity_by_id(cluster->cluster_data->planet), cluster->pos, PLANET, 0);
+	e->planet_data->cluster = cluster;
+	e->radius = drand48() * (MAXIMUM_PLANET_SIZE - MINIMUM_PLANET_SIZE) + MINIMUM_PLANET_SIZE;
+	cluster->radius = e->radius + config_get_double("weapon_range") + 2*config_get_double("max_ship_size");
 }
 
 void distribute_asteroids(entity_t *cluster, const unsigned int n) {
@@ -123,52 +205,6 @@ void distribute_asteroids(entity_t *cluster, const unsigned int n) {
 
 	// set safety-radius as maximum distance of a asteroid to cluster-center
 	cluster->radius = 1.25 * max_distance;
-}
-
-void set_limits() {
-	int i;
-	double left_bound, upper_bound, right_bound, lower_bound;
-
-	// find upper bound
-
-	upper_bound = map.cluster[0].pos.y - map.cluster[0].radius;
-	lower_bound = map.cluster[0].pos.y + map.cluster[0].radius;
-	left_bound  = map.cluster[0].pos.x - map.cluster[0].radius;
-	right_bound = map.cluster[0].pos.x + map.cluster[0].radius;
-
-	// find upper bound
-	for (i = 1; i < map.clusters_x; i++) {
-		double t = map.cluster[i].pos.y - map.cluster[i].radius;
-		if (t < upper_bound) {
-			upper_bound = t;
-		}
-	}
-
-	// find lower bound
-	for (i = (map.clusters_y - 1) * map.clusters_x; i < map.clusters_x * map.clusters_y; i++) {
-		double t = map.cluster[i].pos.y + map.cluster[i].radius;
-		if (t > lower_bound) {
-			lower_bound = t;
-		}
-	}
-
-	// find left and right bound
-	for (i = 0; i < map.clusters_x * map.clusters_y; i += map.clusters_x) {
-		double t = map.cluster[i].pos.x - map.cluster[i].radius;
-		if (t < left_bound) {
-			left_bound = t;
-		}
-
-		t = map.cluster[i + map.clusters_x - 1].pos.x - map.cluster[i + map.clusters_x - 1].radius;
-		if (t > right_bound) {
-			right_bound = t;
-		}
-	}
-
-	map.left_bound = left_bound;
-	map.upper_bound = upper_bound;
-	map.right_bound = right_bound;
-	map.lower_bound = lower_bound;
 }
 
 void free_map() {
@@ -226,14 +262,17 @@ void build_quads() {
 	map.quads_y = quads_y;
 	map.quad = (map_quad_t *) calloc (quads_x * quads_y, sizeof(map_quad_t)); // use calloc, or init the pointer with NULL
 
-	for (i = 0, cluster = map.cluster; i < map.clusters_x * map.clusters_y; i++, cluster++) {
+	for (i = 0, cluster = cluster_storage->entities; i < cluster_storage->first_free; i++, cluster++) {
+		ERROR("cluster %lu\n", i);
 		register_object(cluster);
 
 		if (cluster->cluster_data->planet.id != INVALID_ID.id) {
+			ERROR("\thas planet\n");
 			register_object(get_entity_by_id(cluster->cluster_data->planet));
 		}
 
 		for (j = 0; j < cluster->cluster_data->asteroids; j++) {
+			ERROR("\tasteroid\n");
 			register_object(get_entity_by_id(cluster->cluster_data->asteroid[j]));
 		}
 	}
