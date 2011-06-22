@@ -181,6 +181,8 @@ struct asteroid_data_t {
 
 	/* If docked: ID of the docking partner */
 	entity_id_t docked_to;
+
+	entity_t* cluster;
 };
 
 struct cluster_data_t {

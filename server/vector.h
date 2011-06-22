@@ -43,6 +43,13 @@ static inline double vector_dist(const vector_t* A, const vector_t* B) {
 }
 
 /*
+ * Returns the length of a vector
+ */
+static inline double vector_length(const vector_t* A) {
+	return hypot(A->x, A->y);
+}
+
+/*
  * Return a vector with both values set to x
  */
 static inline vector_t vector(const double x) {

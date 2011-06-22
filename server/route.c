@@ -39,6 +39,7 @@ waypoint_t* _route(vector_t* start, vector_t* stop, int level) {
 	double r_min = 1;
 
 	if(level > 30) {
+		fprintf(stderr, "Dein Stack ist gleich voll\n");
 		exit(1);
 	}
 

@@ -331,6 +331,7 @@ static void init_cluster_with_asteroids(entity_t *cluster) {
 		cluster->cluster_data->asteroid[i] = asteroid->unique_id;
 		init_entity(asteroid, vector(0), ASTEROID, 5);
 		asteroid_radius = asteroid->radius;
+		asteroid->asteroid_data->cluster = cluster;
 
 		do {
 			asteroid->pos.v = cluster->pos.v + randv().v * vector(
@@ -340,7 +341,7 @@ static void init_cluster_with_asteroids(entity_t *cluster) {
 		} while (check_for_asteroid_collisions(asteroid, cluster) == 1);
 
 		// increase cluster-size
-		cluster_radius = dist(asteroid, cluster) + 2*config_get_double("max_ship_size");
+		cluster_radius = dist(asteroid, cluster) + 2*config_get_double("max_ship_size") + asteroid_radius;
 		if (cluster_radius > cluster->radius) {
 			cluster->radius = cluster_radius;
 		}
