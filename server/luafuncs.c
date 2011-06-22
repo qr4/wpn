@@ -1324,7 +1324,7 @@ int lua_manufacture(lua_State* L) {
 	self = get_self(L);
 	eself = get_entity_by_id(self);
 
-	slot = lua_tonumber(L,1);
+	slot = lua_tonumber(L,1) - 1;
 	what_to_build = lua_tonumber(L,2);
 
 	if(slot < 0 || slot >= eself->slots) {

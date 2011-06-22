@@ -207,7 +207,7 @@ void player_check_code_updates(long usec_wait) {
 							/* Send return values to the client, as strings */
 							n = lua_gettop(ebase->lua);
 							for(i=0; i<n; i++) {
-								returntext = lua_tostring(ebase->lua,i);
+								returntext = lua_tostring(ebase->lua,i+1);
 								if(returntext) {
 									talk_set_user_code_reply_msg(user, returntext, strlen(returntext));
                   talk_set_user_code_reply_msg(user, "\n", 1);
