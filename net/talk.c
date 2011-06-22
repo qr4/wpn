@@ -660,7 +660,8 @@ int _lua_console(char* data, int len, struct userstate* us, int write_fd) {
 //
 int _lua_get_code(char* data, int len, struct userstate* us, int write_fd) {
 
-  if ((len == 8) && (strncasecmp(data, "-- .quit", 8) == 0)) {
+  if (((len == 7) && (strncasecmp(data, "--.quit", 7) == 0)) ||
+    ((len == 8) && (strncasecmp(data, "-- .quit", 8) == 0))) {
     struct pstr revision_id = { .used = 0 };
     pstr_append_printf(&revision_id, USER_HOME_BY_ID"/%d/revision", us->id);
 
@@ -845,28 +846,45 @@ static void net_client_talk(int fd, fd_set* master) {
 }
 
 
-static void dispatch(struct pipe_com* pc, int read_pipe, fd_set* master) {
+//
+// pc: pointer auf pipe_com zum puffern von header-infos
+// read_pipe: fd aus welcher pipe gelesen werden soll
+// data*: wurden erfolgreich daten gelesen zeigt data darauf
+// data_len*: anzahl der zur verfuegung stehenden daten (0 = ist okay, halt keine daten)
+// return -1: broken pipe oder verbindung unterbrochen
+//
+static int dispatch(struct pipe_com* pc, int read_pipe, char* data, int* data_len) {
   if (pc->read_head < sizeof((struct pipe_com*)0)->header) {
     // "header" noch nicht vollstaendig
     ssize_t read_len = read(read_pipe,
         pc->header._head + pc->read_head,   // header-position bestimmen, evtl. append
         sizeof((struct pipe_com*)0)->header - pc->read_head); // nicht ueber den kopf hinaus lesen
-    if (read_len == -1) { log_perror("read from pipe"); exit(EXIT_FAILURE); }
-    if (read_len == 0) { log_msg("keine verbindung zum vater (2)"); exit(EXIT_FAILURE); }
+    if (read_len == -1) { log_perror("read from pipe"); return -1; }
+    if (read_len == 0) { log_msg("keine verbindung zum vater (2)"); return -1; }
     pc->read_head += read_len;
     pc->read_body = 0;
+    *data_len = 0;
   } else {
     // so, nutzdaten lesen und weiter schicken
-    char buffer[4000];
+    static char buffer[4000];
     int buffer_size = sizeof(buffer) < pc->header.head.len - pc->read_body
       ? sizeof(buffer)
       : pc->header.head.len - pc->read_body;
 
     ssize_t read_len = read(read_pipe, buffer, buffer_size);
-    if (read_len == -1) { log_perror("read from pipe"); exit(EXIT_FAILURE); }
-    if (read_len == 0) { log_msg("keine verbindung zum vater (2)"); exit(EXIT_FAILURE); }
+    if (read_len == -1) { log_perror("read from pipe"); return -1; }
+    if (read_len == 0) { log_msg("keine verbindung zum vater (2)"); return -1; }
     pc->read_body += read_len;
 
+    // alles an den client weiter gegeben
+    if (pc->read_body == pc->header.head.len) {
+      pc->read_head = 0;
+    }
+
+    *data = buffer;
+    *data_len = buffer_size;
+
+#if 0 
     // alle offenen konsolen suchen und meldung ausgeben
     for (int i = 0; i < TALK_MAX_USERS; ++i) {
       if ((us[i].id == pc->header.head.id) && (us[i].fkt == _lua_monitor)) {
@@ -877,12 +895,11 @@ static void dispatch(struct pipe_com* pc, int read_pipe, fd_set* master) {
         }
       }
     }
+#endif
 
-    // alles an den client weiter gegeben
-    if (pc->read_body == pc->header.head.len) {
-      pc->read_head = 0;
-    }
   }
+
+  return 0;
 }
 
 static void dispatch_code_reply(fd_set* master) {
@@ -890,7 +907,25 @@ static void dispatch_code_reply(fd_set* master) {
 }
 
 static void dispatch_lua_msg(fd_set* master) {
-  dispatch(&talk.lua_log, talk.log_lua_msg_pipe, master);
+  char* buffer;
+  int buffer_len;
+  if (dispatch(&talk.lua_log, talk.log_lua_msg_pipe, &buffer, &buffer_len) == -1) { exit(EXIT_FAILURE); }
+
+  return;
+
+  if (buffer_len > 0) {
+    for (int i = 0; i < TALK_MAX_USERS; ++i) {
+//      if ((us[i].id == talk.log_lua_msg_pipe.header.head.id) && (us[i].fkt == _lua_monitor)) {
+      if ((us[i].id == talk.lua_log.header.head.id) && (us[i].fkt == _lua_monitor)) {
+        if (write(i, buffer, buffer_len) == -1) {
+          // fail -> verbindung dicht machen
+          close(i);
+          FD_CLR(i, master);
+        }
+      }
+    }
+  }
+
 #if 0
   if (talk.lua_log_size < sizeof(talk.lua_log.head)) {
     // "header" noch nicht vollstaendig

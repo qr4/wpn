@@ -15,7 +15,7 @@ int main() {
 
   init_talk();
 
-  for (int i = 0; i < 100; ++i) {
+  for (int i = 0; i < 10000000; ++i) {
     for (int id = 100; id < 105; ++id) {
       struct pstr foo = { .used = 0 };
       pstr_append_printf(&foo, "lalala, id = %d, loop = %d\n", id, i);
@@ -25,8 +25,6 @@ int main() {
   }
 
   talk_kill();
-
-//  kill(talk.cpid, 9);
 
   exit(EXIT_SUCCESS);
 }
