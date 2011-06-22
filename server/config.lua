@@ -19,15 +19,17 @@ max_ship_estimation = 8192
 max_base_estimation = 32
 
 -- Range Limits:
-weapon_range = 20
-docking_range = 1
-scanner_range = 50
+weapon_range = 200
+docking_range = 100
+scanner_range = 5000
 
 -- Durations for a number of actions (measured in ticks)
 docking_duration = 3
 undocking_duration = 3
 transfer_duration = 3
 mining_duration = 20
+manufacture_duration = 20
+build_ship_duration = 50
 -- This better be a multiple of 24, so a large ship can fire every x timesteps
 laser_recharge_duration = 24
 

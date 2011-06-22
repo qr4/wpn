@@ -49,6 +49,10 @@ int lua_fire(lua_State* L);
 /* Get stuff from the ground */
 int lua_mine(lua_State* L);
 
+/* Turn a useless chunk of ore into something useful */
+int lua_manufacture(lua_State* L);
+
+
 /* --- QUERIES - with which entities get information about their surroundings */
 /* Search the closest entity in the search radius matchin the filter.
  */
