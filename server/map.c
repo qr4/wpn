@@ -322,6 +322,7 @@ static void init_cluster_with_asteroids(entity_t *cluster) {
 	size_t i;
 	size_t asteroids = MINIMUM_ASTEROIDS + (MAXIMUM_ASTEROIDS - MINIMUM_ASTEROIDS) * drand48();
 	double asteroid_radius;
+	double cluster_radius;
 
 	cluster->cluster_data->asteroid = realloc(cluster->cluster_data->asteroid, asteroids * sizeof(entity_id_t));
 
@@ -337,6 +338,12 @@ static void init_cluster_with_asteroids(entity_t *cluster) {
 					- 2*config_get_double("max_ship_size") 
 					- asteroid_radius).v;
 		} while (check_for_asteroid_collisions(asteroid, cluster) == 1);
+
+		// increase cluster-size
+		cluster_radius = dist(asteroid, cluster) + 2*config_get_double("max_ship_size");
+		if (cluster_radius > cluster->radius) {
+			cluster->radius = cluster_radius;
+		}
 
 		cluster->cluster_data->asteroids++;
 	}
