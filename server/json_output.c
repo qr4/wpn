@@ -494,21 +494,24 @@ void player_updates_to_network() {
 
 void ship_updates_to_network() {
 	char* joined_updates;
-	current_ships[n_current_ships] = NULL;
 
 	if(n_current_ships <= 0) {
-		asprintf(&joined_updates, "\"ships\": []\n");
-	} else {
-		char* p = join(current_ships, ",\n");
-		asprintf(&joined_updates, "\"ships\": [\n%s\n]\n", p);
-		free(p);
+		update_printf("{ \"update\":\n{ \"ships\": []\n}\n}\n\n");
+		update_flush();
+		return;
 	}
+
+	current_ships[n_current_ships] = NULL;
+	char* p = join(current_ships, ",\n");
+	asprintf(&joined_updates, "\"ships\": [\n%s\n]\n", p);
+	free(p);
 
 	for(int i = 0; i < n_current_ships; i++) {
 		free(current_ships[i]);
 	}
 
 	free(current_ships);
+	current_ships = NULL;
 	n_current_ships = 0;
 
 	update_printf("{ \"update\":\n{ %s}\n}\n\n", joined_updates);
