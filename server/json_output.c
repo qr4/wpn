@@ -18,6 +18,10 @@ size_t n_current_explosions = 0;
 char** current_shots = NULL;
 size_t n_current_shots = 0;
 
+/* Same for ship updates */
+char** current_ships = NULL;
+size_t n_current_ships = 0;
+
 
 // Joins strings separated by sep until strings contain a NULL element
 // Arguments and return string need to be freed by the caller
@@ -488,23 +492,24 @@ void player_updates_to_network() {
 	}
 }
 
-void ship_updates_to_network(char** updated_ships, int updates) {
+void ship_updates_to_network() {
 	char* joined_updates;
-	updated_ships[updates] = NULL;
+	current_ships[n_current_ships] = NULL;
 
-	if(updates <= 0) {
+	if(n_current_ships <= 0) {
 		asprintf(&joined_updates, "\"ships\": []\n");
 	} else {
-		char* p = join(updated_ships, ",\n");
+		char* p = join(current_ships, ",\n");
 		asprintf(&joined_updates, "\"ships\": [\n%s\n]\n", p);
 		free(p);
 	}
 
-	for(int i = 0; i < updates; i++) {
-		free(updated_ships[i]);
+	for(int i = 0; i < n_current_ships; i++) {
+		free(current_ships[i]);
 	}
 
-	free(updated_ships);
+	free(current_ships);
+	n_current_ships = 0;
 
 	update_printf("{ \"update\":\n{ %s}\n}\n\n", joined_updates);
 	update_flush();

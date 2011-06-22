@@ -24,7 +24,7 @@ void asteroids_to_network();
 void bases_to_network();
 void planets_to_network();
 void ships_to_network();
-void ship_updates_to_network(char** updated_ships, int updates);
+void ship_updates_to_network();
 void explosions_to_network();
 void shots_to_network();
 void players_to_network();
@@ -38,5 +38,9 @@ extern size_t n_current_explosions;
 /* Same for laser shots */
 extern char** current_shots;
 extern size_t n_current_shots;
+
+/* Same for ship updates */
+extern char** current_ships;
+extern size_t n_current_ships;
 
 #endif /* _JSON_OUTPUT_H */
