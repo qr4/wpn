@@ -1336,7 +1336,7 @@ int lua_build_ship(lua_State* L) {
 		}
 
 		/* Ships should be build from resource / ore */
-		if(eself->slot_data->slot[i] != ORE) {
+		if(eself->slot_data->slot[a] != ORE) {
 			lua_pushstring(L, "Attempted to build a ship from a non-resource block.");
 			lua_error(L);
 		}
