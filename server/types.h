@@ -36,6 +36,7 @@ typedef enum {
 	TRANSFER_COMPLETE,  // Transfer of a slot has completed.
 	BUILD_COMPLETE,  // Production of a new ship completed (for bases)
 	TIMER_EXPIRED,      // A fixed timer has expired
+	MINING_COMPLETE,    // Digging pays off afterall
 
 	NUM_EVENTS
 } event_t;

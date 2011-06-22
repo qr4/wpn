@@ -27,6 +27,7 @@ scanner_range = 50
 docking_duration = 3
 undocking_duration = 3
 transfer_duration = 3
+mining_duration = 20
 -- This better be a multiple of 24, so a large ship can fire every x timesteps
 laser_recharge_duration = 24
 

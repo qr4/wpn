@@ -29,6 +29,7 @@ char* callback_names[NUM_EVENTS] = {
 	/* TRANSFER_COMPLETE */ "on_transfer_complete",
 	/* BUILD_COMPLETE */ "on_build_complete",
 	/* TIMER_EXPIRED */ "on_timer_expired",
+	/* MINING_COMPLETE */ "on_mining_complete",
 };
 
 

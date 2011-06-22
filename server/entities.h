@@ -105,4 +105,7 @@ void explode_entity(entity_t* e);
 /* Setup a timer for this entity, informing it when a certain action is complete */
 void set_entity_timer(entity_t* e, int timesteps, event_t event, entity_id_t context);
 
+/* Determine whether an entity is busy */
+int is_busy(entity_t* e);
+
 #endif /* ENTITIES_H */

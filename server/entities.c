@@ -334,3 +334,16 @@ void set_entity_timer(entity_t* e, int timesteps, event_t event, entity_id_t con
 	e->ship_data->timer_context = context;
 
 }
+
+/* Determine whether an entity is currently waiting for some action to finish, or just
+ * idling around. */
+int is_busy(entity_t* e) {
+
+	switch(e->type) {
+		case SHIP:
+		case BASE:
+			return e->ship_data->timer_value != -1;
+		default:
+			return 0;
+	}
+}

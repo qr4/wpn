@@ -36,6 +36,7 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_send_data,        "send_data"},
 	{lua_build_ship,       "build_ship"},
 	{lua_fire,             "fire"},
+	{lua_mine,             "mine"},
 
 	/* Queries */
 	{lua_entity_to_string, "entity_to_string"},
@@ -268,7 +269,7 @@ int lua_dock(lua_State* L) {
 	}
 
 	/* Check that we are not currently waiting for some other action to complete */
-	if(eself->ship_data->timer_value != -1) {
+	if(is_busy(eself)) {
 		DEBUG("Currently waiting for timer!\n");
 		return 0;
 	}
@@ -328,7 +329,7 @@ int lua_undock(lua_State* L) {
 	}
 
 	/* Check that we are not currently waiting for some other action to complete */
-	if(eself->ship_data->timer_value != -1) {
+	if(is_busy(eself)) {
 		DEBUG("Can't undock: currently waiting for timer!\n");
 		return 0;
 	}
@@ -381,7 +382,7 @@ int lua_fire(lua_State* L) {
 	}
 
 	/* Check that we're not currently busy, or our lasers reloading. */
-	if(eself->ship_data->timer_value != -1) {
+	if(is_busy(eself)) {
 		return 0;
 	}
 
@@ -482,6 +483,56 @@ int lua_fire(lua_State* L) {
 	return 0;
 }
 
+/* Let a base get one resource chunk from a planet */
+int lua_mine(lua_State *L) {
+	entity_id_t self;
+	entity_t* eself;
+	int slot;
+	int n;
+
+	n = lua_gettop(L);
+	if(n!=0) {
+		lua_pushstring(L, "mine doesn't take any arguments");
+		lua_error(L);
+	}
+
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	/* Only bases can mine */
+	if(eself->type != BASE) {
+		return 0;
+	}
+
+	/* We won't mine if we're busy */
+	if(is_busy(eself)) {
+		return 0;
+	}
+
+
+	/* Find a free slot */
+	for(slot=0; slot < eself->slots; slot++) {
+		if(eself->slot_data->slot[slot] == EMPTY) {
+			break;
+		}
+	}
+
+	if(slot == eself->slots) {
+		/* No slot free -> no mining */
+		return 0;
+	}
+
+	/* Fill it in */
+	eself->slot_data->slot[slot] = ORE;
+
+	/* Set the timer. */
+	set_entity_timer(eself, config_get_int("mining_duration"), MINING_COMPLETE, self);
+
+	/* Return true cause everything went well */
+	lua_pushboolean(L, 1);
+	return 1;
+}
+
 /*
  * Returns the nearest object within the radius if filter matches. 
  * Returns NULL if no object is found.
@@ -563,7 +614,7 @@ int lua_set_timer(lua_State* L) {
 
 	n = lua_gettop(L);
 	if(n!=1 || !lua_isnumber(L,-1)) {
-		lua_pushstring(L, "set_timer expects exactly one integer (number of ticks to wait");
+		lua_pushstring(L, "set_timer expects exactly one integer (number of ticks to wait)");
 		lua_error(L);
 	}
 
@@ -586,7 +637,7 @@ int lua_set_timer(lua_State* L) {
 		return 0;
 	}
 
-	if(e->ship_data->timer_value != -1) {
+	if(is_busy(e)) {
 		/* Another timer is already ticking for this entity, so we don't set one.
 		 * Return 0 to inform the ship.*/
 		lua_pushnumber(L,0);
@@ -791,7 +842,7 @@ int lua_transfer_slot(lua_State* L) {
 	}
 
 	/* Check that we are not currently waiting for some other action to complete */
-	if(eself->ship_data->timer_value != -1) {
+	if(is_busy(eself)) {
 		DEBUG("Not transferring: currently waiting for timer!\n");
 		return 0;
 	}
@@ -951,14 +1002,8 @@ int lua_busy(lua_State* L) {
 	}
 
 	/* If no timer is set, we are idle. */
-	if(e->ship_data->timer_value == -1) {
-		lua_pushboolean(L,0);
-		return 1;
-	} else {
-		/* Otherwise we are busy */
-		lua_pushboolean(L,1);
-		return 1;
-	}
+	lua_pushboolean(L,is_busy(e));
+	return 1;
 }
 
 /* Determine whether another entity, or yourself, is currently flying or stationary */
@@ -1145,7 +1190,7 @@ int lua_build_ship(lua_State* L) {
 	}
 
 	/* Check that we're not currently busy, or docked to someone else */
-	if(eself->base_data->timer_value != -1) {
+	if(is_busy(eself)) {
 		return 0;
 	}
 	if(eself->base_data->docked_to.id != INVALID_ID.id) {

@@ -46,6 +46,9 @@ int lua_build_ship(lua_State* L);
 /* Pew pew pew */
 int lua_fire(lua_State* L);
 
+/* Get stuff from the ground */
+int lua_mine(lua_State* L);
+
 /* --- QUERIES - with which entities get information about their surroundings */
 /* Search the closest entity in the search radius matchin the filter.
  */
