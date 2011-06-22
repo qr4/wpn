@@ -36,7 +36,7 @@ float offset_y;
 float mag = 20;
 
 void screen_init() {
-	screen = SDL_SetVideoMode(display_x, display_y, 0, 0);
+	screen = SDL_SetVideoMode(display_x, display_y, 0, SDL_RESIZABLE | SDL_HWSURFACE | SDL_DOUBLEBUF);
 
 	if (screen == NULL) {
 		fprintf(stderr, "SDL_SetVideoMode() failed: %s\n", SDL_GetError());
