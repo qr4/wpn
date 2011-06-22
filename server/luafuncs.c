@@ -1252,7 +1252,7 @@ int lua_build_ship(lua_State* L) {
 		/* Lua counts from one, lets do that too */
 		a-=1;
 
-		if(a<0) {
+		if(a<0 || a>=eself->slots) {
 			lua_pushstring(L, "Slot number out of range in build_ship\n");
 			lua_error(L);
 		}
@@ -1263,6 +1263,11 @@ int lua_build_ship(lua_State* L) {
 				lua_pushstring(L, "A slot was specified twice in build_ship!");
 				lua_error(L);
 			}
+		}
+
+		/* We can't build a ship while we're docked */
+		if(eself->ship_data->docked_to.id != INVALID_ID.id) {
+			return 0;
 		}
 
 		/* Ships should be build from resource / ore */
@@ -1295,6 +1300,7 @@ int lua_build_ship(lua_State* L) {
 	pos.y = eself->pos.y + config_get_double("build_offset_y");
 	id = init_ship(ship_storage, pos, n);
 	e = get_entity_by_id(id);
+	register_object(e);
 
 	e->player_id = eself->player_id;
 
@@ -1302,6 +1308,10 @@ int lua_build_ship(lua_State* L) {
 	for(int i=0; i<n; i++) {
 		eself->slot_data->slot[used_slots[i]] = EMPTY;
 	}
+
+	/* Dock with this ship */
+	eself->ship_data->docked_to = id;
+	e->ship_data->docked_to = self;
 
 	/* Yeah, everything takes time... */
 	set_entity_timer(eself, config_get_int("build_ship_duration"), BUILD_COMPLETE, id);
