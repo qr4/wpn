@@ -210,11 +210,16 @@ void player_check_code_updates(long usec_wait) {
 								returntext = lua_tostring(ebase->lua,i);
 								if(returntext) {
 									talk_set_user_code_reply_msg(user, returntext, strlen(returntext));
+                  talk_set_user_code_reply_msg(user, "\n", 1);
 								} else {
-									talk_set_user_code_reply_msg(user, "(nil)", 5);
+									talk_set_user_code_reply_msg(user, "(nil)\n", 6);
 								}
 							}
+              lua_pop(ebase->lua, n);
 						}
+
+            // request send prompt
+            talk_set_user_code_reply_msg(user, "400 lua: ", 9);
 
           } else if (fd == talk_get_user_code_upload_fd()) {
             // der upload new file-fd hat was fuer uns

@@ -240,7 +240,7 @@ struct automaton {
   },
   {
     .msg = "\n"
-      " Hint: Öffne in einer andren Konsole den LUA-Monitor um weitere Ausgaben zu sehen\n"
+      " Hint: Oeffne in einer andren Konsole den LUA-Monitor um weitere Ausgaben zu sehen\n"
       " Gib .quit<RETURN> ein um die LUA-Konsole zu verlassen\n"
       "\n",
     .prompt = "400 lua: ",
@@ -667,7 +667,6 @@ int _lua_console(char* data, int len, struct userstate* us, int write_fd) {
   write(talk.user_code_pipe, data, len);
   dstr_clear(&us->tmp);
 
-  return print_msg_and_prompt(write_fd, NULL, 0, us);
   return 0; // kein prompt... wird generiert bei der lua-ruckmeldung
 }
 
