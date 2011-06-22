@@ -98,4 +98,6 @@ extern int lua_entity_to_string(lua_State* L);
  * but rather the player's console buffer */
 int lua_print(lua_State* L);
 
+/* Print help message for interactive lua console */
+int lua_help(lua_State *L);
 #endif /* _LUAFUNCS_H */

@@ -15,46 +15,51 @@
 #include "route.h"
 #include "../net/talk.h"
 
+#include "lua_help_messages.h"
+
 /* Type of functions which we make available to lua states */
+#define MAX_LUA_NAME_LEN 32
 typedef struct {
 	lua_CFunction c_function;
-	const char lua_function_name[32];
+	char lua_function_name[MAX_LUA_NAME_LEN];
+	const char *help_message;
 } lua_function_entry;
 
 /* Add all functions that shall be available for the shipcomputers here */
 static const lua_function_entry lua_wrappers[] = {
-//   C-function name,      Lua-function name
+//   C-function name,           Lua-function name,       Help message
 
 	/* Action */
-	{lua_killself,         "killself"},
-	{lua_moveto,           "moveto"},
-	{lua_set_autopilot_to, "set_autopilot_to"},
-	{lua_set_timer,        "set_timer"},
-	{lua_dock,             "dock"},
-	{lua_undock,           "undock"},
-	{lua_transfer_slot,    "transfer_slot"},
-	{lua_send_data,        "send_data"},
-	{lua_build_ship,       "build_ship"},
-	{lua_fire,             "fire"},
-	{lua_mine,             "mine"},
-	{lua_manufacture,      "manufacture"},
+	{lua_killself,              "killself",              killself_help},        
+	{lua_moveto,                "moveto",                moveto_help},          
+	{lua_set_autopilot_to,      "set_autopilot_to",      set_autopilot_to_help},   
+	{lua_set_timer,             "set_timer",             set_timer_help},       
+	{lua_dock,                  "dock",                  dock_help},            
+	{lua_undock,                "undock",                undock_help},          
+	{lua_transfer_slot,         "transfer_slot",         transfer_slot_help},   
+	{lua_send_data,             "send_data",             send_data_help},       
+	{lua_build_ship,            "build_ship",            build_ship_help},      
+	{lua_fire,                  "fire",                  fire_help},            
+	{lua_mine,                  "mine",                  mine_help},            
+	{lua_manufacture,           "manufacture",           NULL},
 
 	/* Queries */
-	{lua_entity_to_string,    "entity_to_string"},
-	{lua_get_player,          "get_player"},
-	{lua_get_entities,        "get_entities"},
-	{lua_find_closest,        "find_closest"},
-	{lua_get_position,        "get_position"},
-	{lua_get_distance,        "get_distance"},
-	{lua_get_docking_partner, "get_docking_partner"},
-	{lua_busy,                "is_busy"},
-	{lua_flying,              "is_flying"},
-	{lua_get_slots,           "get_slots"},
-	{lua_get_world_size,      "get_world_size"},
-	{lua_get_type,         "get_type"},
+	{lua_entity_to_string,      "entity_to_string",      entity_to_string_help},
+	{lua_get_player,            "get_player",            get_player_help},
+	{lua_get_entities,          "get_entities",          get_entities_help},
+	{lua_find_closest,          "find_closest",          find_closest_help},
+	{lua_get_position,          "get_position",          get_position_help},
+	{lua_get_distance,          "get_distance",          get_distance_help},
+	{lua_get_docking_partner,   "get_docking_partner",   get_docking_partner_help},
+	{lua_busy,                  "is_busy",               busy_help},
+	{lua_flying,                "is_flying",             flying_help},
+	{lua_get_slots,             "get_slots",             get_slots_help},
+	{lua_get_world_size,        "get_world_size",        get_world_size_help},
+	{lua_get_type,              "get_type",              get_type_help},
 
 	/* More lowlevel stuff */
-	{lua_print,            "print"},
+	{lua_help,                  "help",                  NULL},
+	{lua_print,                 "print",                 print_help},
 };
 
 void register_lua_functions(entity_t *s) {
@@ -85,6 +90,66 @@ static entity_id_t get_self(lua_State *L) {
 	}
 
 	return e;
+}
+
+int lua_function_entry_cmp(const void *left, const void *right) {
+	return strncmp(
+			((lua_function_entry *) left)->lua_function_name, 
+			((lua_function_entry *) right)->lua_function_name, 
+			MAX_LUA_NAME_LEN);
+}
+
+int lua_help(lua_State *L) {
+	static lua_function_entry *sorted_lua_wrappers;
+
+	entity_id_t self;
+	entity_t *eself;
+	unsigned int player_id;
+	int n;
+
+	if (sorted_lua_wrappers == NULL) {
+		sorted_lua_wrappers = malloc(sizeof(lua_wrappers));
+		memcpy(sorted_lua_wrappers, lua_wrappers, sizeof(lua_wrappers));
+		qsort(sorted_lua_wrappers, 
+				sizeof(lua_wrappers) / sizeof(lua_function_entry), 
+				sizeof(lua_function_entry),
+				lua_function_entry_cmp);
+	}
+
+	n = lua_gettop(L);
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+	player_id = eself->player_id;
+
+	if (n != 1 || (n == 1 && !lua_isstring(L, -1))) {
+		for (size_t i = 0; i < sizeof(lua_wrappers) / sizeof(lua_function_entry); i++) {
+			talk_set_user_code_reply_msg(player_id, 
+					sorted_lua_wrappers[i].lua_function_name, 
+					strlen(sorted_lua_wrappers[i].lua_function_name)); 
+			talk_set_user_code_reply_msg(player_id, "()\n", strlen("()\n"));
+		}
+	} else {
+		lua_function_entry key, *res;
+		strncpy(key.lua_function_name, lua_tostring(L, -1), MAX_LUA_NAME_LEN);
+		res = ((lua_function_entry *) bsearch(&key, 
+					sorted_lua_wrappers,
+					sizeof(lua_wrappers) / sizeof(lua_function_entry), 
+					sizeof(lua_function_entry),
+					lua_function_entry_cmp));
+		
+		if (res == NULL || res->help_message == NULL) {
+			const char *error_msg = "Sorry, no help for \"";
+			talk_set_user_code_reply_msg(player_id, error_msg, strlen(error_msg));
+			talk_set_user_code_reply_msg(player_id, key.lua_function_name, strlen(key.lua_function_name));
+			talk_set_user_code_reply_msg(player_id, "\"\n", strlen("\"\n"));
+		} else {
+			talk_set_user_code_reply_msg(player_id, res->help_message, strlen(res->help_message));
+		}
+	}
+
+	lua_pop(L, lua_gettop(L));
+
+	return 0;
 }
 
 /* Kill the interpreter, resetting to an empty ship.
