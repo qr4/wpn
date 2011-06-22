@@ -150,7 +150,7 @@ int lua_moveto(lua_State* L) {
 			y = lua_tonumber(L,-1);
 			x = lua_tonumber(L,-2);
 
-			lua_pop(L,3);
+			lua_pop(L,2);
 			break;
 		default:
 			lua_pushstring(L, "Wrong number of arguments to moveto.");
@@ -202,7 +202,7 @@ int lua_set_autopilot_to(lua_State* L) {
 			y = lua_tonumber(L,-1);
 			x = lua_tonumber(L,-2);
 
-			lua_pop(L,3);
+			lua_pop(L,2);
 			break;
 		default:
 			lua_pushstring(L, "Wrong number of arguments to set_autopilot_to.");
@@ -559,14 +559,14 @@ int lua_get_entities(lua_State *L) {
 			search_center = get_entity_by_id(self)->pos;
 			filter        = (unsigned int) lua_tonumber(L, -1);
 			search_radius = (double)       lua_tonumber(L, -2);
-			lua_pop(L, 3);
+			lua_pop(L, 2);
 			break;
 		case 4 :
 			filter          = (unsigned int) lua_tonumber(L, -1);
 			search_radius   = (double)       lua_tonumber(L, -2);
 			search_center.y = (double)       lua_tonumber(L, -3);
 			search_center.x = (double)       lua_tonumber(L, -4);
-			lua_pop(L, 5);
+			lua_pop(L, 4);
 			break;
 		default :
 			lua_pushstring(L, 
@@ -618,7 +618,7 @@ int lua_find_closest(lua_State *L) {
 
 	filter        = (unsigned int) lua_tonumber(L, -1);
 	search_radius = (double) lua_tonumber(L, -2);
-	lua_pop(L, 3);
+	lua_pop(L, 2);
 	id = get_self(L);
 	e = get_entity_by_id(id);
 
@@ -655,7 +655,7 @@ int lua_entity_to_string(lua_State* L) {
 
 	/* Pop entity pointer from stack */
 	id.id = (uint64_t) lua_touserdata(L, -1);
-	lua_pop(L,2);
+	lua_pop(L,1);
 	e = get_entity_by_id(id);
 
 	if (e == NULL) {
