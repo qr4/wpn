@@ -550,7 +550,6 @@ int lua_get_entities(lua_State *L) {
 	int n;
 
 	n = lua_gettop(L);
-	lua_pop(L, 1);
 
 	self = get_self(L);
 
@@ -560,14 +559,14 @@ int lua_get_entities(lua_State *L) {
 			search_center = get_entity_by_id(self)->pos;
 			filter        = (unsigned int) lua_tonumber(L, -1);
 			search_radius = (double)       lua_tonumber(L, -2);
-			lua_pop(L, 2);
+			lua_pop(L, 3);
 			break;
 		case 4 :
 			filter          = (unsigned int) lua_tonumber(L, -1);
 			search_radius   = (double)       lua_tonumber(L, -2);
 			search_center.y = (double)       lua_tonumber(L, -3);
 			search_center.x = (double)       lua_tonumber(L, -4);
-			lua_pop(L, 4);
+			lua_pop(L, 5);
 			break;
 		default :
 			lua_pushstring(L, 
@@ -581,18 +580,21 @@ int lua_get_entities(lua_State *L) {
 
 	found = get_entities(search_center, search_radius, filter, &n_found);
 	
+	lua_newtable(L);
 	n = 0;
 
 	for (i = 0; i < n_found; i++) {
 		if (in_scanner_range(self, found[i])) {
-			lua_pushlightuserdata(L, (void *) found[i].id);
 			n++;
+			lua_pushnumber(L, n);                           // key
+			lua_pushlightuserdata(L, (void *) found[i].id); // valua
+			lua_settable(L, -3);                            // add to table
 		}
 	}
 	
-  free(found);
+	free(found);
 
-	return n;
+	return 1;
 }
 
 /*
@@ -1179,13 +1181,17 @@ int lua_get_slots(lua_State* L) {
 			return 0;
 	}
 
+	lua_newtable(L);
+
 	/* Push each of the slot contents on the stack */
 	for(n = 0; n<e->slots; n++) {
-		lua_pushnumber(L, e->slot_data->slot[n]);
+		lua_pushinteger(L, n + 1);                // key
+		lua_pushnumber(L, e->slot_data->slot[n]); // value
+		lua_settable(L, -3);                      // add to table
 	}
 
 	/* Return the number of slots, thus forming a valid lua list */
-	return n;
+	return 1;
 }
 
 /* As a base, build a new empty ship running the default bios.
