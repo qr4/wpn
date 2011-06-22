@@ -255,7 +255,8 @@ void move_ship(entity_t *ship) {
 		quad_index_t old_quad = get_quad_index_by_pos(ship->pos);
 		if(next->point.x < map.left_bound || next->point.x > map.right_bound || next->point.y < map.upper_bound || next->point.y > map.lower_bound) {
 			log_msg("%d is outside the map\n", ship->unique_id);
-			//explode(ship_storage->entities[i]);
+			explode_entity(ship);
+			return;
 		}
 		ship->pos.v = next->point.v;
 		quad_index_t new_quad = get_quad_index_by_pos(ship->pos);

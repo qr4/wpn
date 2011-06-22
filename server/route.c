@@ -9,6 +9,7 @@
 #include "entity_storage.h"
 #include "physics.h"
 #include "storages.h"
+#include "debug.h"
 
 extern entity_storage_t* asteroid_storage;
 extern entity_storage_t* planet_storage;
@@ -24,7 +25,7 @@ waypoint_t* go_around(vector_t* A, vector_t* B, entity_t* C, double r) {
 	X.v = A->v + (v2d) {r, r} * (B->v - A->v);
 	double d = vector_dist(&X, &(C->pos));
 	if(d < 1e-10) {
-		fprintf(stderr, "A = (%f, %f), B = (%f, %f), C = (%f, %f), d = %f\n", A->x, A->y, B->x, B->y, C->pos.x, C->pos.y, d);
+		ERROR("A = (%f, %f), B = (%f, %f), C = (%f, %f), d = %f\n", A->x, A->y, B->x, B->y, C->pos.x, C->pos.y, d);
 	}
 	vector_t W;
 	W.v = C->pos.v + (X.v - C->pos.v) * (v2d) {1.01, 1.01} * (v2d) {C->radius,  C->radius} / (v2d) {d, d};
@@ -39,30 +40,35 @@ waypoint_t* _route(vector_t* start, vector_t* stop, int level) {
 	double r_min = 1;
 
 	if(level > 30) {
-		fprintf(stderr, "Dein Stack ist gleich voll\n");
+		ERROR("Dein Stack ist gleich voll\n");
 		exit(1);
 	}
 
 	for(int i = 0; i < cluster_storage->first_free; i++) {
 		double r = vector_dividing_ratio(start, stop, &(cluster_storage->entities[i].pos));
-		if (r > 0 && r < 1) {
-			double d = vector_dist_to_line(start, stop, &(cluster_storage->entities[i].pos));
-			if (fabs(d) < cluster_storage->entities[i].radius) {
-				if(fabs(r-0.5) < fabs(r_min-0.5)) {
-					i_min = i;
-					r_min = r;
-				}
+		double d;
+		if (r < 0) {
+			d = vector_dist(start, &(cluster_storage->entities[i].pos));
+		} else if (r > 1) {
+			d = vector_dist(stop, &(cluster_storage->entities[i].pos));
+		} else {
+			d = vector_dist_to_line(start, stop, &(cluster_storage->entities[i].pos));
+		}
+		if (fabs(d) < cluster_storage->entities[i].radius) {
+			if(i_min == -1 || fabs(r-0.5) < fabs(r_min-0.5)) {
+				i_min = i;
+				r_min = r;
 			}
 		}
 	}
 
 	if(i_min >= 0) {
 		if(level > 20) {
-			fprintf(stderr, "go around start = (%f, %f), stop = (%f, %f), cluster = (%f, %f) radius = %f, r = %f\n", start->x, start->y, stop->x, stop->y, cluster_storage->entities[i_min].pos.x, cluster_storage->entities[i_min].pos.y, cluster_storage->entities[i_min].radius, r_min);
+			ERROR("go around start = (%f, %f), stop = (%f, %f), cluster = (%f, %f) radius = %f, r = %f\n", start->x, start->y, stop->x, stop->y, cluster_storage->entities[i_min].pos.x, cluster_storage->entities[i_min].pos.y, cluster_storage->entities[i_min].radius, r_min);
 		}
 		waypoint_t* wp = go_around(start, stop, cluster_storage->entities + i_min, r_min);
 		if(level > 20) {
-			fprintf(stderr, "wp = (%f, %f) dist = %f\n", wp->point.x, wp->point.y, hypot(wp->point.x-cluster_storage->entities[i_min].pos.x, wp->point.y-cluster_storage->entities[i_min].pos.y));
+			ERROR("wp = (%f, %f) dist = %f\n", wp->point.x, wp->point.y, hypot(wp->point.x-cluster_storage->entities[i_min].pos.x, wp->point.y-cluster_storage->entities[i_min].pos.y));
 		}
 
 		waypoint_t* part1 = _route(start, &(wp->point), level+1);
@@ -95,9 +101,9 @@ waypoint_t* route(vector_t* start, vector_t* stop) {
 
 waypoint_t* _intra_cluster_route(vector_t* start, vector_t* stop, entity_t* cluster, int level) {
 	if(cluster->cluster_data->asteroids == 0) {
-		if(level > 10) {
-			fprintf(stderr, "We are 10 deep in a single planet cluster\n");
-			fprintf(stderr, "start = (%f, %f), stop = (%f, %f)\n", start->x, start->y, stop->x, stop->y);
+		if(level > 30) {
+			ERROR("We are 30 deep in a single planet cluster\n");
+			ERROR("start = (%f, %f), stop = (%f, %f)\n", start->x, start->y, stop->x, stop->y);
 			exit(1);
 		}
 		// Single planet in cluster
@@ -134,9 +140,9 @@ waypoint_t* _intra_cluster_route(vector_t* start, vector_t* stop, entity_t* clus
 			return NULL;
 		}
 	} else {
-		if(level > 20) {
-			fprintf(stderr, "We are 20 deep in an astroid cluster\n");
-			fprintf(stderr, "start = (%f, %f), stop = (%f, %f)\n", start->x, start->y, stop->x, stop->y);
+		if(level > 30) {
+			ERROR("We are 30 deep in an astroid cluster\n");
+			ERROR("start = (%f, %f), stop = (%f, %f)\n", start->x, start->y, stop->x, stop->y);
 			exit(1);
 		}
 		// Routing in astroid cluster
@@ -158,8 +164,8 @@ waypoint_t* _intra_cluster_route(vector_t* start, vector_t* stop, entity_t* clus
 
 		if(i_min >= 0) {
 			entity_t* asteroid = get_entity_from_storage_by_id(asteroid_storage, cluster->cluster_data->asteroid[i_min]);
-			if(level > 7) {
-				fprintf(stderr, "go_around A = (%f, %f), B = (%f, %f), C = (%f, %f) radius=%f, r = %f\n", start->x, start->y, stop->x, stop->y, asteroid->pos.x, asteroid->pos.y, asteroid->radius, r_min);
+			if(level > 20) {
+				ERROR("go_around A = (%f, %f), B = (%f, %f), C = (%f, %f) radius=%f, r = %f\n", start->x, start->y, stop->x, stop->y, asteroid->pos.x, asteroid->pos.y, asteroid->radius, r_min);
 			}
 			waypoint_t* wp = go_around(start, stop, asteroid, r_min);
 
@@ -199,16 +205,27 @@ waypoint_t* plotCourse(vector_t* start, vector_t* stop) {
 	waypoint_t* jp1 = wp_start;
 	waypoint_t* jp2 = wp_stop;
 
-	entity_t* e_start = find_closest_by_position(*start, 0, 0, CLUSTER);
-	entity_t* e_stop = find_closest_by_position(*stop, 0, 0, CLUSTER);
+	entity_t* e_start = find_closest_by_position(*start, 0, MAXIMUM_CLUSTER_SIZE, CLUSTER);
+	entity_t* e_stop = find_closest_by_position(*stop, 0, MAXIMUM_CLUSTER_SIZE, CLUSTER);
+
+	if(e_start && e_start->radius < vector_dist(&(e_start->pos), start)) {
+		DEBUG("Found a cluster at (%f, %f) with radius %f close to the departure point but that is %f away\n", e_start->pos.x, e_start->pos.y, e_start->radius, vector_dist(&(e_start->pos), start));
+		e_start = NULL;
+	}
+	if(e_stop && e_stop->radius < vector_dist(&(e_stop->pos), stop)) {
+		DEBUG("Found a cluster at (%f, %f) with radius %f close to the arrival point but that is %f away\n", e_stop->pos.x, e_stop->pos.y, e_stop->radius, vector_dist(&(e_stop->pos), stop));
+		e_stop = NULL;
+	}
 
 	waypoint_t* t;
 
 	if(e_start == NULL && e_stop == NULL) {
 		// inter cluster flight
+		DEBUG("Inter cluster route from (%f, %f) to (%f, %f)\n", start->x, start->y, stop->x, stop->y);
 		wp_start->next = route(start, stop);
 	} else if(e_start != NULL && e_stop != NULL && e_start->pos.x == e_stop->pos.x && e_start->pos.y == e_stop->pos.y) {
 		// flight within a cluster
+		DEBUG("Pure intra cluster route from (%f, %f) to (%f, %f), cluster at (%f, %f) with radius %f\n", start->x, start->y, stop->x, stop->y, e_start->pos.x, e_start->pos.y, e_start->radius);
 		wp_start->next = intra_cluster_route(start, stop, e_start);
 	} else {
 		if(e_start != NULL) {
@@ -220,10 +237,16 @@ waypoint_t* plotCourse(vector_t* start, vector_t* stop) {
 				jp1->point.x = e_start->pos.x + sin(dir) * e_start->radius;
 				jp1->point.y = e_start->pos.y + cos(dir) * e_start->radius;
 			} else {
-				jp1->point.x = e_start->pos.x + (start->x - e_start->pos.x) * e_start->radius / dist;
-				jp1->point.y = e_start->pos.y + (start->y - e_start->pos.y) * e_start->radius / dist;
+				jp1->point.x = e_start->pos.x + (start->x - e_start->pos.x) * e_start->radius * 1.01 / dist;
+				jp1->point.y = e_start->pos.y + (start->y - e_start->pos.y) * e_start->radius * 1.01 / dist;
 			}
+			DEBUG("Starting with intra cluster route from (%f, %f) to (%f, %f), cluster at (%f, %f) with radius %f\n", start->x, start->y, jp1->point.x, jp1->point.y, e_start->pos.x, e_start->pos.y, e_start->radius);
 			wp_start->next = intra_cluster_route(start, &(jp1->point), e_start);
+			t = wp_start;
+			while(t->next) {
+				t = t->next;
+			}
+			t->next = jp1;
 		}
 		if(e_stop != NULL) {
 			// We stop in a cluster
@@ -234,9 +257,10 @@ waypoint_t* plotCourse(vector_t* start, vector_t* stop) {
 				jp2->point.x = e_stop->pos.x + sin(dir) * e_stop->radius;
 				jp2->point.y = e_stop->pos.y + cos(dir) * e_stop->radius;
 			} else {
-				jp2->point.x = e_stop->pos.x + (stop->x - e_stop->pos.x) * e_stop->radius / dist;
-				jp2->point.y = e_stop->pos.y + (stop->y - e_stop->pos.y) * e_stop->radius / dist;
+				jp2->point.x = e_stop->pos.x + (stop->x - e_stop->pos.x) * e_stop->radius * 1.01 / dist;
+				jp2->point.y = e_stop->pos.y + (stop->y - e_stop->pos.y) * e_stop->radius * 1.01 / dist;
 			}
+			DEBUG("Stoping with intra cluster route from (%f, %f) to (%f, %f), cluster at (%f, %f) with radius %f, dist = %f\n", jp2->point.x, jp2->point.y, stop->x, stop->y, e_stop->pos.x, e_stop->pos.y, e_stop->radius, dist);
 			jp2->next = intra_cluster_route(&(jp2->point), stop, e_stop);
 			t = jp2;
 			while (t->next != NULL) {
@@ -245,11 +269,17 @@ waypoint_t* plotCourse(vector_t* start, vector_t* stop) {
 			t->next = wp_stop;
 		}
 
-		route(&(jp1->point), &(jp2->point));
+		DEBUG("Connecting inter cluster route from (%f, %f) to (%f, %f)\n", jp1->point.x, jp1->point.y, jp2->point.x, jp2->point.y);
+		waypoint_t* s = route(&(jp1->point), &(jp2->point));
+		t = wp_start;
+		while (t->next != NULL) {
+			t = t->next;
+		}
+		t->next = s;
 	}
 
 	t = wp_start;
-	while (t->next != NULL) {
+	while (t->next) {
 		t = t->next;
 	}
 	t->next = jp2;
@@ -259,7 +289,7 @@ waypoint_t* plotCourse(vector_t* start, vector_t* stop) {
 // To be called from Lua code
 void moveto_planner(entity_t* e, double x, double y) {
 	if(e->type != SHIP) {
-		fprintf(stderr, "We don't do moveto planing for non-ship entities\n");
+		ERROR("We don't do moveto planing for non-ship entities\n");
 		exit(1);
 	}
 	if(e->ship_data->flightplan != NULL) {
@@ -284,7 +314,7 @@ void moveto_planner(entity_t* e, double x, double y) {
 // To be called from Lua code
 void stop_planner(entity_t* e) {
 	if(e->type != SHIP) {
-		fprintf(stderr, "We don't do moveto planing for non-ship entities\n");
+		ERROR("We don't do stop planing for non-ship entities\n");
 		exit(1);
 	}
 	if(e->ship_data->flightplan == NULL) {
@@ -339,16 +369,16 @@ void stop_planner(entity_t* e) {
 // To be called from Lua code
 void autopilot_planner(entity_t* e, double x, double y) {
 	if(e->type != SHIP) {
-		fprintf(stderr, "We don't do autoroute planing for non-ship entities\n");
+		ERROR("We don't do autoroute planing for non-ship entities\n");
 		exit(1);
 	}
 	if(get_acceleration(e) == 0) {
-		fprintf(stderr, "Flying without engines? Talk to Mr. Scott first.\n");
+		ERROR("Flying without engines? Talk to Mr. Scott first.\n");
 		return;
 	}
 	if(e->pos.x == x && e->pos.y == y) {
 		// Already there
-		fprintf(stderr, "We are already there\n");
+		ERROR("We are already there\n");
 		return;
 	}
 	if(e->ship_data->flightplan != NULL) {
@@ -366,15 +396,16 @@ void autopilot_planner(entity_t* e, double x, double y) {
 	if(se) {
 		double dist = hypot(x - se->pos.x, y - se->pos.y);
 		if(dist < (se->radius+1)) {
-			fprintf(stderr, "This move brings you within %f of an object\n", hypot(x - se->pos.x, y - se->pos.y));
+			DEBUG("This move brings you within %f of an object\n", hypot(x - se->pos.x, y - se->pos.y));
 			double flight_dist = hypot(start.x - stop.x, start.y - stop.y);
 			double r = (flight_dist - (se->radius+2)) / flight_dist;
 			stop.x = start.x + r * (stop.x - start.x);
 			stop.y = start.y + r * (stop.y - start.y);
-			fprintf(stderr, "Stopping early at (%f, %f), dist = %f\n", stop.x, stop.y, hypot(stop.x - se->pos.x, stop.y - se->pos.y));
+			DEBUG("Stopping early at (%f, %f), dist = %f\n", stop.x, stop.y, hypot(stop.x - se->pos.x, stop.y - se->pos.y));
 		}
 	}
 
+	DEBUG("Going from (%f, %f) to (%f, %f)\n", start.x, start.y, stop.x, stop.y);
 	e->ship_data->flightplan = plotCourse(&start, &stop);
 	complete_flightplan(e);
 }

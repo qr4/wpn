@@ -374,16 +374,16 @@ static void build_quads() {
 	map.quad = (map_quad_t *) calloc (quads_x * quads_y, sizeof(map_quad_t)); // use calloc, or init the pointer with NULL
 
 	for (i = 0, cluster = cluster_storage->entities; i < cluster_storage->first_free; i++, cluster++) {
-		ERROR("cluster %lu\n", i);
+		DEBUG("cluster %lu\n", i);
 		register_object(cluster);
 
 		if (cluster->cluster_data->planet.id != INVALID_ID.id) {
-			ERROR("\thas planet\n");
+			DEBUG("\thas planet\n");
 			register_object(get_entity_by_id(cluster->cluster_data->planet));
 		}
 
 		for (j = 0; j < cluster->cluster_data->asteroids; j++) {
-			ERROR("\tasteroid\n");
+			DEBUG("\tasteroid\n");
 			register_object(get_entity_by_id(cluster->cluster_data->asteroid[j]));
 		}
 	}
