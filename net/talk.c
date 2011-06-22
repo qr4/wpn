@@ -630,17 +630,45 @@ out:
 //
 int _lua_console(char* data, int len, struct userstate* us, int write_fd) {
 
-  if ((len == 5) && (strncasecmp(data, ".quit", 5) == 0)) return set_state(MENU_MAIN, us, write_fd);
-
-  log_msg("vom user fd %d eingegeben: %.*s", write_fd, len, data);
-
-  if (len > 0) {
-    write(talk.user_code_pipe, &us->id, sizeof(unsigned int));
-    write(talk.user_code_pipe, &len, sizeof(int));
-    write(talk.user_code_pipe, data, len);
+  if ((len == 5) && (strncasecmp(data, ".quit", 5) == 0)) {
+    dstr_clear(&us->tmp);
+    return set_state(MENU_MAIN, us, write_fd);
   }
 
-  return print_msg_and_prompt(write_fd, NULL, 0, us); // nur den prompt anzeigen
+  if (len > 0) {
+    if (data[len - 1] == '\\') {
+      // wir haben ein \ am ende -> mehr-zeilen-cmd
+      dstr_append(&us->tmp, data, len - 1);
+      dstr_append(&us->tmp, "\n", 1);
+      // return mehrzeilen-prompt
+      return print_msg_and_prompt(write_fd, "       > ", 9, NULL);
+    } else {
+      if (dstr_len(&us->tmp) > 0) {
+        // mehrzeilen-cmd, letzte zeile ohne "\"
+        dstr_append(&us->tmp, data, len);
+        len = dstr_len(&us->tmp);
+        data = dstr_as_cstr(&us->tmp);
+      }
+    }
+  } else if (len == 0) {
+    if (dstr_len(&us->tmp) > 0) {
+      // im alten puffer steht noch was -> ausfuehren
+      len = dstr_len(&us->tmp);
+      data = dstr_as_cstr(&us->tmp);
+    } else {
+      // len = 0 und kein puffer -> prompt anzeigen
+      return print_msg_and_prompt(write_fd, NULL, 0, us); // nur den prompt anzeigen
+    }
+  }
+
+  // send command
+  write(talk.user_code_pipe, &us->id, sizeof(unsigned int));
+  write(talk.user_code_pipe, &len, sizeof(int));
+  write(talk.user_code_pipe, data, len);
+  dstr_clear(&us->tmp);
+
+  return print_msg_and_prompt(write_fd, NULL, 0, us);
+  return 0; // kein prompt... wird generiert bei der lua-ruckmeldung
 }
 
 //

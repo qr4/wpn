@@ -20,6 +20,7 @@
 // pstr leer machen
 void pstr_clear(struct pstr* p) {
   p->used = 0;
+  p->str[0] = '\0';
 }
 
 
@@ -175,6 +176,7 @@ void dstr_free(struct dstr* p) {
 void dstr_clear(struct dstr* p) {
   p->unused = 0;
   p->next = 0;
+  p->data[0] = '\0';
   if (p->size > 800000) {
     char* tmp = realloc(p->data, 500000);
     if (tmp != NULL) {
