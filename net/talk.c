@@ -662,12 +662,10 @@ int _lua_console(char* data, int len, struct userstate* us, int write_fd) {
   }
 
   // send command
-  write(talk.user_code_pipe, &us->id, sizeof(unsigned int));
-  write(talk.user_code_pipe, &len, sizeof(int));
-  write(talk.user_code_pipe, data, len);
+  int ret =  send_dispatch_msg(talk.user_code_pipe, us->id, data, len);
   dstr_clear(&us->tmp);
 
-  return 0; // kein prompt... wird generiert bei der lua-ruckmeldung
+  return ret; // kein prompt... wird generiert bei der lua-ruckmeldung
 }
 
 //
@@ -710,7 +708,8 @@ int _lua_get_code(char* data, int len, struct userstate* us, int write_fd) {
       return -1;
     }
 
-    write(talk.user_change_code_pipe, &us->id, sizeof(unsigned int));
+    int ret = write(talk.user_change_code_pipe, &us->id, sizeof(unsigned int));
+    if (ret == -1) { return -1; }
 
     return set_state(MENU_MAIN, us, write_fd);
   }
@@ -1045,10 +1044,8 @@ int talk_get_user_code_fd() {
   return talk.user_code_pipe;
 }
 
-void talk_set_user_code_reply_msg(unsigned int user_id, char* msg, int msg_len) {
-  write(talk.user_code_reply_pipe, &user_id, sizeof(unsigned int));
-  write(talk.user_code_reply_pipe, &msg_len, sizeof(int));
-  write(talk.user_code_reply_pipe, msg, msg_len);
+int talk_set_user_code_reply_msg(unsigned int user_id, char* msg, int msg_len) {
+  return send_dispatch_msg(talk.user_code_reply_pipe, user_id, msg, msg_len);
 } 
 
 // menupunkt 2
@@ -1057,10 +1054,8 @@ int talk_get_user_code_upload_fd() {
 }
 
 // menupunkt 3
-void talk_log_lua_msg(unsigned int user_id, char* msg, int msg_len) {
-  write(talk.log_lua_msg_pipe, &user_id, sizeof(unsigned int));
-  write(talk.log_lua_msg_pipe, &msg_len, sizeof(int));
-  write(talk.log_lua_msg_pipe, msg, msg_len);
+int talk_log_lua_msg(unsigned int user_id, char* msg, int msg_len) {
+  return send_dispatch_msg(talk.log_lua_msg_pipe, user_id, msg, msg_len);
 }
 
 

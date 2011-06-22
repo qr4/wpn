@@ -2,7 +2,7 @@
 // code by twist<at>nerd2nerd.org
 //
 
-#include <unistd.h>   // read
+#include <unistd.h>   // read, write
 
 #include <logging.h>  // log_
 
@@ -58,4 +58,32 @@ int dispatch(struct pipe_com* pc, int read_pipe, char** data, int* data_len) {
  
   return pc->header.head.len - pc->read_body;
 }
+
+int send_dispatch_msg(int fd, unsigned int user_id, char* msg, int msg_len) {
+  struct pipe_com tmp = { .header.head.id = user_id, .header.head.len = msg_len };
+
+  if (msg_len == 0) {
+    // nix zum senden
+    return 0;
+  }
+
+  ssize_t ret;
+
+  if ((ret = write(fd, &tmp, sizeof((struct pipe_com*)0)->header)) == -1) {
+    return -1;
+  }
+  if (ret != sizeof((struct pipe_com*)0)->header) {
+    // TODO
+  }
+
+  if ((ret = write(fd, msg, msg_len)) == -1) {
+    return -1;
+  }
+  if (ret != msg_len) {
+    // TODO
+  }
+
+  return 0;
+}
+
 
