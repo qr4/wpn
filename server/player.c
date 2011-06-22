@@ -140,8 +140,9 @@ static struct pipe_com user_code;
 void player_check_code_updates(long usec_wait) {
   fd_set rfds, rfds_tmp;
   struct timeval tv;
-	char* errortext;
+	char* errortext, *returntext;
   int ret;
+	int n,i;
 
   // auf talk_get_user_change_code_fd() hoeren
   FD_ZERO(&rfds);
@@ -195,12 +196,25 @@ void player_check_code_updates(long usec_wait) {
             lua_active_entity = players[j].homebase;
             ebase = get_entity_by_id(players[j].homebase);
 
+						/* Execute the code */
             if (luaL_dostring (ebase->lua, data)) {
               DEBUG("Execution failed.\n");
               errortext = (char*) lua_tostring(ebase->lua, -1);
               talk_set_user_code_reply_msg(user, errortext, strlen(errortext));
               lua_pop(ebase->lua, 1);
-            }
+            } else {
+
+							/* Send return values to the client, as strings */
+							n = lua_gettop(ebase->lua);
+							for(i=0; i<n; i++) {
+								returntext = lua_tostring(ebase->lua,i);
+								if(returntext) {
+									talk_set_user_code_reply_msg(user, returntext, strlen(returntext));
+								} else {
+									talk_set_user_code_reply_msg(user, "(nil)", 5);
+								}
+							}
+						}
 
           } else if (fd == talk_get_user_code_upload_fd()) {
             // der upload new file-fd hat was fuer uns

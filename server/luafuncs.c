@@ -1240,6 +1240,11 @@ int lua_build_ship(lua_State* L) {
 		/* Lua counts from one, lets do that too */
 		a-=1;
 
+		if(a<0) {
+			lua_pushstring(L, "Slot number out of range in build_ship\n");
+			lua_error(L);
+		}
+
 		/* No slot should be specified twice */
 		for(int j=0; j<i; j++) {
 			if(a == used_slots[j]) {
