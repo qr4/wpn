@@ -202,12 +202,78 @@ static void get_search_bounds(vector_t pos, double radius, quad_index_t *start, 
 }
 
 /*
+ * returns an array of entities_id_t and saves the number found in n
+ * found has to be free'd by the caller.
+ */
+entity_id_t *get_entities(const vector_t pos, const double search_radius, const unsigned int filter, size_t *n) {
+	quad_index_t start, end;
+	entity_id_t *found = NULL;
+
+	size_t storage_size;
+	size_t x, y;
+	size_t i;
+
+	get_search_bounds(pos, search_radius, &start, &end);
+
+	*n = 0;
+	storage_size = 16;
+	found = malloc(sizeof(entity_id_t) * storage_size);
+
+	for (y = start.quad_y; y <= end.quad_y; y++) {
+		for (x = start.quad_x ; x <= end.quad_x; x++) {
+			map_quad_t *quad = get_quad_by_index((quad_index_t) {x, y});
+
+			if (filter & CLUSTER) {
+				for (i = 0; i < quad->clusters; i++) {
+					if (vector_dist(&pos, &get_entity_by_id(quad->cluster[i])->pos) < search_radius) {
+						found[(*n)++] = quad->cluster[i];
+
+						if (*n >= storage_size) {
+							storage_size *= 2;
+							found = realloc(found, sizeof(entity_id_t) * storage_size);
+						}
+					}
+				}
+			}
+
+			if (filter & (ASTEROID | PLANET)) {
+				for (i = 0; i < quad->static_objects; i++) {
+					if (filter & quad->static_object[i].type 
+							&& vector_dist(&pos, &get_entity_by_id(quad->static_object[i])->pos) < search_radius) {
+						found[(*n)++] = quad->static_object[i];
+
+						if (*n >= storage_size) {
+							storage_size *= 2;
+							found = realloc(found, sizeof(entity_id_t) * storage_size);
+						}
+					}
+				}
+			}
+
+			if (filter & SHIP) {
+				for (i = 0; i < quad->moving_objects; i++) {
+					if (vector_dist(&pos, &get_entity_by_id(quad->moving_object[i])->pos) < search_radius) {
+						found[(*n)++] = quad->moving_object[i];
+
+						if (*n >= storage_size) {
+							storage_size *= 2;
+							found = realloc(found, sizeof(entity_id_t) * storage_size);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return found;
+}
+
+/*
  * find the closest object in the universe to e within a radius.
  * filter is used to match only against certain types (ships, planets, etc)
  */
 entity_t *find_closest(entity_t *e, const double radius, const unsigned int filter) {
 	quad_index_t start, end;
-	quad_index_t index;
 
 	size_t x, y;
 	unsigned int i;
@@ -217,7 +283,6 @@ entity_t *find_closest(entity_t *e, const double radius, const unsigned int filt
 	entity_t *closest = NULL;
 
 	get_search_bounds(e->pos, radius, &start, &end);
-	index = get_quad_index_by_pos(e->pos);
 
 	for (y = start.quad_y; y <= end.quad_y; y++) {
 		for (x = start.quad_x ; x <= end.quad_x; x++) {
@@ -225,8 +290,7 @@ entity_t *find_closest(entity_t *e, const double radius, const unsigned int filt
 
 			if (filter & CLUSTER) {
 				for (i = 0; i < quad->clusters; i++) {
-					if (filter & quad->cluster[i].type 
-							&& e->unique_id.id != quad->cluster[i].id
+					if (e->unique_id.id != quad->cluster[i].id
 							&& (t = collision_dist(e, get_entity_by_id(quad->cluster[i]))) < dist) {
 						dist = t;
 						closest = get_entity_by_id(quad->cluster[i]);
@@ -247,8 +311,7 @@ entity_t *find_closest(entity_t *e, const double radius, const unsigned int filt
 
 			if (filter & SHIP) {
 				for (i = 0; i < quad->moving_objects; i++) {
-					if (filter & quad->moving_object[i].type 
-							&& e->unique_id.id != quad->moving_object[i].id
+					if (e->unique_id.id != quad->moving_object[i].id
 							&& (t = collision_dist(e, get_entity_by_id(quad->moving_object[i]))) < dist) {
 						dist = t;
 						closest = get_entity_by_id(quad->moving_object[i]);
@@ -331,16 +394,17 @@ static void init_cluster_with_asteroids(entity_t *cluster) {
 		cluster->cluster_data->asteroid[i] = asteroid->unique_id;
 		init_entity(asteroid, vector(0), ASTEROID, 5);
 		asteroid_radius = asteroid->radius;
+		asteroid->asteroid_data->cluster = cluster;
 
 		do {
-			asteroid->pos.v = cluster->pos.v + randv().v * vector(
+			asteroid->pos.v = cluster->pos.v + rad_randv().v * vector(
 					(double) MAXIMUM_CLUSTER_SIZE 
 					- 2*config_get_double("max_ship_size") 
 					- asteroid_radius).v;
 		} while (check_for_asteroid_collisions(asteroid, cluster) == 1);
 
 		// increase cluster-size
-		cluster_radius = dist(asteroid, cluster) + 2*config_get_double("max_ship_size");
+		cluster_radius = dist(asteroid, cluster) + 2*config_get_double("max_ship_size") + asteroid_radius;
 		if (cluster_radius > cluster->radius) {
 			cluster->radius = cluster_radius;
 		}
@@ -373,16 +437,16 @@ static void build_quads() {
 	map.quad = (map_quad_t *) calloc (quads_x * quads_y, sizeof(map_quad_t)); // use calloc, or init the pointer with NULL
 
 	for (i = 0, cluster = cluster_storage->entities; i < cluster_storage->first_free; i++, cluster++) {
-		ERROR("cluster %lu\n", i);
+		DEBUG("cluster %lu\n", i);
 		register_object(cluster);
 
 		if (cluster->cluster_data->planet.id != INVALID_ID.id) {
-			ERROR("\thas planet\n");
+			DEBUG("\thas planet\n");
 			register_object(get_entity_by_id(cluster->cluster_data->planet));
 		}
 
 		for (j = 0; j < cluster->cluster_data->asteroids; j++) {
-			ERROR("\tasteroid\n");
+			DEBUG("\tasteroid\n");
 			register_object(get_entity_by_id(cluster->cluster_data->asteroid[j]));
 		}
 	}

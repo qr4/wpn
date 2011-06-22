@@ -29,6 +29,11 @@ void unregister_object(entity_t *e);
 // update position within the grid
 map_quad_t* update_quad_object(entity_t *e);
 
+/*
+ * returns an array of entities_id_t and saves the number found in n
+ * found has to be free'd by the caller.
+ */
+entity_id_t *get_entities(const vector_t pos, const double search_radius, const unsigned int filter, size_t *n);
 
 /*
  * find the closest object in the universe to e within a radius.

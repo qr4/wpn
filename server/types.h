@@ -181,6 +181,8 @@ struct asteroid_data_t {
 
 	/* If docked: ID of the docking partner */
 	entity_id_t docked_to;
+
+	entity_t* cluster;
 };
 
 struct cluster_data_t {
@@ -214,5 +216,19 @@ typedef struct player_data_t {
 	char* name;
 	entity_id_t homebase;
 } player_data_t;
+
+
+/*
+ * structure used for pooling
+ */
+typedef struct entity_storage entity_storage_t;
+
+struct entity_storage {
+	entity_t* entities;
+	uint32_t* offsets;
+	uint32_t max;
+	uint32_t first_free;
+	uint16_t type;
+};
 
 #endif  /*TYPES_H*/

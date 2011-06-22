@@ -39,16 +39,17 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_mine,             "mine"},
 
 	/* Queries */
-	{lua_entity_to_string, "entity_to_string"},
-	{lua_get_player,       "get_player"},
-	{lua_find_closest,     "find_closest"},       
-	{lua_get_position,     "get_position"},
-	{lua_get_distance,     "get_distance"},
+	{lua_entity_to_string,    "entity_to_string"},
+	{lua_get_player,          "get_player"},
+	{lua_get_entities,        "get_entities"},
+	{lua_find_closest,        "find_closest"},
+	{lua_get_position,        "get_position"},
+	{lua_get_distance,        "get_distance"},
 	{lua_get_docking_partner, "get_docking_partner"},
-	{lua_busy,             "is_busy"},
-	{lua_flying,           "is_flying"},
-	{lua_get_slots,        "get_slots"},
-	{lua_get_world_size,   "get_world_size"},
+	{lua_busy,                "is_busy"},
+	{lua_flying,              "is_flying"},
+	{lua_get_slots,           "get_slots"},
+	{lua_get_world_size,      "get_world_size"},
 
 	/* More lowlevel stuff */
 	{lua_print,            "print"},
@@ -531,6 +532,64 @@ int lua_mine(lua_State *L) {
 	/* Return true cause everything went well */
 	lua_pushboolean(L, 1);
 	return 1;
+}
+
+/* 
+ * Returns all object within a search area. 
+ * Moving objects are masked out it out of scanner-range
+ */
+int lua_get_entities(lua_State *L) {
+	entity_id_t self;
+	entity_id_t *found;
+	size_t n_found;
+	size_t i;
+	vector_t search_center;
+	double search_radius = 0;
+	unsigned int filter = 0;;
+	int n;
+
+	n = lua_gettop(L);
+	lua_pop(L, 1);
+
+	self = get_self(L);
+
+	switch (n) {
+		// search from the entity position
+		case 2 :
+			search_center = get_entity_by_id(self)->pos;
+			filter        = (unsigned int) lua_tonumber(L, -1);
+			search_radius = (double)       lua_tonumber(L, -2);
+			lua_pop(L, 2);
+			break;
+		case 4 :
+			filter          = (unsigned int) lua_tonumber(L, -1);
+			search_radius   = (double)       lua_tonumber(L, -2);
+			search_center.y = (double)       lua_tonumber(L, -3);
+			search_center.x = (double)       lua_tonumber(L, -4);
+			lua_pop(L, 4);
+			break;
+		default :
+			lua_pushstring(L, 
+					"Invalid number of arguments for get_entities()!\n"
+					"valid calls are:\n"
+					"get_entities(radius, filter)\n"
+					"get_entities(x, y, radius, filter)\n");
+			lua_error(L);
+			break;
+	}
+
+	found = get_entities(search_center, search_radius, filter, &n_found);
+	
+	n = 0;
+
+	for (i = 0; i < n_found; i++) {
+		if (in_scanner_range(self, found[i])) {
+			lua_pushlightuserdata(L, (void *) found[i].id);
+			n++;
+		}
+	}
+	
+	return n;
 }
 
 /*

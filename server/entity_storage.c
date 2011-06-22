@@ -1,4 +1,5 @@
 #include "entity_storage.h"
+#include "entities.h"
 #include "debug.h"
 
 /* Create a new, empty entity storage, with the specified starting size and

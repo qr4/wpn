@@ -43,6 +43,13 @@ static inline double vector_dist(const vector_t* A, const vector_t* B) {
 }
 
 /*
+ * Returns the length of a vector
+ */
+static inline double vector_length(const vector_t* A) {
+	return hypot(A->x, A->y);
+}
+
+/*
  * Return a vector with both values set to x
  */
 static inline vector_t vector(const double x) {
@@ -55,6 +62,18 @@ static inline vector_t vector(const double x) {
 static inline vector_t randv() {
 	vector_t v;
 	v.v = (v2d) { drand48(), drand48() } * vector(2).v - vector(1).v;
+	return v;
+}
+
+/*
+ * Return random vector with length < 1
+ */
+static inline vector_t rad_randv() {
+	double alpha = 2 * M_PI * drand48();
+	double r = drand48();
+	vector_t v;
+	v.x = r * sin(alpha);
+	v.y = r * cos(alpha);
 	return v;
 }
 
