@@ -37,6 +37,7 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_build_ship,       "build_ship"},
 	{lua_fire,             "fire"},
 	{lua_mine,             "mine"},
+	{lua_manufacture,      "manufacture"},
 
 	/* Queries */
 	{lua_entity_to_string,    "entity_to_string"},
@@ -1291,11 +1292,67 @@ int lua_build_ship(lua_State* L) {
 		eself->slot_data->slot[used_slots[i]] = EMPTY;
 	}
 
-	/* TODO: Currently, the new ship is created instantly. There should be a way
-	 * to delay it. */
+	/* Yeah, everything takes time... */
+	set_entity_timer(eself, config_get_int("build_ship_duration"), BUILD_COMPLETE, id);
 
 	/* Return the ship's id to the caller */
 	lua_pushlightuserdata(L, (void*)(id.id));
+	return 1;
+}
+
+/* Turn a useless chunk of ore into something spiffy!
+ * Or the other way around. We don't care. You can do with your expensive
+ * technology what you want. That's all, cave johnson out. */
+int lua_manufacture(lua_State* L) {
+	int n;
+	entity_id_t self;
+	entity_t* eself;
+	int slot;
+	slot_t what_to_build;
+
+	n = lua_gettop(L);
+	if(n!=2) {
+		lua_pushstring(L, "manufacture requires exactly 2 arguments: slotnumber, content");
+		lua_error(L);
+	}
+
+	if(!lua_isnumber(L,1)) {
+		lua_pushstring(L, "first argument of manufacture is not numeric");
+		lua_error(L);
+	}
+
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	slot = lua_tonumber(L,1);
+	what_to_build = lua_tonumber(L,2);
+
+	if(slot < 0 || slot >= eself->slots) {
+		/* Slots out of range -> don't build. */
+		return 0;
+	}
+
+	if(what_to_build <= EMPTY || what_to_build > ORE) {
+		/* Don't know how to build that. */
+		return 0;
+	}
+
+	/* Can't build from an empty slot */
+	if(eself->slot_data->slot[slot] == EMPTY) {
+		return 0;
+	}
+
+	if(is_busy(eself)) {
+		return 0;
+	}
+
+	eself->slot_data->slot[slot] = what_to_build;
+
+	/* Set timer to inform us when it's complete */
+	set_entity_timer(eself, config_get_int("manufacture_duration"), MANUFACTURE_COMPLETE, self);
+
+	/* Push the slot number we just built into */
+	lua_pushnumber(L,slot);
 	return 1;
 }
 
