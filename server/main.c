@@ -22,7 +22,11 @@
 #include <fenv.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
+
+extern double MAXIMUM_PLANET_SIZE;
 
 #define print_sizeof(TYPE) \
 	printf("sizeof(%-14s) = %4lu\n", #TYPE, sizeof(TYPE));
@@ -185,37 +189,11 @@ int main(int argc, char *argv[]) {
 		int updates = 0;
 		for(int i=0; i<ship_storage->first_free; i++) {
 			if(ship_storage->entities[i].ship_data->flightplan != NULL) {
-				waypoint_t* next = ship_storage->entities[i].ship_data->flightplan->next;
-				free_waypoint(ship_storage->entities[i].ship_data->flightplan);
-				ship_storage->entities[i].ship_data->flightplan = next;
-
-				if(next) {
-					quad_index_t old_quad = get_quad_index_by_pos(ship_storage->entities[i].pos);
-					if(next->point.x < map.left_bound || next->point.x > map.right_bound || next->point.y < map.upper_bound || next->point.y > map.lower_bound) {
-						log_msg("%d is outside the map\n", ship_storage->entities[i].unique_id);
-						//explode(ship_storage->entities[i]);
-					}
-					ship_storage->entities[i].pos.v = next->point.v;
-					quad_index_t new_quad = get_quad_index_by_pos(ship_storage->entities[i].pos);
-					if((old_quad.quad_x != new_quad.quad_x) || (old_quad.quad_y != new_quad.quad_y)) {
-						update_quad_object(&(ship_storage->entities[i]));
-					}
-
-					ship_storage->entities[i].v.v = next->speed.v;
-				} else {
-					ship_storage->entities[i].v.v = (v2d) {0, 0};
-				}
-				updated_ships[updates] = ship_to_json(&(ship_storage->entities[i]));
-				updates++;
+				move_ship(ship_storage->entities + i);
 			}
-
-			//if(rand() < RAND_MAX/1000) {
-			//	explode_entity(&(ship_storage->entities[i]));
-			//	i--;
-			//}
 		}
 		// Send JSON to network and free strings
-		ship_updates_to_network(updated_ships, updates);
+		ship_updates_to_network();
 		shots_to_network();
 		explosions_to_network();
 

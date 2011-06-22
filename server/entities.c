@@ -11,6 +11,7 @@
 #include "player.h"
 #include "storages.h"
 #include "json_output.h"
+#include "../logging/logging.h"
 
 extern double asteroid_radius_to_slots_ratio;
 extern double planet_size;
@@ -246,20 +247,33 @@ char* slots_to_string(entity_t* e) {
 }
 
 void move_ship(entity_t *ship) {
-	if(ship->ship_data != NULL) {
-		if(ship->ship_data->flightplan != NULL) {
-			waypoint_t* next = ship->ship_data->flightplan->next;
-			free_waypoint(ship->ship_data->flightplan);
-			ship->ship_data->flightplan = next;
-			if(next) {
-				ship->pos = next->point;
-				ship->v = next->speed;
-			} else {
-				// *Bling* we arrived
-				call_entity_callback(ship, AUTOPILOT_ARRIVED, INVALID_ID);
-			}
+	waypoint_t* next = ship->ship_data->flightplan->next;
+	free_waypoint(ship->ship_data->flightplan);
+	ship->ship_data->flightplan = next;
+
+	if(next) {
+		quad_index_t old_quad = get_quad_index_by_pos(ship->pos);
+		if(next->point.x < map.left_bound || next->point.x > map.right_bound || next->point.y < map.upper_bound || next->point.y > map.lower_bound) {
+			log_msg("%d is outside the map\n", ship->unique_id);
+			//explode(ship_storage->entities[i]);
 		}
+		ship->pos.v = next->point.v;
+		quad_index_t new_quad = get_quad_index_by_pos(ship->pos);
+		if((old_quad.quad_x != new_quad.quad_x) || (old_quad.quad_y != new_quad.quad_y)) {
+			update_quad_object(ship);
+		}
+
+		ship->v.v = next->speed.v;
+	} else {
+		ship->v.v = (v2d) {0, 0};
 	}
+	current_ships = realloc(current_ships, sizeof(char*) * (n_current_ships+2));
+	if(!current_ships) {
+		ERROR("Out of memory for ship movement json-strings.");
+		return;
+	}
+	current_ships[n_current_ships] = ship_to_json(ship);
+	n_current_ships++;
 }
 
 /* And boom goes the entity! */
