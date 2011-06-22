@@ -963,8 +963,8 @@ int lua_transfer_slot(lua_State* L) {
 		lua_error(L);
 	}
 
-	local_slot = lua_tonumber(L,1);
-	remote_slot = lua_tonumber(L,2);
+	local_slot = lua_tonumber(L,1) -1;
+	remote_slot = lua_tonumber(L,2) -1;
 	lua_pop(L,2);
 
 	/* get self */
