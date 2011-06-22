@@ -217,4 +217,18 @@ typedef struct player_data_t {
 	entity_id_t homebase;
 } player_data_t;
 
+
+/*
+ * structure used for pooling
+ */
+typedef struct entity_storage entity_storage_t;
+
+struct entity_storage {
+	entity_t* entities;
+	uint32_t* offsets;
+	uint32_t max;
+	uint32_t first_free;
+	uint16_t type;
+};
+
 #endif  /*TYPES_H*/

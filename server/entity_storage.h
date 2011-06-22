@@ -1,17 +1,7 @@
 #ifndef _ENTITY_STORAGE_H
 #define _ENTITY_STORAGE_H
 
-#include "entities.h"
-
-typedef struct entity_storage entity_storage_t;
-
-struct entity_storage {
-	entity_t* entities;
-	uint32_t* offsets;
-	uint32_t max;
-	uint32_t first_free;
-	uint16_t type;
-};
+#include "types.h"
 
 /* Create a new, empty entity storage */
 entity_storage_t* init_entity_storage(const uint32_t n_entries, const uint16_t type);

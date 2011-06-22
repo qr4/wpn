@@ -2,6 +2,8 @@
 #define ENTITIES_H
 
 #include <lua.h>
+#include "config.h"
+#include "storages.h"
 #include "vector.h"
 #include "types.h"
 #include "map.h"
@@ -59,6 +61,13 @@ static inline double collision_dist(entity_t *A, entity_t *B) {
  * ship-functions
  */
 
+static inline int in_scanner_range(entity_id_t ship, entity_id_t object) {
+	if (object.type != SHIP && object.type != BASE) {
+		return 1 == 1;
+	} else {
+		return dist(get_entity_by_id(ship), get_entity_by_id(object)) < config_get_double("scanner_range");
+	}
+}
 
 void move_ship(entity_t *ship);
 

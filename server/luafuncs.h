@@ -52,6 +52,8 @@ int lua_mine(lua_State* L);
 /* --- QUERIES - with which entities get information about their surroundings */
 /* Search the closest entity in the search radius matchin the filter.
  */
+int lua_get_entities(lua_State *L);
+
 extern int lua_find_closest(lua_State *L);
 
 /* Get the player id of an entity (or yourself) */
