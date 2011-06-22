@@ -530,8 +530,8 @@ int lua_mine(lua_State *L) {
 	/* Set the timer. */
 	set_entity_timer(eself, config_get_int("mining_duration"), MINING_COMPLETE, self);
 
-	/* Return true cause everything went well */
-	lua_pushboolean(L, 1);
+	/* Return the slot number we mine into. */
+	lua_pushnumber(L, slot+1);
 	return 1;
 }
 
@@ -643,9 +643,14 @@ int lua_entity_to_string(lua_State* L) {
 
 	/* Check arguments */
 	n = lua_gettop(L);
-	if(n != 1 || !lua_islightuserdata(L,-1)) {
+	if(n != 1) {
 		lua_pushstring(L, "entity_to_string expects exactly one entity pointer\n");
 		lua_error(L);
+	}
+
+	/* If the thing that was passed to us is not an entity pointer, our string is also null. */
+	if(!lua_islightuserdata(L,1)) {
+		return 0;
 	}
 
 	/* Pop entity pointer from stack */
@@ -1231,6 +1236,9 @@ int lua_build_ship(lua_State* L) {
 		}
 		
 		a = lua_tonumber(L,i+1);
+
+		/* Lua counts from one, lets do that too */
+		a-=1;
 
 		/* No slot should be specified twice */
 		for(int j=0; j<i; j++) {
