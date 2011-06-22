@@ -66,6 +66,18 @@ static inline vector_t randv() {
 }
 
 /*
+ * Return random vector with length < 1
+ */
+static inline vector_t rad_randv() {
+	double alpha = 2 * M_PI * drand48();
+	double r = drand48();
+	vector_t v;
+	v.x = r * sin(alpha);
+	v.y = r * cos(alpha);
+	return v;
+}
+
+/*
  * Decide on which side the point C is realtive to the line A - B is.
  *
  * = 0 -> C on the line A - B

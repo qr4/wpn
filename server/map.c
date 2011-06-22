@@ -334,7 +334,7 @@ static void init_cluster_with_asteroids(entity_t *cluster) {
 		asteroid->asteroid_data->cluster = cluster;
 
 		do {
-			asteroid->pos.v = cluster->pos.v + randv().v * vector(
+			asteroid->pos.v = cluster->pos.v + rad_randv().v * vector(
 					(double) MAXIMUM_CLUSTER_SIZE 
 					- 2*config_get_double("max_ship_size") 
 					- asteroid_radius).v;
