@@ -11,6 +11,7 @@ EMPTY     = 0;
 WEAPON    = 1;
 DRIVE     = 2;
 ORE       = 3;
+_slot_strings = {[0] = "EMPTY", [1]="WEAPON", [2]="DRIVE", [3]="ORE"}
 
 -- The default behaviour when recieving data from a docked partner is to
 -- execute it right away. (This allows initial programming of a new ship)
@@ -24,6 +25,33 @@ end
 --print = nil   -- Ships are not supposed to be able to write to stdout
 pcall = nil   -- Lua errors can't be caught, but lead to distruption of the ship
 
+
+
+-- Useful function library.
+
+-- For friendly interactive base operation.
+function print_slots()
+  local s = get_slots()
+  print("Slot contents:")
+  for i=1,#s do
+    print("  ".._slot_strings[s[i]])
+  end
+  print("end.")
+end
+
+-- For knowing when to build a ship.
+function count_ore()
+  local s = get_slots()
+  local num = 0;
+
+  for i=1,#s do
+    if(s[i]==ORE) then
+      num = num+1
+    end
+  end
+
+  return num
+end
 
 --  ********* Everything below here is debugging code *********
 

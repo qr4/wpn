@@ -150,7 +150,7 @@ int lua_moveto(lua_State* L) {
 			y = lua_tonumber(L,-1);
 			x = lua_tonumber(L,-2);
 
-			lua_pop(L,3);
+			lua_pop(L,2);
 			break;
 		default:
 			lua_pushstring(L, "Wrong number of arguments to moveto.");
@@ -202,7 +202,7 @@ int lua_set_autopilot_to(lua_State* L) {
 			y = lua_tonumber(L,-1);
 			x = lua_tonumber(L,-2);
 
-			lua_pop(L,3);
+			lua_pop(L,2);
 			break;
 		default:
 			lua_pushstring(L, "Wrong number of arguments to set_autopilot_to.");
@@ -530,8 +530,8 @@ int lua_mine(lua_State *L) {
 	/* Set the timer. */
 	set_entity_timer(eself, config_get_int("mining_duration"), MINING_COMPLETE, self);
 
-	/* Return true cause everything went well */
-	lua_pushboolean(L, 1);
+	/* Return the slot number we mine into. */
+	lua_pushnumber(L, slot+1);
 	return 1;
 }
 
@@ -559,14 +559,14 @@ int lua_get_entities(lua_State *L) {
 			search_center = get_entity_by_id(self)->pos;
 			filter        = (unsigned int) lua_tonumber(L, -1);
 			search_radius = (double)       lua_tonumber(L, -2);
-			lua_pop(L, 3);
+			lua_pop(L, 2);
 			break;
 		case 4 :
 			filter          = (unsigned int) lua_tonumber(L, -1);
 			search_radius   = (double)       lua_tonumber(L, -2);
 			search_center.y = (double)       lua_tonumber(L, -3);
 			search_center.x = (double)       lua_tonumber(L, -4);
-			lua_pop(L, 5);
+			lua_pop(L, 4);
 			break;
 		default :
 			lua_pushstring(L, 
@@ -618,7 +618,7 @@ int lua_find_closest(lua_State *L) {
 
 	filter        = (unsigned int) lua_tonumber(L, -1);
 	search_radius = (double) lua_tonumber(L, -2);
-	lua_pop(L, 3);
+	lua_pop(L, 2);
 	id = get_self(L);
 	e = get_entity_by_id(id);
 
@@ -643,14 +643,19 @@ int lua_entity_to_string(lua_State* L) {
 
 	/* Check arguments */
 	n = lua_gettop(L);
-	if(n != 1 || !lua_islightuserdata(L,-1)) {
+	if(n != 1) {
 		lua_pushstring(L, "entity_to_string expects exactly one entity pointer\n");
 		lua_error(L);
 	}
 
+	/* If the thing that was passed to us is not an entity pointer, our string is also null. */
+	if(!lua_islightuserdata(L,1)) {
+		return 0;
+	}
+
 	/* Pop entity pointer from stack */
 	id.id = (uint64_t) lua_touserdata(L, -1);
-	lua_pop(L,2);
+	lua_pop(L,1);
 	e = get_entity_by_id(id);
 
 	if (e == NULL) {
@@ -1231,6 +1236,14 @@ int lua_build_ship(lua_State* L) {
 		}
 		
 		a = lua_tonumber(L,i+1);
+
+		/* Lua counts from one, lets do that too */
+		a-=1;
+
+		if(a<0) {
+			lua_pushstring(L, "Slot number out of range in build_ship\n");
+			lua_error(L);
+		}
 
 		/* No slot should be specified twice */
 		for(int j=0; j<i; j++) {

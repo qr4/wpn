@@ -59,8 +59,8 @@ initial_asteroid_ore = 86
 
 -- When building a new ship, offset it from the building bases' position by this
 -- amount. (This should always be larger than the collision distance)
-build_offset_x = -0.5
-build_offset_y = 0
+build_offset_x = -50
+build_offset_y = 50
 
 -- A new player starts with a base of this size
 initial_base_size = 12
