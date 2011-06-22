@@ -6,6 +6,12 @@ ASTEROID  = 4;
 BASE      = 8;
 SHIP      = 16;
 
+-- Type Constants for slot contents (returned as a list by get_slots)
+EMPTY     = 0;
+WEAPON    = 1;
+DRIVE     = 2;
+ORE       = 3;
+
 -- The default behaviour when recieving data from a docked partner is to
 -- execute it right away. (This allows initial programming of a new ship)
 function on_incoming_data(d)

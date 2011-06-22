@@ -50,6 +50,7 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_flying,              "is_flying"},
 	{lua_get_slots,           "get_slots"},
 	{lua_get_world_size,      "get_world_size"},
+	{lua_get_type,         "get_type"},
 
 	/* More lowlevel stuff */
 	{lua_print,            "print"},
@@ -589,6 +590,8 @@ int lua_get_entities(lua_State *L) {
 		}
 	}
 	
+  free(found);
+
 	return n;
 }
 
@@ -1285,6 +1288,34 @@ int lua_get_world_size(lua_State* L) {
 	lua_pushnumber(L, map.upper_bound);
 	lua_pushnumber(L, map.lower_bound);
 	return 4;
+}
+
+/* determine the type of the given entity */
+int lua_get_type(lua_State* L) {
+	int n;
+	entity_id_t id;
+	entity_t* e;
+
+	n = lua_gettop(L);
+	if(n!=1 || !lua_islightuserdata(L,1)) {
+		lua_pushstring(L,"get_type requires one (entity) argument.\n");
+		lua_error(L);
+	}
+
+	id.id = (uint64_t) lua_touserdata(L,1);
+	lua_pop(L,1);
+
+	/* Check whether this entity even exists */
+	e = get_entity_by_id(id);
+	if(!e) {
+		/* A nonexistant entity gives nil */
+		return 0;
+	}
+
+	/* Push the type and return */
+	lua_pushnumber(L,id.type);
+
+	return 1;
 }
 
 /* Override lua's "print" function, so that output is not going to a terminal,
