@@ -950,6 +950,7 @@ int lua_send_data(lua_State* L) {
 	entity_t* eself, *epartner;
 	int n = lua_gettop(L);
 	luaL_Buffer b;
+	const char* temp;
 
 	if(n != 1) {
 		lua_pushstring(L, "Invalid Arguments: send_data expects exactly one argument");
@@ -982,16 +983,26 @@ int lua_send_data(lua_State* L) {
 		return 0;
 	}
 
-	/* Create a stringbuffer in the other entities' lua state, and serialize our data into it */
-	luaL_buffinit(epartner->lua, &b);
-	if(lua_dump(L, data_transfer_writer, &b)) {
-		DEBUG("Error while dumping lua data\n");
-		return 0;
-	}
-	luaL_pushresult(&b);
+	/* Possibility a: send a lua function */
+	if(lua_isfunction(L, 1)) {
+		/* Create a stringbuffer in the other entities' lua state, and serialize our data into it */
+		luaL_buffinit(epartner->lua, &b);
+		if(lua_dump(L, data_transfer_writer, &b)) {
+			DEBUG("Error while dumping lua data\n");
+			return 0;
+		}
+		luaL_pushresult(&b);
 
-	/* We can now savely pop our argument */
-	lua_pop(L,1);
+		/* We can now savely pop our argument */
+		lua_pop(L,1);
+	} else if(lua_isstring(L,1)) {
+
+		/* Possibility b: send a source code string */
+		temp = lua_tostring(L,1);
+		lua_pushstring(epartner->lua, temp);
+
+		lua_pop(L,1);
+	}
 
 	/* Call the handler function on the other side */
 	lua_active_entity = partner;
