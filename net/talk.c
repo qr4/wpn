@@ -632,9 +632,13 @@ int _lua_console(char* data, int len, struct userstate* us, int write_fd) {
 
   if ((len == 5) && (strncasecmp(data, ".quit", 5) == 0)) return set_state(MENU_MAIN, us, write_fd);
 
-  write(talk.user_code_pipe, &us->id, sizeof(unsigned int));
-  write(talk.user_code_pipe, &len, sizeof(int));
-  write(talk.user_code_pipe, data, len);
+  log_msg("vom user fd %d eingegeben: %.*s", write_fd, len, data);
+
+  if (len > 0) {
+    write(talk.user_code_pipe, &us->id, sizeof(unsigned int));
+    write(talk.user_code_pipe, &len, sizeof(int));
+    write(talk.user_code_pipe, data, len);
+  }
 
   return print_msg_and_prompt(write_fd, NULL, 0, us); // nur den prompt anzeigen
 }
@@ -1009,15 +1013,29 @@ void init_talk() {
 }
 
 
+// menupunkt 1
+int talk_get_user_code_fd() {
+  return talk.user_code_pipe;
+}
+
+void talk_set_user_code_reply_msg(unsigned int user_id, char* msg, int msg_len) {
+  write(talk.user_code_reply_pipe, &user_id, sizeof(unsigned int));
+  write(talk.user_code_reply_pipe, &msg_len, sizeof(int));
+  write(talk.user_code_reply_pipe, msg, msg_len);
+} 
+
+// menupunkt 2
+int talk_get_user_code_upload_fd() {
+  return talk.user_change_code_pipe;
+}
+
+// menupunkt 3
 void talk_log_lua_msg(unsigned int user_id, char* msg, int msg_len) {
   write(talk.log_lua_msg_pipe, &user_id, sizeof(unsigned int));
   write(talk.log_lua_msg_pipe, &msg_len, sizeof(int));
   write(talk.log_lua_msg_pipe, msg, msg_len);
 }
 
-int talk_get_user_change_code_fd() {
-  return talk.user_change_code_pipe;
-}
 
 
 // do not use!

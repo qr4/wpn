@@ -9,6 +9,7 @@
 #include "types.h"
 #include "../net/config.h"
 #include "../net/talk.h"
+#include "../net/dispatch.h"
 #include "debug.h"
 #include "config.h"
 #include "json_output.h"
@@ -133,6 +134,8 @@ void add_all_known_players() {
 	closedir(playerdir);
 }
 
+static struct pipe_com user_code;
+
 /* Look if the network code provides us with some new shiny player data */
 void player_check_code_updates(long usec_wait) {
   fd_set rfds, rfds_tmp;
@@ -142,13 +145,17 @@ void player_check_code_updates(long usec_wait) {
 
   // auf talk_get_user_change_code_fd() hoeren
   FD_ZERO(&rfds);
-  FD_SET(talk_get_user_change_code_fd(), &rfds);
+  FD_SET(talk_get_user_code_fd(), &rfds);
+  FD_SET(talk_get_user_code_upload_fd(), &rfds);
 
   // timeout
   tv.tv_sec = 0;
   tv.tv_usec = usec_wait;
 
-  int max_fd = talk_get_user_change_code_fd();
+#ifndef MAX
+# define MAX(a, b)  (((a) > (b)) ? (a) : (b))
+#endif
+  int max_fd = MAX(talk_get_user_code_fd(), talk_get_user_code_upload_fd());
 
   for(;;) {
     rfds_tmp = rfds;
@@ -160,54 +167,94 @@ void player_check_code_updates(long usec_wait) {
       // fd jammert rum
       for (int fd = 0; fd <= max_fd; ++fd) {
         if (FD_ISSET(fd, &rfds_tmp)) {
+          if (fd == talk_get_user_code_fd()) {
+            // ein user hat was per hand eingegeben
+            char* data;
+            int data_len;
+            int ret = dispatch(&user_code, fd, &data, &data_len);
+            if (ret == -1) {
+              ERROR("dispatch sagt -1\n");
+              exit(EXIT_FAILURE);
+            }
 
-          int data[100];
+            if (data_len == 0) break;  // keine daten -> nix an lua senden
 
-          ssize_t read_len = read(fd, data, sizeof(data));
-          if (read_len == -1) { perror("read player_check_code_updates"); exit(EXIT_FAILURE); }
-          if (read_len == 0) { printf("client tot...\n"); exit(EXIT_FAILURE); }
-          if ((read_len & 0x3) != 0) { printf("oops. we lost an update. boeses socket, boeses!\n"); exit(EXIT_FAILURE); }
-
-          for (int i = 0; i < read_len / sizeof(unsigned int); ++i) {
-            unsigned int user = data[i];
-            entity_id_t base;
-            entity_t* ebase;
+            int user = user_code.header.head.id;
             int j;
-            char* lua_source_file;
+            entity_t* ebase;
+            DEBUG("Code from user %d", user);
 
-            DEBUG("Update for player %d", user);
-
-            /* Make sure this player exists */
             new_player(user);
 
-            for(j = 0; j < n_players; j++) {
-              if(players[j].player_id == user) {
+            for (j = 0; j < n_players; ++j) {
+              if (players[j].player_id == user) {
                 break;
               }
             }
 
-            /* Get the location we're reading code from */
-            asprintf(&lua_source_file, USER_HOME_BY_ID "/%i/current", user);
+            lua_active_entity = players[j].homebase;
+            ebase = get_entity_by_id(players[j].homebase);
 
-            base = players[j].homebase;
-            ebase = get_entity_by_id(base);
-
-            /* Evaluate the code in the context of the player's homebase */
-            lua_active_entity = base;
-
-            if(!(ebase->lua)) {
-              ERROR("Player %u's homebase lua state is dead. This shouldn't happen.\n", user);
-              return;
+            if (luaL_dostring (ebase->lua, data)) {
+              DEBUG("Execution failed.\n");
+              errortext = (char*) lua_tostring(ebase->lua, -1);
+              talk_set_user_code_reply_msg(user, errortext, strlen(errortext));
+              lua_pop(ebase->lua, 1);
             }
-            DEBUG("Executing %s in the context of entity %lu\n", lua_source_file, base.id);
-            if(luaL_dofile(ebase->lua, lua_source_file)) {
-							DEBUG("Execution failed.\n");
-							errortext = (char*) lua_tostring(ebase->lua, -1);
-							talk_log_lua_msg(user, errortext, strlen(errortext));
-							lua_pop(ebase->lua, 1);
-						}
 
-            free(lua_source_file);
+          } else if (fd == talk_get_user_code_upload_fd()) {
+            // der upload new file-fd hat was fuer uns
+            int data[100];
+
+            ssize_t read_len = read(fd, data, sizeof(data));
+            if (read_len == -1) { perror("read player_check_code_updates"); exit(EXIT_FAILURE); }
+            if (read_len == 0) { printf("client tot...\n"); exit(EXIT_FAILURE); }
+            if ((read_len & 0x3) != 0) { printf("oops. we lost an update. boeses socket, boeses!\n"); exit(EXIT_FAILURE); }
+
+            for (int i = 0; i < read_len / sizeof(unsigned int); ++i) {
+              unsigned int user = data[i];
+              entity_id_t base;
+              entity_t* ebase;
+              int j;
+              char* lua_source_file;
+
+              DEBUG("Update for player %d", user);
+
+              /* Make sure this player exists */
+              new_player(user);
+
+              for(j = 0; j < n_players; j++) {
+                if(players[j].player_id == user) {
+                  break;
+                }
+              }
+
+              /* Get the location we're reading code from */
+              asprintf(&lua_source_file, USER_HOME_BY_ID "/%i/current", user);
+
+              base = players[j].homebase;
+              ebase = get_entity_by_id(base);
+
+              /* Evaluate the code in the context of the player's homebase */
+              lua_active_entity = base;
+
+              if(!(ebase->lua)) {
+                ERROR("Player %u's homebase lua state is dead. This shouldn't happen.\n", user);
+                return;
+              }
+              DEBUG("Executing %s in the context of entity %lu\n", lua_source_file, base.id);
+              if(luaL_dofile(ebase->lua, lua_source_file)) {
+                DEBUG("Execution failed.\n");
+                errortext = (char*) lua_tostring(ebase->lua, -1);
+                talk_log_lua_msg(user, errortext, strlen(errortext));
+                lua_pop(ebase->lua, 1);
+              }
+
+              free(lua_source_file);
+            }
+          } else {
+            // hu?! welcher fd war das denn?
+            ERROR("unknown fd is talking?!??!\n");
           }
         }
       }
