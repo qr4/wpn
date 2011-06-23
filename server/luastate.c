@@ -31,6 +31,7 @@ char* callback_names[NUM_EVENTS] = {
 	/* TIMER_EXPIRED */ "on_timer_expired",
 	/* MINING_COMPLETE */ "on_mining_complete",
 	/* MANUFACTURE_COMPLETE */ "on_manufacture_complete",
+	/* COLONIZE_COMPLETE */ "on_colonize_complete",
 };
 
 

@@ -38,6 +38,7 @@ typedef enum {
 	TIMER_EXPIRED,      // A fixed timer has expired
 	MINING_COMPLETE,    // Digging pays off afterall
 	MANUFACTURE_COMPLETE, // Congratulations, you built something
+	COLONIZE_COMPLETE,  // A new planet has been colonized.
 
 	NUM_EVENTS
 } event_t;

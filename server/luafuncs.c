@@ -42,6 +42,7 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_fire,                  "fire",                  fire_help},            
 	{lua_mine,                  "mine",                  mine_help},            
 	{lua_manufacture,           "manufacture",           NULL},
+	{lua_colonize,              "colonize",              NULL},
 
 	/* Queries */
 	{lua_entity_to_string,      "entity_to_string",      entity_to_string_help},
@@ -1373,6 +1374,9 @@ int lua_build_ship(lua_State* L) {
 	e = get_entity_by_id(id);
 	register_object(e);
 
+	/* Let the world know about this ship */
+	map_to_network();
+
 	e->player_id = eself->player_id;
 
 	/* Zero out the slots we used for building. */
@@ -1445,6 +1449,80 @@ int lua_manufacture(lua_State* L) {
 
 	/* Push the slot number we just built into */
 	lua_pushnumber(L,slot);
+	return 1;
+}
+
+/* Turn a ship into a base */
+int lua_colonize(lua_State* L) {
+	int n;
+	entity_id_t self, planet, base;
+	entity_t* eself, *eplanet, *ebase;
+	slot_data_t* slot_temp;
+
+	n = lua_gettop(L);
+	if(n!=1 || !lua_islightuserdata(L,1)) {
+		lua_pushstring(L, "colonize requires exactly one planet as argument\n");
+		lua_error(L);
+	}
+
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	/* Get the planet */
+	planet.id = (uint64_t) lua_touserdata(L,1);
+
+	eplanet = get_entity_by_id(planet);
+	if(!eplanet || eplanet->type != PLANET) {
+		DEBUG("Trying to colonize something that's not a planet.");
+		return 0;
+	}
+
+	/* Check that we're a ship */
+	if(eself->type != SHIP) {
+		ERROR("How can you colonize? You're not a ship!");
+		return 0;
+	}
+
+	/* Check for occupancy */
+	if(eplanet->player_id != 0) {
+		DEBUG("Planet is already occupied!");
+		return 0;
+	}
+
+	/* Well, I guess everything's fine. Create a base here */
+	base = alloc_entity(base_storage);
+	ebase = get_entity_by_id(base);
+
+	ebase->pos = eself->pos;
+	ebase->radius = eplanet->radius;
+	ebase->lua = eself->lua;
+	eself->lua = NULL;
+	ebase->player_id = eself->player_id;
+	eplanet->player_id = eself->player_id;
+
+	/* Swap storages/slots */
+	slot_temp = ebase->slot_data;
+	ebase->slot_data = eself->slot_data;
+	eself->slot_data = slot_temp;
+
+	/* Set the new id as this lua states' "self"-pointer, as well as the active entity. */
+	lua_pushlightuserdata(L, (void*) base.id);
+	lua_setglobal(L,"self");
+	lua_active_entity = base;
+
+	/* Remove the hollow hull of the old ship */
+	free_entity(ship_storage, self);
+
+	/* Re-invoke the lua stuff after this time */
+	set_entity_timer(ebase, config_get_int("colonize_duration"), COLONIZE_COMPLETE, base);
+
+	/* update map */
+	map_to_network();
+
+	/* TODO: Send out a json-update about this */
+
+	/* Return 1, denoting success! */
+	lua_pushnumber(L,1);
 	return 1;
 }
 

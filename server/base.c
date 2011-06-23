@@ -9,10 +9,15 @@
 entity_id_t init_base(entity_storage_t* s, entity_id_t planet, uint8_t size) {
 
 	entity_id_t id;
-	entity_t* e;
+	entity_t* e, *eplanet;
 	vector_t pos;
 
-	pos = get_entity_by_id(planet)->pos;
+	eplanet = get_entity_by_id(planet);
+	if(!eplanet) {
+		ERROR("Planet does not exist! Not creating base!");
+		return INVALID_ID;
+	}
+	pos = eplanet->pos;
 
 	id = alloc_entity(s);
 	e = get_entity_by_id(id);
@@ -20,7 +25,7 @@ entity_id_t init_base(entity_storage_t* s, entity_id_t planet, uint8_t size) {
 	init_entity(e, pos, BASE, size);
 
 	/* TODO: Calculate radius from size */
-	e->radius = 1;
+	e->radius = eplanet->radius;
 
 	/* TODO: Initialize mass 'n stuff */
 	e->player_id = 0;
