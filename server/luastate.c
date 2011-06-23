@@ -32,6 +32,7 @@ char* callback_names[NUM_EVENTS] = {
 	/* MINING_COMPLETE */ "on_mining_complete",
 	/* MANUFACTURE_COMPLETE */ "on_manufacture_complete",
 	/* COLONIZE_COMPLETE */ "on_colonize_complete",
+	/* UPGRADE_COMPLETE */ "on_upgrade_complete",
 };
 
 

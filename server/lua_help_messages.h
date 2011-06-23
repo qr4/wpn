@@ -171,6 +171,19 @@ static const char build_ship_help[] =
 "\n"
 "";
 
+static const char upgrade_base_help[] =
+"\n"
+"upgrade_base()\n"
+"\n"
+"Double the size of a planetary base. To do this you need ore in all slots and\n"
+"you may neither be busy nor be at the maximum size of 24 yet.\n"
+"\n"
+"Returns 1 on successful upgrade\n"
+"\n"
+"Callbacks set up: once the upgrade is finished on_upgrade_complete() is called\n"
+"\n"
+"";
+
 static const char fire_help[] = 
 "\n"
 "fire(entity)\n"

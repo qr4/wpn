@@ -43,6 +43,9 @@ int lua_send_data(lua_State* L);
 /* As a base, build a new empty ship running the default bios. */
 int lua_build_ship(lua_State* L);
 
+/* As a base you can grow */
+int lua_upgrade_base(lua_State* L);
+
 /* Pew pew pew */
 int lua_fire(lua_State* L);
 

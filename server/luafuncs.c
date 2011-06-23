@@ -44,6 +44,7 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_mine,                  "mine",                  mine_help},
 	{lua_manufacture,           "manufacture",           manufacture_help},
 	{lua_colonize,              "colonize",              colonize_help},
+	{lua_upgrade_base,          "upgrade_base",          upgrade_base_help},
 
 	/* Queries */
 	{lua_entity_to_string,      "entity_to_string",      entity_to_string_help},
@@ -1592,6 +1593,71 @@ int lua_colonize(lua_State* L) {
 	}
 
 	/* Return 1, denoting success! */
+	lua_pushnumber(L,1);
+	return 1;
+}
+
+/* As a base, use all the stored ore to double own size */
+int lua_upgrade_base(lua_State* L) {
+
+	entity_id_t self;
+	entity_t *eself;
+
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	switch(eself->slots) {
+		case 12:
+		case 6:
+		case 3:
+			break;
+		default:
+			lua_pushstring(L,"Can't upgrade a base of this size.");
+			lua_error(L);
+			return 0;
+	}
+
+	for(int i=0; i<eself->slots; i++) {
+		/* Upgrades happen from resource / ore */
+		if(eself->slot_data->slot[i] != ORE) {
+			lua_pushstring(L, "Attempted to upgrade using a non-resource block.");
+			lua_error(L);
+		}
+	}
+
+	/* Check that we are a base */
+	if(!eself->type == BASE) {
+		return 0;
+	}
+
+	/* Check that we're not currently busy */
+	if(is_busy(eself)) {
+		return 0;
+	}
+
+	/* So far, everything looks nice. Let's build a bigger base! */
+	slot_t* newslots = realloc(eself->slot_data->slot, 2*eself->slots*sizeof(slot_t));
+	if(!newslots) {
+		ERROR("Realloc of slots for base %lu failed\n", eself->unique_id.id);
+		exit(1);
+	}
+	eself->slot_data->slot = newslots;
+
+	/* Zero out the slots we used for building. */
+	for(int i=0; i<eself->slots; i++) {
+		eself->slot_data->slot[i] = EMPTY;
+	}
+
+	/* Double size */
+	eself->slots *= 2;
+
+	/* Let the world know it */
+	map_to_network();
+
+	/* Yeah, everything takes time... */
+	set_entity_timer(eself, config_get_int("upgrade_base_duration"), UPGRADE_COMPLETE, self);
+
+	/* Return 1 for success */
 	lua_pushnumber(L,1);
 	return 1;
 }

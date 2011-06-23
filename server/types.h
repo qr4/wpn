@@ -39,6 +39,7 @@ typedef enum {
 	MINING_COMPLETE,      // Digging pays off afterall
 	MANUFACTURE_COMPLETE, // Congratulations, you built something
 	COLONIZE_COMPLETE,  // A new planet has been colonized.
+	UPGRADE_COMPLETE,  // A base finished doubling its own size
 
 	NUM_EVENTS
 } event_t;

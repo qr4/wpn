@@ -31,6 +31,7 @@ mining_duration = 20
 manufacture_duration = 20
 build_ship_duration = 50
 colonize_duration = 50
+upgrade_base_duration = 50
 -- This better be a multiple of 24, so a large ship can fire every x timesteps
 laser_recharge_duration = 24
 
