@@ -119,7 +119,27 @@ void init_entity(entity_t *e, const vector_t pos, const type_t type, unsigned in
 		e->slot_data->slot = malloc(sizeof(slot_t) * slots);
 
 		for (i = 0; i < slots; i++) {
-			e->slot_data->slot[i] = EMPTY;
+			if(type != ASTEROID) {
+				e->slot_data->slot[i] = EMPTY;
+			} else {
+				double rnd = 100 * drand48();
+				rnd -= config_get_double("initial_asteroid_drive");
+				if(rnd < 0) {
+					e->slot_data->slot[i] = DRIVE;
+					continue;
+				}
+				rnd -= config_get_double("initial_asteroid_weapon");
+				if(rnd < 0) {
+					e->slot_data->slot[i] = WEAPON;
+					continue;
+				}
+				rnd -= config_get_double("initial_asteroid_ore");
+				if(rnd < 0) {
+					e->slot_data->slot[i] = ORE;
+					continue;
+				}
+				e->slot_data->slot[i] = EMPTY;
+			}
 		}
 	}
 
