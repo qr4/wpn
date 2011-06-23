@@ -1553,6 +1553,10 @@ int lua_colonize(lua_State* L) {
 	ebase->player_id = eself->player_id;
 	eplanet->player_id = eself->player_id;
 
+	/* Zero the timer */
+	ebase->base_data->timer_value=-1;
+	ebase->base_data->timer_event=0;
+
 	/* Set the new id as this lua states' "self"-pointer, as well as the active entity. */
 	lua_pushlightuserdata(L, (void*) base.id);
 	lua_setglobal(L,"self");
@@ -1568,6 +1572,19 @@ int lua_colonize(lua_State* L) {
 	map_to_network();
 
 	/* TODO: Send out a json-update about this */
+
+	/* Sanity check. */
+	ebase = get_entity_by_id(base);
+	if(!ebase) {
+		ERROR("While colonizing: something went wrong creating base!\n");
+	}
+	eself = get_entity_by_id(self);
+	if(eself) {
+		ERROR("While colonizing: something went wrong destroying ship!\n");
+	}
+	if(ebase->base_data->timer_value != config_get_int("colonize_duration")) {
+		ERROR("Timer not set. Hua?\n");
+	}
 
 	/* Return 1, denoting success! */
 	lua_pushnumber(L,1);
