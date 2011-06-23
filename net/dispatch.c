@@ -27,7 +27,7 @@ int dispatch(struct pipe_com* pc, int read_pipe, char** data, int* data_len) {
         pc->header._head + pc->read_head,   // header-position bestimmen, evtl. append
         sizeof((struct pipe_com*)0)->header - pc->read_head); // nicht ueber den kopf hinaus lesen
     if (read_len == -1) { log_perror("read from pipe"); return -1; }
-    if (read_len == 0) { log_msg("keine verbindung zum vater (2)"); return -1; }
+//    if (read_len == 0) { log_msg("keine verbindung zum vater (2)"); return -1; }
     pc->read_head += read_len;
     pc->read_body = 0;
     *data = 0;
@@ -43,7 +43,7 @@ int dispatch(struct pipe_com* pc, int read_pipe, char** data, int* data_len) {
  
   ssize_t read_len = read(read_pipe, buffer, buffer_size);
   if (read_len == -1) { log_perror("read from pipe"); return -1; } 
-  if (read_len == 0) { log_msg("keine verbindung zum vater (2)"); return -1; }
+//  if (read_len == 0) { log_msg("keine verbindung zum vater (2)"); return -1; }
   pc->read_body += read_len;
 
   buffer[read_len] = '\0';
