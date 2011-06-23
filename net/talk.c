@@ -272,7 +272,7 @@ struct automaton {
       " 1 Login-Passwort aendern\n"
       " 2 User-Info aendern\n"
       " 3 Noob-Mode aendern (-> Dein Code fuer Plagiatserkennungssoftware)\n"
-      " 4 ssh-key aendern\n"
+//      " 4 ssh-key aendern\n"
       "\n"
       " 0 Main-Menu\n"
       "\n",
@@ -282,20 +282,24 @@ struct automaton {
   },
   {
     .msg = "\n"
-      " So, 1x Loginpasswort aendern\n"
+      " So, 1x Loginpasswort aendern...\n"
       "\n",
     .prompt = "100 altes passwort: ",
     .fkt = _change_password_old,
     .state = CHANGE_PASSWORD_OLD
   },
   {
-    .msg = "",
-    .prompt = "101 passwort: ",
+    .msg = "\n"
+      " Und nun das neue Passwort... Remember: mindestens 6 Zeichen.\n"
+      "\n",
+    .prompt = "101 neues passwort: ",
     .fkt = _change_password_new1,
     .state = CHANGE_PASSWORD_NEW1
   },
   {
-    .msg = "",
+    .msg = "\n"
+      " und noch 1x zur Sicherheit...\n"
+      "\n",
     .prompt = "102 passwort: ",
     .fkt = _change_password_new2,
     .state = CHANGE_PASSWORD_NEW2
@@ -743,7 +747,8 @@ int _menu_config(char* data, int len, struct userstate* us, int write_fd) {
     case '1': return set_state(CHANGE_PASSWORD_OLD, us, write_fd);
     case '2': return set_state(CHANGE_USER_INFO, us, write_fd);
     case '3': return set_state(CHANGE_NOOB, us, write_fd);
-    case '4': return set_state(CHANGE_SSH_KEY, us, write_fd);
+//    case '4': return set_state(CHANGE_SSH_KEY, us, write_fd);
+    case '0': return set_state(MENU_MAIN, us, write_fd);
     default: return print_msg_and_prompt(write_fd, msg, sizeof(msg), us);
   }
 }
@@ -752,6 +757,27 @@ int _menu_config(char* data, int len, struct userstate* us, int write_fd) {
 //
 //
 int _change_password_old(char* data, int len, struct userstate* us, int write_fd) {
+  struct pstr path = { .used = 0 };
+  pstr_append_printf(&path, USER_HOME_BY_ID "/%d/passwd", us->id);
+
+  struct pstr hash_platte, hash_user;
+  if (pstr_read_file(&path, &hash_platte) == -1) {
+    log_msg("_change_password_old: user %d nicht gefunden, path = %s", us->id, pstr_as_cstr(&path));
+    log_perror("pw-file kann nicht geoeffnet werden");
+    return -1;
+  }
+  crypt_passwd((const void*)data, (unsigned long)len, &hash_user);
+
+  if (pstr_cmp(&hash_user, &hash_platte) == 0) {
+    // passwort okay
+    dstr_clear(&us->tmp);
+    us->count = 0;
+    return set_state(CHANGE_PASSWORD_NEW1, us, write_fd);
+  }
+
+  const char msg[] = "550 Passowrt falsch\n";
+  print_msg_and_prompt(write_fd, msg, sizeof(msg), NULL);
+
   return set_state(MENU_CONFIG, us, write_fd);
 }
 
@@ -759,13 +785,46 @@ int _change_password_old(char* data, int len, struct userstate* us, int write_fd
 //
 //
 int _change_password_new1(char* data, int len, struct userstate* us, int write_fd) {
-  return set_state(MENU_CONFIG, us, write_fd);
+  if (len < 6) {
+    if (++us->count > 3) { goto err; }
+    const char msg[] = "504 Dein Passwort ist zu kurz.\n";
+    return print_msg_and_prompt(write_fd, msg, sizeof(msg), us);
+  }
+
+  us->count = 0;
+  dstr_set(&us->tmp, data, len);
+
+  return set_state(CHANGE_PASSWORD_NEW2, us, write_fd);
+
+err:
+  {
+    const char msg[] = "500 Wie oft willst Du da noch was ungueltiges eingeben??\n";
+    print_msg_and_prompt(write_fd, msg, sizeof(msg), NULL);
+    return set_state(MENU_CONFIG, us, write_fd);
+  }
 }
 
 //
 //
 //
 int _change_password_new2(char* data, int len, struct userstate* us, int write_fd) {
+  if ( (dstr_len(&us->tmp) != len) || (strncmp(dstr_as_cstr(&us->tmp), data, len)) ) {
+    const char msg[] = "505 Die eingegebenen Passwoerter stimmen nicht ueberein. Nochmal!\n";
+    print_msg_and_prompt(write_fd, msg, sizeof(msg), NULL);
+    return set_state(CHANGE_PASSWORD_NEW1, us, write_fd);
+  }
+
+  struct pstr hash;
+  crypt_passwd(data, len, &hash);
+
+  struct pstr file = { .used = 0 };
+  pstr_append_printf(&file, USER_HOME_BY_ID "/%d/passwd", us->id);
+  if (pstr_write_file(&file, &hash, O_WRONLY | O_TRUNC) == -1) {
+    log_msg("probleme beim schreiben von %s", pstr_as_cstr(&file));
+    log_perror("_change_password_new2");
+    return -1;
+  }
+
   return set_state(MENU_CONFIG, us, write_fd);
 }
 
