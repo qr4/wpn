@@ -886,7 +886,7 @@ int _change_user_info(char* data, int len, struct userstate* us, int write_fd) {
       struct pstr file = { .used = 0 };
       pstr_append_printf(&file, USER_HOME_BY_ID"/%d/msg", us->id);
       log_msg("schreibe text = %s", dstr_as_cstr(&us->tmp));
-      if (dstr_write_file(&file, &us->tmp, O_WRONLY | O_TRUNC) == -1) {
+      if (dstr_write_file(&file, &us->tmp, O_WRONLY | O_TRUNC | O_CREAT) == -1) {
         log_msg("probleme beim schreiben von %s", pstr_as_cstr(&file));
         log_perror("_change_user_info");
         return -1;
