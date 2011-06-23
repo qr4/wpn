@@ -178,25 +178,25 @@ void net_client_talk(int fd, fd_set* master) {
     return;
   }
 
-  log_msg("<%d> client sagt >%.*s<", fd, len, buffer);
+//  log_msg("<%d> client sagt >%.*s<", fd, len, buffer);
 }
 
 //
 // timeout - verwenden um langsamen clients neue daten reinzudruecken
 //
 void net_timer(struct timeval* tv) {
-  log_msg("timer hat zugeschlagen!!!");
+//  log_msg("timer hat zugeschlagen!!!");
   int haveMoreWork = 0;
   for (int fd = 0; fd < MAX_CONNECTION; ++fd) {
     switch(net.nc[fd].status) {
       case NETCS_NEW_CONNECTED:
       {
-        log_msg("-------------------------------------");
+//        log_msg("-------------------------------------");
         struct stat st;
         int ret = fstat(net.nc[fd].data_fd, &st);
         if (ret == -1) { log_perror("fstat"); break; }
 
-        log_msg("MAP fd = %d, size = %d", net.nc[fd].data_fd, st.st_size);
+//        log_msg("MAP fd = %d, size = %d", net.nc[fd].data_fd, st.st_size);
 
         char* data = mmap(0, st.st_size, PROT_READ, MAP_PRIVATE, net.nc[fd].data_fd, 0);
         if (data == (char*)-1) { log_perror("mmap"); break; }
@@ -219,12 +219,12 @@ void net_timer(struct timeval* tv) {
       } while(0);
       case NETCS_UPDATE_IN_PROGRESS:
       {
-        log_msg("-------------------------------------");
+//        log_msg("-------------------------------------");
         struct stat st;
         int ret = fstat(net.nc[fd].data_fd, &st);
         if (ret == -1) { log_perror("fstat"); break; }
 
-        log_msg("UPDATE fd = %d, size = %d", net.nc[fd].data_fd, st.st_size);
+//        log_msg("UPDATE fd = %d, size = %d", net.nc[fd].data_fd, st.st_size);
 
         char* data = mmap(0, st.st_size, PROT_READ, MAP_PRIVATE, net.nc[fd].data_fd, 0);
         if (data == (char*)-1) { log_perror("mmap"); break; }
@@ -260,7 +260,7 @@ void net_timer(struct timeval* tv) {
     tv->tv_usec = 0;
   }
 
-  log_msg("");
+//  log_msg("");
 }
 
 //
@@ -277,7 +277,7 @@ int net_pipe(int fd, struct timeval* tv) {
     return -1;
   }
 
-  log_msg("neue sachen zum verteilen (%.*s)...", len, buffer);
+//  log_msg("neue sachen zum verteilen (%.*s)...", len, buffer);
 
   char map[] = NET_MAP;
   char update[] = NET_UPDATE;
