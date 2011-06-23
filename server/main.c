@@ -206,26 +206,25 @@ int main(int argc, char *argv[]) {
 			}
 			double dist = collision_dist(e, c)+1;
 			if(dist < 0) {
-				if(c->type == SHIP) {
-					DEBUG("{\n\tEntity %lu:\n\tpos: %f,  %f\n\tv: %f, %f\n\ttype: %s\n\tslots: %i\n\tplayer: %i\n\tradius: %f\n} might be colliding with \n", (size_t)e->unique_id.id, e->pos.x, e->pos.y, e->v.x, e->v.y, type_string(e->type), e->slots, e->player_id, e->radius);
-					DEBUG("Hit ship at (%f, %f), radius %f\n", c->pos.x, c->pos.y, c->radius);
-					explode_entity(e);
-					explode_entity(c);
-					continue;
+#ifdef ENABLE_DEBUG
+				char* temp;
+				temp = slots_to_string(e);
+				DEBUG("{\n\tEntity %lu:\n\tpos: %f,  %f\n\tv: %f, %f\n\ttype: %s\n\tslots: %i\n\tplayer: %i\n\tcontents: [%s]\n\tradius: %f\n} might be colliding with \n", (size_t)e->unique_id.id, e->pos.x, e->pos.y, e->v.x, e->v.y, type_string(e->type), e->slots, e->player_id, temp, e->radius);
+				free(temp);
+				if(c->type == PLANET) {
+					DEBUG("Planet belongs to cluster at (%f, %f), radius %f\n", c->planet_data->cluster->pos.x, c->planet_data->cluster->pos.y, c->planet_data->cluster->radius);
+				} else if(c->type == ASTEROID) {
+					DEBUG("Asteroid belongs to cluster at (%f, %f), radius %f\n", c->asteroid_data->cluster->pos.x, c->asteroid_data->cluster->pos.y, c->asteroid_data->cluster->radius);
+				} else if(c->type == SHIP) {
+					DEBUG("Another ship at (%f, %f), radius %f\n", c->pos.x, c->pos.y, c->radius);
 				} else {
-					char* temp;
-					temp = slots_to_string(e);
-					ERROR("{\n\tEntity %lu:\n\tpos: %f,  %f\n\tv: %f, %f\n\ttype: %s\n\tslots: %i\n\tplayer: %i\n\tcontents: [%s]\n\tradius: %f\n} might be colliding with \n", (size_t)e->unique_id.id, e->pos.x, e->pos.y, e->v.x, e->v.y, type_string(e->type), e->slots, e->player_id, temp, e->radius);
-					free(temp);
-					if(c->type == PLANET) {
-						ERROR("Planet belongs to cluster at (%f, %f), radius %f\n", c->planet_data->cluster->pos.x, c->planet_data->cluster->pos.y, c->planet_data->cluster->radius);
-					} else if(c->type == ASTEROID) {
-						ERROR("Asteroid belongs to cluster at (%f, %f), radius %f\n", c->asteroid_data->cluster->pos.x, c->asteroid_data->cluster->pos.y, c->asteroid_data->cluster->radius);
-					} else if(c->type != SHIP) {
-						ERROR("Some other entity of type %d\n", c->type);
-					}
-					ERROR("dist = %f\n\n\n\n", dist);
-					exit(1);
+					DEBUG("Some other entity of type %d\n", c->type);
+				}
+				DEBUG("dist = %f\n\n\n\n", dist);
+#endif
+				explode_entity(e);
+				if(c->type == SHIP) {
+					explode_entity(c);
 				}
 			}
 		}
