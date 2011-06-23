@@ -1647,15 +1647,15 @@ int lua_upgrade_base(lua_State* L) {
 	}
 	eself->slot_data->slot = newslots;
 
-	/* Zero out the slots we used for building. */
+	/* Double size */
+	eself->slots *= 2;
+
+	/* Zero out all slots */
 	for(int i=0; i<eself->slots; i++) {
 		eself->slot_data->slot[i] = EMPTY;
 	}
 
-	/* Double size */
-	eself->slots *= 2;
-
-	/* Let the world know it */
+	/* Let the world know about the upgrade */
 	map_to_network();
 
 	/* Yeah, everything takes time... */
