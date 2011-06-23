@@ -111,17 +111,17 @@ int main(int argc, char *argv[]) {
 	evaluate_all_player_code();
 
 	/* Create a test user and -ships */
-	entity_id_t ship1;
-	for(int i=0; i<200; i++)  {
-		vector_t v1 = vector(i);
-		ship1 = init_ship(ship_storage, v1, 6);
-		e = get_entity_by_id(ship1);
-		if(e) {
-			e->player_id = 100;
-			e->ship_data->slot[0] = DRIVE;
-			register_object(e);
-		}
-	}
+	//entity_id_t ship1;
+	//for(int i=0; i<200; i++)  {
+	//	vector_t v1 = vector(i);
+	//	ship1 = init_ship(ship_storage, v1, 6);
+	//	e = get_entity_by_id(ship1);
+	//	if(e) {
+	//		e->player_id = 100;
+	//		e->ship_data->slot[0] = DRIVE;
+	//		register_object(e);
+	//	}
+	//}
 
 	map_to_network();
 
@@ -246,7 +246,7 @@ int main(int argc, char *argv[]) {
 		t_prev = t;
 	}
 
-	free_entity(ship_storage,ship1);
+	//free_entity(ship_storage,ship1);
 
 	free_all_storages();
 	free_map();

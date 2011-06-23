@@ -1307,8 +1307,35 @@ int lua_build_ship(lua_State* L) {
 	vector_t pos;
 
 	n = lua_gettop(L);
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+
+	if (n == 1) {
+		/* Are we building a ship using an index table?
+		 * Then push all indexes on the stack, set n properly and
+		 * continue as if the function was called with explicit indexes
+		 */
+
+		int table_position = n;
+
+		if (!lua_istable(L, table_position)) {
+			lua_pushstring(L, "Expected table as argument\n");
+			lua_error(L);
+		}
+
+		n = lua_objlen(L, table_position);   // size of the table, hence the number of slots used to build a ship
+
+		for (int i = 0; i < n; i++) {
+			lua_pushinteger(L, i + 1);
+			lua_gettable(L, table_position); // get value from table
+		}
+
+		lua_remove(L, table_position);       // delete the table from the stack, leaving only indexes behind
+	}
 
 	switch(n) {
+		// build ship from explicit slots: build_ship(slot1, slot2, ...)
 		case 24:
 		case 12:
 		case 6:
@@ -1319,9 +1346,6 @@ int lua_build_ship(lua_State* L) {
 			lua_error(L);
 			return 0;
 	}
-
-	self = get_self(L);
-	eself = get_entity_by_id(self);
 
 	/* Check the arguments */
 	/* TODO: Should all errors here really be fatal for the ship? */
