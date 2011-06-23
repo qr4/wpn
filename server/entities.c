@@ -32,7 +32,7 @@ ETRANSFER swap_slots(entity_t *left, unsigned int pos_left, entity_t *right, uns
 	slot_t t;
 
 	t = *slot_left;
-	*slot_left = *slot_left;
+	*slot_left = *slot_right;
 	*slot_right = t;
 
 	return OK;

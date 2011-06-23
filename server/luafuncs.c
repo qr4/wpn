@@ -989,10 +989,16 @@ int lua_transfer_slot(lua_State* L) {
 	}
 
 	/* Swap the slots */
-	if(swap_slots(eself, local_slot, e, remote_slot) != OK) {
+	switch(swap_slots(eself, local_slot, e, remote_slot)) {
 
-		/* Somethings has gone wrong. */
-		return 0;
+		case OUT_OF_BOUNDS_LEFT:
+			DEBUG("Out of bounds in source of transfer\n");
+			return 0;
+		case OUT_OF_BOUNDS_RIGHT:
+			DEBUG("Out of bounds in target of transfer\n");
+			return 0;
+		case OK:
+			break;
 	}
 
 	/* Now the little robognomes on board are busy carrying over the chests. */
