@@ -766,7 +766,8 @@ int _menu_config(char* data, int len, struct userstate* us, int write_fd) {
                 if (dstr_read_file(&file, &us->tmp) == -1) { 
                   log_msg("kann %s nicht lesen", pstr_as_cstr(&file));
                   log_perror("read msg"); 
-                  return -1; 
+                  const char msg[] = "-- TEXT NICHT GEFUNDEN --\n";
+                  dstr_set(&us->tmp, msg, sizeof(msg));
                 }
                 if (print_msg_and_prompt(write_fd, dstr_as_cstr(&us->tmp), dstr_len(&us->tmp), NULL) == -1) { return -1; }
                 dstr_clear(&us->tmp);
