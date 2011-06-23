@@ -236,7 +236,7 @@ entity_id_t *get_entities(const vector_t pos, const double search_radius, const 
 				}
 			}
 
-			if (filter & (ASTEROID | PLANET)) {
+			if (filter & (ASTEROID | PLANET | BASE)) {
 				for (i = 0; i < quad->static_objects; i++) {
 					if (filter & quad->static_object[i].type 
 							&& vector_dist(&pos, &get_entity_by_id(quad->static_object[i])->pos) < search_radius) {
@@ -298,7 +298,7 @@ entity_t *find_closest(entity_t *e, const double radius, const unsigned int filt
 				}
 			}
 
-			if (filter & (ASTEROID | PLANET)) {
+			if (filter & (ASTEROID | PLANET | BASE)) {
 				for (i = 0; i < quad->static_objects; i++) {
 					if (filter & quad->static_object[i].type 
 							&& e->unique_id.id != quad->static_object[i].id
