@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
+
 <svg
    xmlns:dc="http://purl.org/dc/elements/1.1/"
    xmlns:cc="http://creativecommons.org/ns#"
@@ -13,7 +14,7 @@
    height="300"
    id="svg6085"
    sodipodi:version="0.32"
-   inkscape:version="0.46"
+   inkscape:version="0.47 r22583"
    sodipodi:docname="gpn-handlungen-gedockt.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
    version="1.0"
@@ -717,9 +718,10 @@
      showguides="true"
      inkscape:guide-bbox="true"
      inkscape:window-width="1431"
-     inkscape:window-height="916"
-     inkscape:window-x="231"
-     inkscape:window-y="46">
+     inkscape:window-height="900"
+     inkscape:window-x="22"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0">
     <inkscape:grid
        type="xygrid"
        id="grid6095"
@@ -808,7 +810,7 @@
          y="0"
          x="0" />
       <path
-         d="M 114,152.36218 A 3,3 0 1 1 108,152.36218 A 3,3 0 1 1 114,152.36218 z"
+         d="m 114,152.36218 c 0,1.65686 -1.34315,3 -3,3 -1.65685,0 -3,-1.34314 -3,-3 0,-1.65685 1.34315,-3 3,-3 1.65685,0 3,1.34315 3,3 z"
          sodipodi:ry="3"
          sodipodi:rx="3"
          sodipodi:cy="152.36218"
@@ -960,7 +962,7 @@
          sodipodi:cy="152.36218"
          sodipodi:rx="1"
          sodipodi:ry="1"
-         d="M 112,152.36218 A 1,1 0 1 1 110,152.36218 A 1,1 0 1 1 112,152.36218 z" />
+         d="m 112,152.36218 c 0,0.55229 -0.44772,1 -1,1 -0.55228,0 -1,-0.44771 -1,-1 0,-0.55228 0.44772,-1 1,-1 0.55228,0 1,0.44772 1,1 z" />
       <path
          id="path9938"
          d="M 120,152.36218 L 120,149.36218 L 122,149.36218 L 122,148.36218 L 124,148.36218"
@@ -1058,19 +1060,19 @@
        id="text3917"
        y="216.13353"
        x="206.47063"
-       style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+       style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
        xml:space="preserve"><tspan
          y="216.13353"
          x="206.47063"
          id="tspan3919"
-         sodipodi:role="line">TransferTo(slot, slot)</tspan></text>
+         sodipodi:role="line">transfer_slot(slot, slot)</tspan></text>
     <path
        style="fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#515151;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="M 202.46827,220.23977 L 286.24824,220.23977"
        id="path3921" />
     <text
        xml:space="preserve"
-       style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+       style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
        x="206.47063"
        y="227.9812"
        id="text3923"
@@ -1086,7 +1088,7 @@
          sodipodi:role="line"
          x="206.47063"
          y="240.10287"
-         id="tspan6534">Partner.</tspan><tspan
+         id="tspan3299">Partner.</tspan><tspan
          sodipodi:role="line"
          x="206.47063"
          y="246.16373"
@@ -1145,7 +1147,7 @@
            style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:bevel;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0.96078431;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
         <text
            xml:space="preserve"
-           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
            x="206.47063"
            y="216.13353"
            id="text3986"
@@ -1153,7 +1155,7 @@
              sodipodi:role="line"
              id="tspan3988"
              x="206.47063"
-             y="216.13353">ShootAt(x,y)</tspan></text>
+             y="216.13353">fire(entity)</tspan></text>
         <path
            id="path3990"
            d="M 202.46827,220.23977 L 286.24824,220.23977"
@@ -1163,7 +1165,7 @@
            id="text3992"
            y="227.9812"
            x="206.47063"
-           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
            xml:space="preserve"><tspan
              id="tspan3998"
              y="227.9812"
@@ -1172,12 +1174,12 @@
              id="tspan4005"
              y="234.04204"
              x="206.47063"
-             sodipodi:role="line">die angegebenen Koordinaten.</tspan><tspan
+             sodipodi:role="line">das angegebene Objekt.</tspan><tspan
              id="tspan4007"
              y="240.10287"
              x="206.47063"
              sodipodi:role="line">Schiesst sofort, blockt aber bis</tspan><tspan
-             y="252.22456"
+             y="246.16373"
              x="206.47063"
              sodipodi:role="line"
              id="tspan4046">die Waffen wieder geladen sind.</tspan></text>
@@ -1197,7 +1199,7 @@
            style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:bevel;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0.96078431;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
         <text
            xml:space="preserve"
-           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
            x="206.47063"
            y="216.13353"
            id="text4027"
@@ -1205,7 +1207,7 @@
              sodipodi:role="line"
              id="tspan4029"
              x="206.47063"
-             y="216.13353">TransferFrom(slot, slot)</tspan></text>
+             y="216.13353">send_data(code)</tspan></text>
         <path
            id="path4031"
            d="M 202.46827,220.23977 L 286.24824,220.23977"
@@ -1215,28 +1217,24 @@
            id="text4033"
            y="227.9812"
            x="206.47063"
-           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
            xml:space="preserve"><tspan
-             id="tspan4050"
              y="227.9812"
              x="206.47063"
-             sodipodi:role="line">Transferiere zeug vom dock-</tspan><tspan
+             sodipodi:role="line"
+             id="tspan6521">Sende lua-source oder </tspan><tspan
              y="234.04204"
              x="206.47063"
              sodipodi:role="line"
-             id="tspan6515">Partner in einen eigenen freien</tspan><tspan
+             id="tspan3317">-bytecode an den docking-</tspan><tspan
              y="240.10287"
              x="206.47063"
              sodipodi:role="line"
-             id="tspan6517">Slot.</tspan><tspan
+             id="tspan3319">partner, der diesen ausführen</tspan><tspan
              y="246.16373"
              x="206.47063"
              sodipodi:role="line"
-             id="tspan6519">Blockt, bis es fertig übertragen</tspan><tspan
-             y="252.22456"
-             x="206.47063"
-             sodipodi:role="line"
-             id="tspan6521">ist.</tspan></text>
+             id="tspan3321">kann (wenn er will).</tspan></text>
       </g>
     </g>
     <g
@@ -1256,7 +1254,7 @@
              style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:bevel;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0.96078431;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
           <text
              xml:space="preserve"
-             style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+             style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
              x="206.47063"
              y="216.13353"
              id="text4068"
@@ -1264,7 +1262,7 @@
                sodipodi:role="line"
                id="tspan4070"
                x="206.47063"
-               y="216.13353">Undock()</tspan></text>
+               y="216.13353">undock()</tspan></text>
           <path
              id="path4072"
              d="M 202.46827,220.23977 L 286.24824,220.23977"
@@ -1310,7 +1308,7 @@
            style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:bevel;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0.96078431;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
         <text
            xml:space="preserve"
-           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
            x="206.47063"
            y="216.13353"
            id="text4112"
@@ -1318,7 +1316,7 @@
              sodipodi:role="line"
              id="tspan4114"
              x="206.47063"
-             y="216.13353">Wait(time)</tspan></text>
+             y="216.13353">set_timer(time)</tspan></text>
         <path
            id="path4116"
            d="M 202.46827,220.23977 L 286.24824,220.23977"
@@ -1388,7 +1386,7 @@
              style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:bevel;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0.96078431;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
           <text
              xml:space="preserve"
-             style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+             style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
              x="206.47063"
              y="216.13353"
              id="text4174"
@@ -1396,7 +1394,7 @@
                sodipodi:role="line"
                id="tspan4176"
                x="206.47063"
-               y="216.13353">Scan()</tspan></text>
+               y="216.13353">get_entities(filter, range)</tspan></text>
           <path
              id="path4178"
              d="M 202.46827,220.23977 L 286.24824,220.23977"
@@ -1567,7 +1565,7 @@
          inkscape:tile-cy="99.85203"
          inkscape:tile-cx="17.490957"
          transform="translate(-4.009043,-1.0101525)"
-         d="M 22,100.86218 A 0.5,0.5 0 1 1 21,100.86218 A 0.5,0.5 0 1 1 22,100.86218 z"
+         d="m 22,100.86218 c 0,0.27614 -0.223858,0.5 -0.5,0.5 -0.276142,0 -0.5,-0.22386 -0.5,-0.5 0,-0.27614 0.223858,-0.5 0.5,-0.5 0.276142,0 0.5,0.22386 0.5,0.5 z"
          sodipodi:ry="0.5"
          sodipodi:rx="0.5"
          sodipodi:cy="100.86218"
@@ -1927,7 +1925,7 @@
          sodipodi:cy="100.86218"
          sodipodi:rx="0.5"
          sodipodi:ry="0.5"
-         d="M 22,100.86218 A 0.5,0.5 0 1 1 21,100.86218 A 0.5,0.5 0 1 1 22,100.86218 z"
+         d="m 22,100.86218 c 0,0.27614 -0.223858,0.5 -0.5,0.5 -0.276142,0 -0.5,-0.22386 -0.5,-0.5 0,-0.27614 0.223858,-0.5 0.5,-0.5 0.276142,0 0.5,0.22386 0.5,0.5 z"
          transform="translate(-4.009043,-1.0101525)"
          inkscape:tile-cx="17.490957"
          inkscape:tile-cy="99.85203"
@@ -2287,7 +2285,7 @@
          inkscape:tile-cy="99.85203"
          inkscape:tile-cx="17.490957"
          transform="translate(-4.009043,-1.0101525)"
-         d="M 22,100.86218 A 0.5,0.5 0 1 1 21,100.86218 A 0.5,0.5 0 1 1 22,100.86218 z"
+         d="m 22,100.86218 c 0,0.27614 -0.223858,0.5 -0.5,0.5 -0.276142,0 -0.5,-0.22386 -0.5,-0.5 0,-0.27614 0.223858,-0.5 0.5,-0.5 0.276142,0 0.5,0.22386 0.5,0.5 z"
          sodipodi:ry="0.5"
          sodipodi:rx="0.5"
          sodipodi:cy="100.86218"
@@ -2647,7 +2645,7 @@
          sodipodi:cy="100.86218"
          sodipodi:rx="0.5"
          sodipodi:ry="0.5"
-         d="M 22,100.86218 A 0.5,0.5 0 1 1 21,100.86218 A 0.5,0.5 0 1 1 22,100.86218 z"
+         d="m 22,100.86218 c 0,0.27614 -0.223858,0.5 -0.5,0.5 -0.276142,0 -0.5,-0.22386 -0.5,-0.5 0,-0.27614 0.223858,-0.5 0.5,-0.5 0.276142,0 0.5,0.22386 0.5,0.5 z"
          transform="translate(-4.009043,-1.0101525)"
          inkscape:tile-cx="17.490957"
          inkscape:tile-cy="99.85203"
@@ -3007,7 +3005,7 @@
          inkscape:tile-cy="99.85203"
          inkscape:tile-cx="17.490957"
          transform="translate(-4.009043,-1.0101525)"
-         d="M 22,100.86218 A 0.5,0.5 0 1 1 21,100.86218 A 0.5,0.5 0 1 1 22,100.86218 z"
+         d="m 22,100.86218 c 0,0.27614 -0.223858,0.5 -0.5,0.5 -0.276142,0 -0.5,-0.22386 -0.5,-0.5 0,-0.27614 0.223858,-0.5 0.5,-0.5 0.276142,0 0.5,0.22386 0.5,0.5 z"
          sodipodi:ry="0.5"
          sodipodi:rx="0.5"
          sodipodi:cy="100.86218"
@@ -3367,7 +3365,7 @@
          sodipodi:cy="100.86218"
          sodipodi:rx="0.5"
          sodipodi:ry="0.5"
-         d="M 22,100.86218 A 0.5,0.5 0 1 1 21,100.86218 A 0.5,0.5 0 1 1 22,100.86218 z"
+         d="m 22,100.86218 c 0,0.27614 -0.223858,0.5 -0.5,0.5 -0.276142,0 -0.5,-0.22386 -0.5,-0.5 0,-0.27614 0.223858,-0.5 0.5,-0.5 0.276142,0 0.5,0.22386 0.5,0.5 z"
          transform="translate(-4.009043,-1.0101525)"
          inkscape:tile-cx="17.490957"
          inkscape:tile-cy="99.85203"

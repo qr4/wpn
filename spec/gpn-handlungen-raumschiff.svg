@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
+
 <svg
    xmlns:dc="http://purl.org/dc/elements/1.1/"
    xmlns:cc="http://creativecommons.org/ns#"
@@ -13,7 +14,7 @@
    height="300"
    id="svg6085"
    sodipodi:version="0.32"
-   inkscape:version="0.46"
+   inkscape:version="0.47 r22583"
    sodipodi:docname="gpn-handlungen-raumschiff.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
    version="1.0"
@@ -476,16 +477,17 @@
      inkscape:pageshadow="2"
      inkscape:zoom="2.3633333"
      inkscape:cx="209.73335"
-     inkscape:cy="151.19806"
+     inkscape:cy="168.12331"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      showguides="true"
      inkscape:guide-bbox="true"
      inkscape:window-width="1431"
-     inkscape:window-height="916"
+     inkscape:window-height="900"
      inkscape:window-x="0"
-     inkscape:window-y="29">
+     inkscape:window-y="29"
+     inkscape:window-maximized="0">
     <inkscape:grid
        type="xygrid"
        id="grid6095"
@@ -574,7 +576,7 @@
          y="0"
          x="0" />
       <path
-         d="M 114,152.36218 A 3,3 0 1 1 108,152.36218 A 3,3 0 1 1 114,152.36218 z"
+         d="m 114,152.36218 c 0,1.65686 -1.34315,3 -3,3 -1.65685,0 -3,-1.34314 -3,-3 0,-1.65685 1.34315,-3 3,-3 1.65685,0 3,1.34315 3,3 z"
          sodipodi:ry="3"
          sodipodi:rx="3"
          sodipodi:cy="152.36218"
@@ -726,7 +728,7 @@
          sodipodi:cy="152.36218"
          sodipodi:rx="1"
          sodipodi:ry="1"
-         d="M 112,152.36218 A 1,1 0 1 1 110,152.36218 A 1,1 0 1 1 112,152.36218 z" />
+         d="m 112,152.36218 c 0,0.55229 -0.44772,1 -1,1 -0.55228,0 -1,-0.44771 -1,-1 0,-0.55228 0.44772,-1 1,-1 0.55228,0 1,0.44772 1,1 z" />
       <path
          id="path9938"
          d="M 120,152.36218 L 120,149.36218 L 122,149.36218 L 122,148.36218 L 124,148.36218"
@@ -814,7 +816,7 @@
          style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:bevel;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0.96078431;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
       <text
          xml:space="preserve"
-         style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+         style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
          x="206.47063"
          y="216.13353"
          id="text3917"
@@ -822,7 +824,7 @@
            sodipodi:role="line"
            id="tspan3919"
            x="206.47063"
-           y="216.13353">MoveTo(x,y)</tspan></text>
+           y="216.13353">moveto(x,y)</tspan></text>
       <path
          id="path3921"
          d="M 202.46827,220.23977 L 286.24824,220.23977"
@@ -845,7 +847,7 @@
            id="tspan3933"
            y="240.10287"
            x="206.47063"
-           sodipodi:role="line">Blockt, bis es dort ist.</tspan></text>
+           sodipodi:role="line" /></text>
     </g>
     <g
        id="g4011"
@@ -862,7 +864,7 @@
            style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:bevel;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0.96078431;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
         <text
            xml:space="preserve"
-           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
            x="206.47063"
            y="216.13353"
            id="text3986"
@@ -870,7 +872,7 @@
              sodipodi:role="line"
              id="tspan3988"
              x="206.47063"
-             y="216.13353">ShootAt(x,y)</tspan></text>
+             y="216.13353">fire(entity)</tspan></text>
         <path
            id="path3990"
            d="M 202.46827,220.23977 L 286.24824,220.23977"
@@ -880,7 +882,7 @@
            id="text3992"
            y="227.9812"
            x="206.47063"
-           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
            xml:space="preserve"><tspan
              id="tspan3998"
              y="227.9812"
@@ -889,7 +891,7 @@
              id="tspan4005"
              y="234.04204"
              x="206.47063"
-             sodipodi:role="line">die angegebenen Koordinaten.</tspan><tspan
+             sodipodi:role="line">das angegebene Objekt.</tspan><tspan
              id="tspan4007"
              y="240.10287"
              x="206.47063"
@@ -915,7 +917,7 @@
            style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:bevel;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0.96078431;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
         <text
            xml:space="preserve"
-           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
            x="206.47063"
            y="216.13353"
            id="text4027"
@@ -923,7 +925,7 @@
              sodipodi:role="line"
              id="tspan4029"
              x="206.47063"
-             y="216.13353">CanDock?(entity)</tspan></text>
+             y="216.13353">set_autopilot_to(x, y)</tspan></text>
         <path
            id="path4031"
            d="M 202.46827,220.23977 L 286.24824,220.23977"
@@ -933,16 +935,20 @@
            id="text4033"
            y="227.9812"
            x="206.47063"
-           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
            xml:space="preserve"><tspan
-             id="tspan4039"
+             id="tspan4050"
              y="227.9812"
              x="206.47063"
-             sodipodi:role="line">Überprüft,  ob &lt;entity&gt; gedockt</tspan><tspan
-             id="tspan4050"
+             sodipodi:role="line">Fliegt mit dem intelligenten</tspan><tspan
              y="234.04204"
              x="206.47063"
-             sodipodi:role="line">werden kann.</tspan></text>
+             sodipodi:role="line"
+             id="tspan3027">Autopilot (TM) an die ange-</tspan><tspan
+             y="240.10287"
+             x="206.47063"
+             sodipodi:role="line"
+             id="tspan3029">gebenen Koordinaten.</tspan></text>
       </g>
     </g>
     <g
@@ -962,7 +968,7 @@
              style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:bevel;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0.96078431;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
           <text
              xml:space="preserve"
-             style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+             style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
              x="206.47063"
              y="216.13353"
              id="text4068"
@@ -970,7 +976,7 @@
                sodipodi:role="line"
                id="tspan4070"
                x="206.47063"
-               y="216.13353">Dock(entity)</tspan></text>
+               y="216.13353">dock(entity)</tspan></text>
           <path
              id="path4072"
              d="M 202.46827,220.23977 L 286.24824,220.23977"
@@ -1020,7 +1026,7 @@
            style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:bevel;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0.96078431;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
         <text
            xml:space="preserve"
-           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+           style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
            x="206.47063"
            y="216.13353"
            id="text4112"
@@ -1028,7 +1034,7 @@
              sodipodi:role="line"
              id="tspan4114"
              x="206.47063"
-             y="216.13353">Wait(time)</tspan></text>
+             y="216.13353">set_timer(time)</tspan></text>
         <path
            id="path4116"
            d="M 202.46827,220.23977 L 286.24824,220.23977"
@@ -1099,7 +1105,7 @@
              style="opacity:1;fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:bevel;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0.96078431;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" />
           <text
              xml:space="preserve"
-             style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+             style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
              x="206.47063"
              y="216.13353"
              id="text4174"
@@ -1107,7 +1113,7 @@
                sodipodi:role="line"
                id="tspan4176"
                x="206.47063"
-               y="216.13353">Scan()</tspan></text>
+               y="216.13353">get_entities(filter, range)</tspan></text>
           <path
              id="path4178"
              d="M 202.46827,220.23977 L 286.24824,220.23977"
@@ -1285,12 +1291,12 @@
          id="text7022"
          y="216.13353"
          x="206.47063"
-         style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
+         style="font-size:6.06083965px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;text-align:start;line-height:100%;writing-mode:lr-tb;text-anchor:start;fill:#0080b5;fill-opacity:1;stroke:none;font-family:Univers LT Std;-inkscape-font-specification:Univers LT Std Condensed"
          xml:space="preserve"><tspan
            y="216.13353"
            x="206.47063"
            id="tspan7024"
-           sodipodi:role="line">Colonize(planet)</tspan></text>
+           sodipodi:role="line">colonize(planet)</tspan></text>
       <path
          style="fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#515151;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
          d="M 202.46827,220.23977 L 286.24824,220.23977"
