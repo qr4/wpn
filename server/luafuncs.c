@@ -1056,6 +1056,11 @@ int lua_send_data(lua_State* L) {
 		return 0;
 	}
 
+	/* Check that we're not busy */
+	if(is_busy(eself)) {
+		return 0;
+	}
+
 	/* Check whether the other entity even has a lua-state, and whether that one
 	 * can handle incoming data */
 	if(!(epartner->lua)) {
