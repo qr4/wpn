@@ -307,6 +307,7 @@ struct automaton {
   {
     .msg = "\n"
       " User-Info aendern...\n"
+      " <RETURN> um nix zu aendern.\n"
       " Eine leere Zeile beendet die Eingabe.\n"
       "\n",
     .prompt = "120 info: ",
@@ -315,7 +316,10 @@ struct automaton {
   },
   {
     .msg = "\n"
-      " noob\n"
+      " Darf der noob Deinen LUA-Code fuer seine Dr.-Arbyte verwenden?\n"
+      " <RETURN> = keine Aenderung vornehmen\n"
+      " JA = okay, wenns denn sein muss (kleines \"ja\" geht auch)\n"
+      " * = nee, kommt nicht in die Tuete. Du spinnst wohl!\n"
       "\n",
     .prompt = "120 noob: ",
     .fkt = _change_noob,
@@ -745,8 +749,43 @@ int _menu_config(char* data, int len, struct userstate* us, int write_fd) {
 
   switch (data[0]) {
     case '1': return set_state(CHANGE_PASSWORD_OLD, us, write_fd);
-    case '2': return set_state(CHANGE_USER_INFO, us, write_fd);
-    case '3': return set_state(CHANGE_NOOB, us, write_fd);
+    case '2': {
+                // header
+                const char msg[] = "\n"
+                  " Aktueller Text:\n"
+                  "\n";
+                if (print_msg_and_prompt(write_fd, msg, sizeof(msg), NULL) == -1) { return -1; }
+
+                // aktuellen text anzeigen
+                struct pstr file = { .used = 0 };
+                pstr_append_printf(&file, USER_HOME_BY_ID"/%d/msg", us->id);
+                if (dstr_read_file(&file, &us->tmp) == -1) { 
+                  log_msg("kann %s nicht lesen", pstr_as_cstr(&file));
+                  log_perror("read msg"); 
+                  return -1; 
+                }
+                if (print_msg_and_prompt(write_fd, dstr_as_cstr(&us->tmp), dstr_len(&us->tmp), NULL) == -1) { return -1; }
+                return set_state(CHANGE_USER_INFO, us, write_fd);
+              }
+    case '3': {
+                // header
+                const char msg_ja[] = "\n"
+                  " Aktueller noob-Status: JA\n";
+                const char msg_nein[] = "\n"
+                  " Aktueller noob-Status: NEIN\n";
+
+                // aktuellen status anzeigen
+                struct pstr file = { .used = 0 };
+                pstr_append_printf(&file, USER_HOME_BY_ID"/%d/noob", us->id);
+                if (dstr_read_file(&file, &us->tmp) == -1) {
+                  // datei gibts wohl nicht -> nein
+                  if (print_msg_and_prompt(write_fd, msg_nein, sizeof(msg_nein), NULL) == -1) { return -1; }
+                } else {
+                  if (print_msg_and_prompt(write_fd, msg_ja, sizeof(msg_ja), NULL) == -1) { return -1; }
+                }
+
+                return set_state(CHANGE_NOOB, us, write_fd);
+              }
 //    case '4': return set_state(CHANGE_SSH_KEY, us, write_fd);
     case '0': return set_state(MENU_MAIN, us, write_fd);
     default: return print_msg_and_prompt(write_fd, msg, sizeof(msg), us);
@@ -839,6 +878,25 @@ int _change_user_info(char* data, int len, struct userstate* us, int write_fd) {
 //
 //
 int _change_noob(char* data, int len, struct userstate* us, int write_fd) {
+
+  struct pstr file = { .used = 0 };
+  pstr_append_printf(&file, USER_HOME_BY_ID"/%d/noob", us->id);
+
+  if ((len == 2) && (strncasecmp(data, "ja", 2) == 0)) {
+    // noob darf
+    struct pstr ja = { .used = 3, .str = "JA\n" };
+    if (pstr_write_file(&file, &ja, O_WRONLY | O_TRUNC | O_CREAT) == -1) {
+      log_msg("user %s möchte, dass der noob darf, schreiben geht aber nicht", pstr_as_cstr(&us->user));
+      log_perror("change_noob");
+    }
+  } else if (len != 0) {
+    // remove noob
+    if (unlink(pstr_as_cstr(&file)) == -1) {
+      log_msg("noob-unlink von %s geht nicht!", pstr_as_cstr(&file));
+      log_perror("noob-unlink");
+    }
+  }
+
   return set_state(MENU_CONFIG, us, write_fd);
 }
 
