@@ -93,6 +93,8 @@ static entity_id_t get_self(lua_State *L) {
 	return e;
 }
 
+/* Comparison function fuer lua_help() to sort lua_wrappers[] copy.
+ * Stringcompares the lua function name */
 int lua_function_entry_cmp(const void *left, const void *right) {
 	return strncmp(
 			((lua_function_entry *) left)->lua_function_name, 
@@ -100,14 +102,22 @@ int lua_function_entry_cmp(const void *left, const void *right) {
 			MAX_LUA_NAME_LEN);
 }
 
+/*
+ * This function gives information about available functions from the c-api.
+ * Output is printed to interactive console.
+ */
 int lua_help(lua_State *L) {
-	static lua_function_entry *sorted_lua_wrappers;
+	static lua_function_entry *sorted_lua_wrappers; // holds the same data as lua_wrappers[], but sorted
 
 	entity_id_t self;
 	entity_t *eself;
 	unsigned int player_id;
 	int n;
 
+	/* 
+	 * on first call of the function copy lua_wrappers[] and sort
+	 * by lua name, so we can search in it with bsearch()
+	 */
 	if (sorted_lua_wrappers == NULL) {
 		sorted_lua_wrappers = malloc(sizeof(lua_wrappers));
 		memcpy(sorted_lua_wrappers, lua_wrappers, sizeof(lua_wrappers));
@@ -117,12 +127,13 @@ int lua_help(lua_State *L) {
 				lua_function_entry_cmp);
 	}
 
-	n = lua_gettop(L);
-	self = get_self(L);
-	eself = get_entity_by_id(self);
+	n         = lua_gettop(L);
+	self      = get_self(L);
+	eself     = get_entity_by_id(self);
 	player_id = eself->player_id;
 
 	if (n != 1 || (n == 1 && !lua_isstring(L, -1))) {
+		// print all available lua functions available from c-api
 		for (size_t i = 0; i < sizeof(lua_wrappers) / sizeof(lua_function_entry); i++) {
 			talk_set_user_code_reply_msg(player_id, 
 					sorted_lua_wrappers[i].lua_function_name, 
@@ -130,6 +141,7 @@ int lua_help(lua_State *L) {
 			talk_set_user_code_reply_msg(player_id, "()\n", strlen("()\n"));
 		}
 	} else {
+		// print helpmessage for a command
 		lua_function_entry key, *res;
 		strncpy(key.lua_function_name, lua_tostring(L, -1), MAX_LUA_NAME_LEN);
 		res = ((lua_function_entry *) bsearch(&key, 
@@ -139,11 +151,13 @@ int lua_help(lua_State *L) {
 					lua_function_entry_cmp));
 		
 		if (res == NULL || res->help_message == NULL) {
+			// no help message available
 			const char *error_msg = "Sorry, no help for \"";
 			talk_set_user_code_reply_msg(player_id, error_msg, strlen(error_msg));
 			talk_set_user_code_reply_msg(player_id, key.lua_function_name, strlen(key.lua_function_name));
 			talk_set_user_code_reply_msg(player_id, "\"\n", strlen("\"\n"));
 		} else {
+			// print the help
 			talk_set_user_code_reply_msg(player_id, res->help_message, strlen(res->help_message));
 		}
 	}
@@ -157,9 +171,6 @@ int lua_help(lua_State *L) {
  * This just deliberately creates a lua error, thus
  * causing the error handler to kill the ship. */
 int lua_killself(lua_State* L) {
-	//entity_t* e = get_self(L);
-	//int n;
-
 	/* Invoke a lua error. */
 	lua_pushstring(L,"invoked killself()");
 	lua_error(L);

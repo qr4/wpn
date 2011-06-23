@@ -189,7 +189,10 @@ map_quad_t* update_quad_object(entity_t *e) {
 	return register_object(e);
 }
 
-// helper for find_closest()
+/* 
+ * helper for find_closest()
+ * returns a bounding box for the search
+ */
 static void get_search_bounds(vector_t pos, double radius, quad_index_t *start, quad_index_t *end) {
 	vector_t up_left;
 	vector_t down_right;
@@ -203,7 +206,7 @@ static void get_search_bounds(vector_t pos, double radius, quad_index_t *start, 
 
 /*
  * returns an array of entities_id_t and saves the number found in n
- * found has to be free'd by the caller.
+ * return value has to be free'd by the caller.
  */
 entity_id_t *get_entities(const vector_t pos, const double search_radius, const unsigned int filter, size_t *n) {
 	quad_index_t start, end;
@@ -223,6 +226,11 @@ entity_id_t *get_entities(const vector_t pos, const double search_radius, const 
 		for (x = start.quad_x ; x <= end.quad_x; x++) {
 			map_quad_t *quad = get_quad_by_index((quad_index_t) {x, y});
 
+			/*
+			 * Record every ID in found not filtered out. Resize
+			 * found if necessary
+			 */
+
 			if (filter & CLUSTER) {
 				for (i = 0; i < quad->clusters; i++) {
 					if (vector_dist(&pos, &get_entity_by_id(quad->cluster[i])->pos) < search_radius) {
@@ -236,7 +244,7 @@ entity_id_t *get_entities(const vector_t pos, const double search_radius, const 
 				}
 			}
 
-			if (filter & (ASTEROID | PLANET)) {
+			if (filter & (ASTEROID | PLANET | BASE)) {
 				for (i = 0; i < quad->static_objects; i++) {
 					if (filter & quad->static_object[i].type 
 							&& vector_dist(&pos, &get_entity_by_id(quad->static_object[i])->pos) < search_radius) {
@@ -288,6 +296,11 @@ entity_t *find_closest(entity_t *e, const double radius, const unsigned int filt
 		for (x = start.quad_x ; x <= end.quad_x; x++) {
 			map_quad_t *quad = get_quad_by_index((quad_index_t) {x, y});
 
+			/* 
+			 * Calculate minimum distance from all objects within a quad
+			 * not filtered out.
+			 */
+
 			if (filter & CLUSTER) {
 				for (i = 0; i < quad->clusters; i++) {
 					if (e->unique_id.id != quad->cluster[i].id
@@ -298,7 +311,7 @@ entity_t *find_closest(entity_t *e, const double radius, const unsigned int filt
 				}
 			}
 
-			if (filter & (ASTEROID | PLANET)) {
+			if (filter & (ASTEROID | PLANET | BASE)) {
 				for (i = 0; i < quad->static_objects; i++) {
 					if (filter & quad->static_object[i].type 
 							&& e->unique_id.id != quad->static_object[i].id
