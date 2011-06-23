@@ -1623,8 +1623,9 @@ int lua_upgrade_base(lua_State* L) {
 	for(int i=0; i<eself->slots; i++) {
 		/* Upgrades happen from resource / ore */
 		if(eself->slot_data->slot[i] != ORE) {
-			lua_pushstring(L, "Attempted to upgrade using a non-resource block.");
-			lua_error(L);
+			//lua_pushstring(L, "Attempted to upgrade using a non-resource block.");
+			//lua_error(L);
+			return 0;
 		}
 	}
 
