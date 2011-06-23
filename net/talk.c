@@ -241,8 +241,8 @@ struct automaton {
   },
   {
     .msg = "\n"
-      " Hint: Oeffne in einer andren Konsole den LUA-Monitor um weitere Ausgaben zu sehen\n"
-      " Gib .quit<RETURN> ein um die LUA-Konsole zu verlassen\n"
+      " Hint: Oeffne in einer andren Konsole den LUA-Monitor um weitere\n"
+      " Ausgaben zu sehen. Gib .quit<RETURN> ein um die LUA-Konsole zu verlassen\n"
       "\n",
     .prompt = "400 lua: ",
     .fkt = _lua_console,
@@ -251,7 +251,8 @@ struct automaton {
   {
     .msg = "\n"
       " Paste hier Deinen Lua-Code rein.\n"
-      " \"-- .quit\" terminiert die Eingabe (ohne die \"\") und aktiviert den neuen Code.\n"
+      " \"-- .quit\" terminiert die Eingabe (ohne die \"\") und aktiviert\n"
+      " den neuen Code.\n"
       "\n",
     .prompt = "410 code: ",
     .fkt = _lua_get_code,
@@ -747,6 +748,9 @@ int _menu_config(char* data, int len, struct userstate* us, int write_fd) {
     return print_msg_and_prompt(write_fd, msg, sizeof(msg), us);
   }
 
+  dstr_clear(&us->tmp);
+  us->count = 0;
+
   switch (data[0]) {
     case '1': return set_state(CHANGE_PASSWORD_OLD, us, write_fd);
     case '2': {
@@ -765,6 +769,8 @@ int _menu_config(char* data, int len, struct userstate* us, int write_fd) {
                   return -1; 
                 }
                 if (print_msg_and_prompt(write_fd, dstr_as_cstr(&us->tmp), dstr_len(&us->tmp), NULL) == -1) { return -1; }
+                dstr_clear(&us->tmp);
+                us->count = 0;
                 return set_state(CHANGE_USER_INFO, us, write_fd);
               }
     case '3': {
@@ -871,7 +877,40 @@ int _change_password_new2(char* data, int len, struct userstate* us, int write_f
 //
 //
 int _change_user_info(char* data, int len, struct userstate* us, int write_fd) {
-  return set_state(MENU_CONFIG, us, write_fd);
+
+  if (len == 0) {
+    // user fertig mit eingabe
+    if (dstr_len(&us->tmp) > 0) {
+      // dinge schreiben
+      struct pstr file = { .used = 0 };
+      pstr_append_printf(&file, USER_HOME_BY_ID"/%d/msg", us->id);
+      log_msg("schreibe text = %s", dstr_as_cstr(&us->tmp));
+      if (dstr_write_file(&file, &us->tmp, O_WRONLY | O_TRUNC) == -1) {
+        log_msg("probleme beim schreiben von %s", pstr_as_cstr(&file));
+        log_perror("_change_user_info");
+        return -1;
+      }
+    }
+    return set_state(MENU_CONFIG, us, write_fd);
+  }
+
+  if (us->count > 3) {
+    const char msg[] = "505 Nee nee. Irgendwas machst Du da falsch...\n";
+    print_msg_and_prompt(write_fd, msg, sizeof(msg), NULL);
+    return -1;
+  }
+
+
+  if (dstr_len(&us->tmp) > 10000) {
+    us->count++;
+    const char msg[] = "505 Das jetzt doch ein wenig viel fuer eine einfache Beschreibung.\n";
+    return print_msg_and_prompt(write_fd, msg, sizeof(msg), NULL);
+  }
+
+  dstr_append(&us->tmp, data, len);
+  dstr_append(&us->tmp, "\n", 1);
+
+  return print_msg_and_prompt(write_fd, NULL, 0, us);
 }
 
 //
