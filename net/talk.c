@@ -158,8 +158,8 @@ struct automaton {
     .msg = "\n"
       " Hallo Weltraumreisender,\n"
       "\n"
-      " wenn Du einen neuen Account anlegen willst, dann lass die Eingabe einfach leer.\n"
-      " Ansonsten gib Deinen Usernamen ein...\n"
+      " wenn Du einen neuen Account anlegen willst, dann lass die Eingabe einfach\n"
+      " leer. Ansonsten gib Deinen Usernamen ein...\n"
       "\n",
     .prompt = "100 login: ",
     .fkt = _login,
@@ -168,7 +168,8 @@ struct automaton {
   {
     .msg = "\n"
       " Hallo neuer User. Gib doch mal Deinen Loginnamen an\n"
-      " Erlaubt sind die Zeichen [a-zA-Z0-9:-+_]. Mehr nicht. Aetsch! Und 3 bis maximal 12 Zeichen!\n"
+      " Erlaubt sind die Zeichen [a-zA-Z0-9:-+_]. Mehr nicht. Aetsch!\n"
+      " Und 3 bis maximal 12 Zeichen!\n"
       "\n",
     .prompt = "110 username: ",
     .fkt = _new_account_name,
@@ -206,9 +207,9 @@ struct automaton {
   {
     .msg = "\n"
       " So, eine letzte Frage noch. Der noob, (auch Wuerzburger Nerd) moechte gerne\n"
-      " Deinen LUA-Code verwenden, um seine Plagiats-Erkennungs-Software zu\n",
+      " Deinen LUA-Code verwenden, um seine Plagiats-Erkennungs-Software zu\n"
       " verbessern. Deinen Code (inklusive der verschiedenen Versionen wie er sich\n"
-      " entwicklet bekommt er aber natuerlich nur, wenn Du ihm das erlaubst und hier\n"
+      " entwicklet) bekommt er aber natuerlich nur, wenn Du ihm das erlaubst und hier\n"
       " \"JA\" eintippst. Sonst nicht. Da du aber einem Mitnerd bestimmt helfen willst\n"
       " gibst Du hier \"JA\" (ohne die Gaensefuesschen) ein, oder?\n"
       "\n",
