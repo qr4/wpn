@@ -25,23 +25,26 @@ typedef enum {
 /* Enum of possible events which can trigger callbacks in a ship */
 /* (Corresponding lua function names are define in luastate.c) */
 typedef enum {
-	AUTOPILOT_ARRIVED,  // The autopilot has finished it's flight plan
-	ENTITY_APPROACHING, // Another entity has appeared within sensor radius
-	SHOT_AT,            // You are being shot at
-	WEAPONS_READY,      // After firing, the weapons have recharged and are back on-line
-	BEING_DOCKED,       // You are being docked
-	DOCKING_COMPLETE,   // The docking operation you requested has completed
-	UNDOCKING_COMPLETE, // Releasing the docking clamps has completed
-	BEING_UNDOCKED,     // The other ship is undocking us.
-	TRANSFER_COMPLETE,  // Transfer of a slot has completed.
-	BUILD_COMPLETE,  // Production of a new ship completed (for bases)
-	TIMER_EXPIRED,      // A fixed timer has expired
-	MINING_COMPLETE,    // Digging pays off afterall
+	AUTOPILOT_ARRIVED,    // The autopilot has finished it's flight plan
+	ENTITY_APPROACHING,   // Another entity has appeared within sensor radius
+	SHOT_AT,              // You are being shot at
+	WEAPONS_READY,        // After firing, the weapons have recharged and are back on-line
+	BEING_DOCKED,         // You are being docked
+	DOCKING_COMPLETE,     // The docking operation you requested has completed
+	UNDOCKING_COMPLETE,   // Releasing the docking clamps has completed
+	BEING_UNDOCKED,       // The other ship is undocking us.
+	TRANSFER_COMPLETE,    // Transfer of a slot has completed.
+	BUILD_COMPLETE,       // Production of a new ship completed (for bases)
+	TIMER_EXPIRED,        // A fixed timer has expired
+	MINING_COMPLETE,      // Digging pays off afterall
 	MANUFACTURE_COMPLETE, // Congratulations, you built something
 
 	NUM_EVENTS
 } event_t;
 
+/*
+ * Type specific data type for entity_t.
+ */
 typedef struct slot_data_t     slot_data_t;
 typedef struct planet_data_t   planet_data_t;
 typedef struct ship_data_t     ship_data_t;
@@ -49,12 +52,19 @@ typedef struct asteroid_data_t asteroid_data_t;
 typedef struct cluster_data_t  cluster_data_t;
 typedef struct base_data_t     base_data_t;
 
-typedef struct entity_t     entity_t;
-typedef struct map_quad_t   map_quad_t;
-typedef struct quad_index_t quad_index_t;
-typedef struct map_t        map_t;
+/*
+ * Main structures
+ */
+typedef struct entity_t     entity_t;     // almost everything is a entity
+typedef struct map_quad_t   map_quad_t;   // entities are registered in a grid
+typedef struct quad_index_t quad_index_t; // location of a quad within the grid
+typedef struct map_t        map_t;        // main map structure
 
-typedef union  entity_id_t  entity_id_t;
+/* 
+ * abstract view on entities, necessary to ensure uniquness
+ * of every entity ever created.
+ */
+typedef union  entity_id_t  entity_id_t;  
 
 /* Entity IDs are 64bit integers, of which the lower
  * 32 bits denote the array index, and the upper 32
@@ -74,30 +84,36 @@ struct quad_index_t {
 };
 
 struct map_quad_t {
-	entity_id_t *cluster;
-	entity_id_t *static_object;
-	entity_id_t *moving_object;
+	entity_id_t *cluster;       // clusters are stored here
+	entity_id_t *static_object; // static objects (bases, asteroids, planets) are stored here
+	entity_id_t *moving_object; // ships are stored here
 	size_t clusters;       // number of clusters in this quad
-	size_t static_objects; // number of static objects (asteroids, planets)
+	size_t static_objects; // number of static objects (asteroids, planets, bases)
 	size_t moving_objects; // number of moving objects (ships)
 };
 
 struct map_t {
-	entity_t     *cluster;
-	map_quad_t   *quad;
-	size_t clusters;
-	size_t quad_size;
-	size_t quads_x;
+	map_quad_t   *quad; // grid is stored here
+	size_t quad_size;   // information about grid resolution
+	size_t quads_x;     
 	size_t quads_y;
+	// map size
 	double left_bound;
 	double upper_bound;
 	double right_bound;
 	double lower_bound;
 };
 
+// Macro defining an always invalid ID
 #define INVALID_ID ((entity_id_t) {.id = ~(0l)})
 
-/* The entity_t datastructure holds all of the actual entity information */
+/* 
+ * The entity_t datastructure holds all of the actual entity information.
+ * Most entities are held in storages, that assign an unique id and
+ * do the memory management. (see the storages.[hc] and entity_storage.[hc]
+ *
+ * Also many functions on entities like distance are defined.
+ */
 struct entity_t {
 
 	/* Position and velocity */
@@ -145,6 +161,7 @@ struct wp_t {
 	waypoint_t* next;
 };
 
+// all entities having slots can access this structure
 struct slot_data_t {
 	slot_t *slot;
 };
@@ -187,8 +204,8 @@ struct asteroid_data_t {
 };
 
 struct cluster_data_t {
-	entity_id_t    planet;
-	entity_id_t *asteroid;
+	entity_id_t    planet; // only one Planet can be in a cluster
+	entity_id_t *asteroid; // list of all asteroids in cluster
 	unsigned int asteroids;
 };
 
