@@ -1607,6 +1607,9 @@ int lua_upgrade_base(lua_State* L) {
 	eself = get_entity_by_id(self);
 
 	switch(eself->slots) {
+		case 24:
+			// Valid size but not upgradeable
+			return 0;
 		case 12:
 		case 6:
 		case 3:
