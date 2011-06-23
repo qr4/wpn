@@ -129,8 +129,8 @@ char* planet_to_json(entity_t* e) {
 		return NULL;
 	}
 
-	asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": null}",
-			e->unique_id.id, e->pos.x, e->pos.y);
+	asprintf(&retval, "{\"id\": %li, \"x\": %f, \"y\": %f, \"owner\": %i}",
+			e->unique_id.id, e->pos.x, e->pos.y, e->player_id);
 
 	return retval;
 }

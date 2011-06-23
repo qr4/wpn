@@ -92,6 +92,7 @@ void create_homebase(player_data_t* player) {
 		i=rand() % (planet_storage->first_free);
 		if(planet_storage->entities[i].player_id == 0) {
 			planet_id = planet_storage->entities[i].unique_id;
+			planet_storage->entities[i].player_id = player->player_id;
 			break;
 		}
 	}

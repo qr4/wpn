@@ -1416,10 +1416,11 @@ int lua_build_ship(lua_State* L) {
 	e = get_entity_by_id(id);
 	register_object(e);
 
+	/* Set correct player ID */
+	e->player_id = eself->player_id;
+
 	/* Let the world know about this ship */
 	map_to_network();
-
-	e->player_id = eself->player_id;
 
 	/* Zero out the slots we used for building. */
 	for(int i=0; i<n; i++) {

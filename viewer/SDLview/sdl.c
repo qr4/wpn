@@ -223,6 +223,66 @@ void SDLplot() {
 	SDL_Flip(screen);
 }
 
+Uint8 red_from_H(double h) {
+	if(h < 0) {
+		return 0;
+	}
+	while(h > 360) {
+		h -= 360;
+	}
+	if(h<60) {
+		return 255;
+	} else if(h<120) {
+		return (120-h)*4.25;
+	} else if(h<240) {
+		return 0;
+	} else if(h<300) {
+		return (h-240)*4.25;
+	} else {
+		return 255;
+	}
+}
+
+Uint8 green_from_H(double h) {
+	if(h < 0) {
+		return 0;
+	}
+	while(h > 360) {
+		h -= 360;
+	}
+	if(h<60) {
+		return h*4.25;
+	} else if(h<180) {
+		return 255;
+	} else if(h<240) {
+		return (240-h)*4.25;
+	} else {
+		return 0;
+	}
+}
+
+Uint8 blue_from_H(double h) {
+	if(h < 0) {
+		return 0;
+	}
+	while(h > 360) {
+		h -= 360;
+	}
+	if(h<120) {
+		return 0;
+	} else if(h<180) {
+		return (h-120)*4.25;
+	} else if(h<300) {
+		return 255;
+	} else {
+		return (300-h)*4.25;
+	}
+}
+
+double player_to_h(int playerid) {
+	return 293*(playerid-100);
+}
+
 void drawAsteroid(asteroid_t* a) {
 	static float last_zoom = 1;
 	static SDL_Surface* asteroid_sprite = NULL;
@@ -252,6 +312,18 @@ void drawAsteroid(asteroid_t* a) {
 	}
 }
 
+void drawHalo(double x, double y, double r, double h) {
+	filledCircleRGBA(screen, x, y, r,       red_from_H(h), green_from_H(h), blue_from_H(h), 6);
+	filledCircleRGBA(screen, x, y, r - 0.5, red_from_H(h), green_from_H(h), blue_from_H(h), 6);
+	filledCircleRGBA(screen, x, y, r - 1.0, red_from_H(h), green_from_H(h), blue_from_H(h), 6);
+	filledCircleRGBA(screen, x, y, r - 1.4, red_from_H(h), green_from_H(h), blue_from_H(h), 6);
+	filledCircleRGBA(screen, x, y, r - 2.0, red_from_H(h), green_from_H(h), blue_from_H(h), 6);
+	filledCircleRGBA(screen, x, y, r - 2.8, red_from_H(h), green_from_H(h), blue_from_H(h), 6);
+	filledCircleRGBA(screen, x, y, r - 4.0, red_from_H(h), green_from_H(h), blue_from_H(h), 6);
+	filledCircleRGBA(screen, x, y, r - 5.7, red_from_H(h), green_from_H(h), blue_from_H(h), 6);
+	filledCircleRGBA(screen, x, y, r - 8.0, red_from_H(h), green_from_H(h), blue_from_H(h), 6);
+}
+
 void drawShip(ship_t * s) {
 	static float last_zoom = 1;
 	static SDL_Surface* ship_small_sprite = NULL;
@@ -266,6 +338,10 @@ void drawShip(ship_t * s) {
 	}
 
 	if(s->active > 0) {
+		if(s->owner != 0) {
+			drawHalo(offset_x + s->x * zoom, offset_y + s->y * zoom, 10 * mag * zoom, player_to_h(s->owner));
+		}
+
 		SDL_Rect dst_rect;
 
 		dst_rect.x = offset_x + (s->x - 3 * mag) * zoom;
@@ -338,6 +414,10 @@ void drawPlanet(planet_t* p) {
 	}
 
 	if(p->active > 0) {
+		if(p->owner != 0) {
+			drawHalo(offset_x + p->x * zoom, offset_y + p->y * zoom, 25 * mag * zoom, player_to_h(p->owner));
+		}
+
 		SDL_Rect dst_rect;
 
 		dst_rect.x = offset_x + (p->x - 8 * mag) * zoom;
