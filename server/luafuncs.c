@@ -31,19 +31,19 @@ static const lua_function_entry lua_wrappers[] = {
 //   C-function name,           Lua-function name,       Help message
 
 	/* Action */
-	{lua_killself,              "killself",              killself_help},        
-	{lua_moveto,                "moveto",                moveto_help},          
-	{lua_set_autopilot_to,      "set_autopilot_to",      set_autopilot_to_help},   
-	{lua_set_timer,             "set_timer",             set_timer_help},       
-	{lua_dock,                  "dock",                  dock_help},            
-	{lua_undock,                "undock",                undock_help},          
-	{lua_transfer_slot,         "transfer_slot",         transfer_slot_help},   
-	{lua_send_data,             "send_data",             send_data_help},       
-	{lua_build_ship,            "build_ship",            build_ship_help},      
-	{lua_fire,                  "fire",                  fire_help},            
-	{lua_mine,                  "mine",                  mine_help},            
-	{lua_manufacture,           "manufacture",           NULL},
-	{lua_colonize,              "colonize",              NULL},
+	{lua_killself,              "killself",              killself_help},
+	{lua_moveto,                "moveto",                moveto_help},
+	{lua_set_autopilot_to,      "set_autopilot_to",      set_autopilot_to_help},
+	{lua_set_timer,             "set_timer",             set_timer_help},
+	{lua_dock,                  "dock",                  dock_help},
+	{lua_undock,                "undock",                undock_help},
+	{lua_transfer_slot,         "transfer_slot",         transfer_slot_help},
+	{lua_send_data,             "send_data",             send_data_help},
+	{lua_build_ship,            "build_ship",            build_ship_help},
+	{lua_fire,                  "fire",                  fire_help},
+	{lua_mine,                  "mine",                  mine_help},
+	{lua_manufacture,           "manufacture",           manufacture_help},
+	{lua_colonize,              "colonize",              colonize_help},
 
 	/* Queries */
 	{lua_entity_to_string,      "entity_to_string",      entity_to_string_help},
@@ -53,14 +53,14 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_get_position,          "get_position",          get_position_help},
 	{lua_get_distance,          "get_distance",          get_distance_help},
 	{lua_get_docking_partner,   "get_docking_partner",   get_docking_partner_help},
-	{lua_busy,                  "is_busy",               busy_help},
-	{lua_flying,                "is_flying",             flying_help},
+	{lua_busy,                  "is_busy",               is_busy_help},
+	{lua_flying,                "is_flying",             is_flying_help},
 	{lua_get_slots,             "get_slots",             get_slots_help},
 	{lua_get_world_size,        "get_world_size",        get_world_size_help},
 	{lua_get_type,              "get_type",              get_type_help},
 
 	/* More lowlevel stuff */
-	{lua_help,                  "help",                  NULL},
+	{lua_help,                  "help",                  help_help},
 	{lua_print,                 "print",                 print_help},
 };
 
