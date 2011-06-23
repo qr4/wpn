@@ -33,7 +33,7 @@ float zoom;
 float offset_x;
 float offset_y;
 
-float default_mag = 64;
+#define default_mag 64
 float mag = default_mag;
 
 void screen_init() {
@@ -149,10 +149,12 @@ void checkSDLevent() {
 						offset_y = display_y / 2 + (offset_y - display_y / 2) / 1.2;
 						break;
 					case SDLK_m:
-						mag /= 1.5;
-						break;
-					case SDLK_M:
-						mag *= 1.5;
+						if((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) {
+							// M
+							mag *= 1.5;
+						} else {
+							mag /= 1.5;
+						}
 						break;
 					case SDLK_q:
 						fprintf(stderr, "Closing by user request\n");
@@ -452,7 +454,7 @@ void drawExplosion(explosion_t* e) {
 	//unsigned int x,y,u;
 	//char a;
 
-	if(!explosion_sprite || (zoom != last_zoom) (mag != last_mag)) {
+	if(!explosion_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(explosion_sprite);
 		explosion_sprite = zoomSurface(explosion_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
 		last_zoom = zoom;
