@@ -230,7 +230,7 @@ int main(int argc, const char* argv[] ) {
 		}
 
 		if(ret == 2) {
-			fprintf(stdout, "Read %d chars to find an empty line\n", buffer->fill);
+			//fprintf(stdout, "Read %d chars to find an empty line\n", buffer->fill);
 			parseJson(buffer);
 			clearBuffer(buffer);
 		}

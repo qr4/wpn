@@ -33,15 +33,15 @@ int parseJson(buffer_t* b) {
 		fprintf(stderr, "Error %s in line %d, column %d\n", error.text, error.line, error.column);
 		exit(1);
 	} else {
-		fprintf(stderr, "Found valid json\n");
+		//fprintf(stderr, "Found valid json\n");
 		json_t* world = json_object_get(root, "world");
 		if(world) {
-			fprintf(stderr, "Turns out it is a world object\n");
+			//fprintf(stderr, "Turns out it is a world object\n");
 			jsonWorld(world);
 		}
 		json_t* update = json_object_get(root, "update");
 		if(update) {
-			fprintf(stderr, "Turns out it is an update object\n");
+			//fprintf(stderr, "Turns out it is an update object\n");
 			jsonUpdate(update);
 		}
 	}
@@ -177,6 +177,7 @@ void jsonExplosion(json_t* explosion) {
 	// Invalidate the ship with this id
 	for(i = 0; i < n_ships; i++) {
 		if(ships[i].id == id) {
+			//fprintf(stderr, "Invalidated ship %d\n", i);
 			ships[i].active = 0;
 		}
 	}
@@ -189,7 +190,7 @@ void jsonExplosion(json_t* explosion) {
 	if(!j_y || !json_is_real(j_y)) return;
 	y = json_real_value(j_y);
 
-	fprintf(stderr, "Bäm! x=%f, y=%f\n",x,y);
+	//fprintf(stderr, "Bäm! x=%f, y=%f\n",x,y);
 	createExplosion(x, y);
 }
 

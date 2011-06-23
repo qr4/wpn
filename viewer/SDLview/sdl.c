@@ -33,7 +33,7 @@ float zoom;
 float offset_x;
 float offset_y;
 
-float mag = 20;
+float mag = 64;
 
 void screen_init() {
 	screen = SDL_SetVideoMode(display_x, display_y, 0, SDL_RESIZABLE | SDL_HWSURFACE | SDL_DOUBLEBUF);
@@ -396,7 +396,7 @@ void drawExplosion(explosion_t* e) {
 		for(i = 0; i < e->strength * e->strength / 1024; i++) {
 			SDL_BlitSurface(explosion_sprite, NULL, screen, &dst_rect);
 		}
-		e->strength -= 3;
+		e->strength -= 1;
 	}
 
 }
