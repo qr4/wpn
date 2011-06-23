@@ -51,7 +51,7 @@ static const luaL_Reg lualibs[] = {
 
 /* Hook to be called if a ship's computer exceeds it's computing time limit,
  * killing the computer. */
-static void time_exceeded_hook(lua_State* L, lua_Debug* ar) {
+void time_exceeded_hook(lua_State* L, lua_Debug* ar) {
 
 	/* Simply raise an error in the ship's lua state, thus cascading to
 	 * kill the computer */

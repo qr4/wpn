@@ -16,6 +16,9 @@ extern entity_id_t lua_active_entity;
 /* lua callback-function names (defined in luastate.c) */
 extern char* callback_names[NUM_EVENTS];
 
+/* Hook that's called when a lua state exceeds it's runtime limit */
+void time_exceeded_hook(lua_State* L, lua_Debug* ar);
+
 extern void init_ship_computer(entity_t* s);
 extern void kill_computer(entity_t* s);
 

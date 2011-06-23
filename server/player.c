@@ -196,6 +196,9 @@ void player_check_code_updates(long usec_wait) {
             lua_active_entity = players[j].homebase;
             ebase = get_entity_by_id(players[j].homebase);
 
+						/* Set the execution time limit */
+						lua_sethook(ebase->lua, time_exceeded_hook, LUA_MASKCOUNT, config_get_int("lua_max_cycles"));
+
 						/* Execute the code */
             if (luaL_dostring (ebase->lua, data)) {
               DEBUG("Execution failed.\n");
@@ -254,6 +257,8 @@ void player_check_code_updates(long usec_wait) {
               base = players[j].homebase;
               ebase = get_entity_by_id(base);
 
+							/* Set the execution time limit */
+							lua_sethook(ebase->lua, time_exceeded_hook, LUA_MASKCOUNT, config_get_int("lua_max_cycles"));
               /* Evaluate the code in the context of the player's homebase */
               lua_active_entity = base;
 
@@ -262,6 +267,7 @@ void player_check_code_updates(long usec_wait) {
                 return;
               }
               DEBUG("Executing %s in the context of entity %lu\n", lua_source_file, base.id);
+
               if(luaL_dofile(ebase->lua, lua_source_file)) {
                 DEBUG("Execution failed.\n");
                 errortext = (char*) lua_tostring(ebase->lua, -1);
@@ -323,6 +329,10 @@ void evaluate_all_player_code() {
 			free(lua_source_file);
 			continue;
 		}
+
+		/* Set the execution time limit */
+		lua_sethook(ebase->lua, time_exceeded_hook, LUA_MASKCOUNT, config_get_int("lua_max_cycles"));
+
 		DEBUG("Executing %s in the context of entity %lu\n", lua_source_file, base.id);
 		if(luaL_dofile(ebase->lua, lua_source_file)) {
 			DEBUG("Execution failed.\n");
