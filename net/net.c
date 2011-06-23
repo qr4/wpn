@@ -66,7 +66,7 @@ void map_flush() {
   now[0] = 'a' + net.current_map;
   map[sizeof(map) - 2] = now[0];
 
-  while( (net.map_fd = shm_open(map, O_CREAT | O_EXCL | O_RDWR, 0700)) == -1 ) {
+  while( (net.map_fd = shm_open(map, O_CREAT | O_EXCL | O_RDWR, 0666)) == -1 ) {
     if (errno == EEXIST) {
       log_msg("netio-client kommt nicht hinterher... schlafe 100usec");
       usleep(100);
@@ -98,7 +98,7 @@ void update_flush() {
   now[0] = 'A' + net.current_update;
   update[sizeof(update) - 2] = now[0];
 
-  while( (net.update_fd = shm_open(update, O_CREAT | O_EXCL | O_RDWR, 0700)) == -1 ) {
+  while( (net.update_fd = shm_open(update, O_CREAT | O_EXCL | O_RDWR, 0666)) == -1 ) {
     if (errno == EEXIST) {
       log_msg("netio-client kommt nicht hinterher... schlafe 100usec");
       usleep(100);
@@ -134,11 +134,6 @@ void net_client_connect(int fd, fd_set* master, int* fdmax, struct timeval* tv) 
     return;
   }
 
-  FD_SET(newfd, master);    // add to master set
-  if (newfd > *fdmax) {     // keep track of the max
-    *fdmax = newfd;
-  }
-  
   char remoteIP[INET6_ADDRSTRLEN];
   log_msg("<%d> new connection from %s",
     newfd,
@@ -146,10 +141,14 @@ void net_client_connect(int fd, fd_set* master, int* fdmax, struct timeval* tv) 
 
   net.nc[newfd].data_fd = dup(net.map_fd);
   if (net.nc[newfd].data_fd == -1) {
-    log_perror("dup");
+    log_perror("net_client_connect: dup");
     close(newfd);
-    FD_CLR(newfd, master);
     return;
+  }
+
+  FD_SET(newfd, master);    // add to master set
+  if (newfd > *fdmax) {     // keep track of the max
+    *fdmax = newfd;
   }
 
   net.nc[newfd].status = NETCS_NEW_CONNECTED;
@@ -197,7 +196,7 @@ void net_timer(struct timeval* tv) {
         int ret = fstat(net.nc[fd].data_fd, &st);
         if (ret == -1) { log_perror("fstat"); break; }
 
-//        log_msg("MAP fd = %d, size = %d", net.nc[fd].data_fd, st.st_size);
+        log_msg("MAP fd = %d, size = %d", net.nc[fd].data_fd, st.st_size);
 
         char* data = mmap(0, st.st_size, PROT_READ, MAP_PRIVATE, net.nc[fd].data_fd, 0);
         if (data == (char*)-1) { log_perror("mmap"); break; }
@@ -225,7 +224,7 @@ void net_timer(struct timeval* tv) {
         int ret = fstat(net.nc[fd].data_fd, &st);
         if (ret == -1) { log_perror("fstat"); break; }
 
-//        log_msg("UPDATE fd = %d, size = %d", net.nc[fd].data_fd, st.st_size);
+       log_msg("UPDATE fd = %d, size = %d", net.nc[fd].data_fd, st.st_size);
 
         char* data = mmap(0, st.st_size, PROT_READ, MAP_PRIVATE, net.nc[fd].data_fd, 0);
         if (data == (char*)-1) { log_perror("mmap"); break; }
@@ -291,7 +290,7 @@ int net_pipe(int fd, struct timeval* tv) {
       char map[] = NET_MAP;
       map[sizeof(map) - 2] = buffer[i];
 
-      int map_fd = shm_open(map, O_RDONLY, 0700);
+      int map_fd = shm_open(map, O_RDONLY, 0666);
       if (map_fd == -1) { log_perror("shm_open"); continue; } // TODO sollten wir hier nicht lieber abbrechen?
 
       // map aus /dev/tmpfs löschen - wir haben ja noch den fd
@@ -306,7 +305,7 @@ int net_pipe(int fd, struct timeval* tv) {
       char update[] = NET_UPDATE;
       update[sizeof(update) - 2] = buffer[i];
 
-      int update_fd = shm_open(update, O_RDONLY, 0700);
+      int update_fd = shm_open(update, O_RDONLY, 0666);
       if (update_fd == -1) { log_perror("shm_open"); continue; } // TODO sollten wir hier nicht lieber abbrechen?
 
       // update aus /dev/tmpfs löschen - wir haben ja den fd
@@ -439,11 +438,11 @@ void net_init() {
 
   now[0] = 'a' + net.current_map;
   map[sizeof(map) - 2] = now[0];
-  net.map_fd = shm_open(map, O_CREAT | O_RDWR, 0700);
+  net.map_fd = shm_open(map, O_CREAT | O_RDWR, 0666);
   if (net.map_fd == -1) { log_perror("shm_open"); exit(EXIT_FAILURE); }
 
   now[0] = 'A' + net.current_update;
   update[sizeof(update) - 2] = now[0];
-  net.update_fd = shm_open(update, O_CREAT | O_RDWR, 0700);
+  net.update_fd = shm_open(update, O_CREAT | O_RDWR, 0666);
   if (net.update_fd == -1) { log_perror("shm_open"); exit(EXIT_FAILURE); }
 }

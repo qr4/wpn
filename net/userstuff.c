@@ -116,7 +116,7 @@ int add_user(char *name, int len_name, const void* pw, unsigned long pw_len, uns
 
   {
     // verzeichnis und symlink fuer den user anlegen
-    if (mkdir(pstr_as_cstr(&home_by_id), 0700) == -1) {
+    if (mkdir(pstr_as_cstr(&home_by_id), 0777) == -1) {
       log_perror("mkdir");
       return -1;
     }

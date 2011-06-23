@@ -96,7 +96,7 @@ int pstr_len(struct pstr* p) {
 
 // pstr in eine datei schreiben -> 0 wenns geklappt hat, sonst -1
 int pstr_write_file(struct pstr* p, struct pstr* data, int flags) {
-  int fd = open(pstr_as_cstr(p), flags, 0600);
+  int fd = open(pstr_as_cstr(p), flags, 0666);
   if (fd == -1) return -1;
 
   ssize_t count = write(fd, pstr_as_cstr(data), pstr_len(data));
@@ -117,7 +117,7 @@ int pstr_write_file(struct pstr* p, struct pstr* data, int flags) {
 // datei-inhalt nach pstr schreiben -> 0 wenns geklappt hat, sonst -1
 // -1 gibts auch, wenn der inhalt nicht rein passt
 int pstr_read_file(struct pstr* p, struct pstr* data) {
-  int fd = open(pstr_as_cstr(p), O_RDONLY, 0600);
+  int fd = open(pstr_as_cstr(p), O_RDONLY, 0666);
   if (fd == -1) return -1;
 
   const ssize_t exact_buffer_size = sizeof((struct pstr*)0)->str;
@@ -285,7 +285,7 @@ int dstr_read_line(struct dstr* p, char** data, int* len) {
 
 // dstr in eine datei schreiben -> 0 wenns geklappt hat, sonst -1
 int dstr_write_file(struct pstr* p, struct dstr* data, int flags) {
-  int fd = open(pstr_as_cstr(p), flags, 0600);
+  int fd = open(pstr_as_cstr(p), flags, 0666);
   if (fd == -1) return -1;
 
   ssize_t count = write(fd, dstr_as_cstr(data), dstr_len(data));
@@ -307,7 +307,7 @@ int dstr_write_file(struct pstr* p, struct dstr* data, int flags) {
 int dstr_read_file(struct pstr* p, struct dstr* data) {
   char buffer[4096];
 
-  int fd = open(pstr_as_cstr(p), O_RDONLY, 0600);
+  int fd = open(pstr_as_cstr(p), O_RDONLY, 0666);
   if (fd == -1) return -1;
 
   ssize_t count;
