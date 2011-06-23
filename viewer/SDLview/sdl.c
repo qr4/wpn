@@ -33,7 +33,8 @@ float zoom;
 float offset_x;
 float offset_y;
 
-float mag = 64;
+float default_mag = 64;
+float mag = default_mag;
 
 void screen_init() {
 	screen = SDL_SetVideoMode(display_x, display_y, 0, SDL_RESIZABLE | SDL_HWSURFACE | SDL_DOUBLEBUF);
@@ -146,6 +147,12 @@ void checkSDLevent() {
 						zoom /= 1.2;
 						offset_x = display_x / 2 + (offset_x - display_x / 2) / 1.2;
 						offset_y = display_y / 2 + (offset_y - display_y / 2) / 1.2;
+						break;
+					case SDLK_m:
+						mag /= 1.5;
+						break;
+					case SDLK_M:
+						mag *= 1.5;
 						break;
 					case SDLK_q:
 						fprintf(stderr, "Closing by user request\n");
@@ -285,12 +292,14 @@ double player_to_h(int playerid) {
 
 void drawAsteroid(asteroid_t* a) {
 	static float last_zoom = 1;
+	static float last_mag = default_mag;
 	static SDL_Surface* asteroid_sprite = NULL;
 
-	if(!asteroid_sprite || (zoom != last_zoom)) {
+	if(!asteroid_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(asteroid_sprite);
 		asteroid_sprite = zoomSurface(asteroid_image, mag * zoom / 16.0, mag * zoom / 16.0, 0);
 		last_zoom = zoom;
+		last_mag = mag;
 	}
 
 	if(a->active > 0) {
@@ -326,15 +335,17 @@ void drawHalo(double x, double y, double r, double h) {
 
 void drawShip(ship_t * s) {
 	static float last_zoom = 1;
+	static float last_mag = default_mag;
 	static SDL_Surface* ship_small_sprite = NULL;
 	static SDL_Surface* ship_medium_sprite = NULL;
 
-	if(!ship_small_sprite || !ship_medium_sprite || (zoom != last_zoom)) {
+	if(!ship_small_sprite || !ship_medium_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(ship_small_sprite);
 		ship_small_sprite = zoomSurface(ship_small_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
 		SDL_FreeSurface(ship_medium_sprite);
 		ship_medium_sprite = zoomSurface(ship_medium_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
 		last_zoom = zoom;
+		last_mag = mag;
 	}
 
 	if(s->active > 0) {
@@ -368,12 +379,13 @@ void drawShip(ship_t * s) {
 
 void drawSlot(float x, float y, char type) {
 	static float last_zoom = 1;
+	static float last_mag = default_mag;
 	static SDL_Surface* slot_empty_sprite = NULL;
 	static SDL_Surface* slot_L_sprite = NULL;
 	static SDL_Surface* slot_R_sprite = NULL;
 	static SDL_Surface* slot_T_sprite = NULL;
 
-	if(!slot_empty_sprite || !slot_L_sprite || !slot_R_sprite || !slot_T_sprite || (zoom != last_zoom)) {
+	if(!slot_empty_sprite || !slot_L_sprite || !slot_R_sprite || !slot_T_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(slot_empty_sprite);
 		slot_empty_sprite = zoomSurface(slot_empty_image, mag * zoom / 16.0, mag * zoom / 16.0, 0);
 		SDL_FreeSurface(slot_L_sprite);
@@ -383,6 +395,7 @@ void drawSlot(float x, float y, char type) {
 		SDL_FreeSurface(slot_T_sprite);
 		slot_T_sprite = zoomSurface(slot_T_image, mag * zoom / 16.0, mag * zoom / 16.0, 0);
 		last_zoom = zoom;
+		last_mag = mag;
 	}
 
 	SDL_Rect dst_rect;
@@ -405,12 +418,14 @@ void drawSlot(float x, float y, char type) {
 
 void drawPlanet(planet_t* p) {
 	static float last_zoom = 1;
+	static float last_mag = default_mag;
 	static SDL_Surface* planet_sprite = NULL;
 
-	if(!planet_sprite || (zoom != last_zoom)) {
+	if(!planet_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(planet_sprite);
 		planet_sprite = zoomSurface(planet_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
 		last_zoom = zoom;
+		last_mag = mag;
 	}
 
 	if(p->active > 0) {
@@ -431,15 +446,17 @@ void drawPlanet(planet_t* p) {
 
 void drawExplosion(explosion_t* e) {
 	static float last_zoom = 1;
+	static float last_mag = default_mag;
 	static SDL_Surface* explosion_sprite = NULL;
 	int i;
 	//unsigned int x,y,u;
 	//char a;
 
-	if(!explosion_sprite || (zoom != last_zoom)) {
+	if(!explosion_sprite || (zoom != last_zoom) (mag != last_mag)) {
 		SDL_FreeSurface(explosion_sprite);
 		explosion_sprite = zoomSurface(explosion_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
 		last_zoom = zoom;
+		last_mag = mag;
 	}
 
 	if(e->strength > 0) {
@@ -483,12 +500,14 @@ void drawExplosion(explosion_t* e) {
 
 void drawShot(shot_t* s) {
 	static float last_zoom = 1;
+	static float last_mag = default_mag;
 	static SDL_Surface* shot_sprite = NULL;
 
-	if(!shot_sprite || (zoom != last_zoom)) {
+	if(!shot_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(shot_sprite);
 		shot_sprite = zoomSurface(shot_image, mag * zoom / 1.0, mag * zoom / 1.0, 0);
 		last_zoom = zoom;
+		last_mag = mag;
 	}
 
 	aalineRGBA(screen, offset_x + s->src_x * zoom, offset_y + s->src_y * zoom, offset_x + s->trg_x * zoom, offset_y + s->trg_y * zoom, 0, 255, 0, 128);
