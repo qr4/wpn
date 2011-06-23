@@ -12,6 +12,7 @@
 #include "json_output.h"
 #include "debug.h"
 #include "config.h"
+#include "base.h"
 #include "route.h"
 #include "../net/talk.h"
 
@@ -1500,21 +1501,33 @@ int lua_colonize(lua_State* L) {
 		return 0;
 	}
 
+	/* TODO: Range checking */
+
 	/* Well, I guess everything's fine. Create a base here */
-	base = alloc_entity(base_storage);
+	unregister_object(eself);
+
+	/* TODO: Put this in it's own function! */
+	base = init_base(base_storage, planet, 0);
+	if(base.id == INVALID_ID.id) {
+		ERROR("Creating the base failed horribly!\n");
+		return 0;
+	}
 	ebase = get_entity_by_id(base);
 
-	ebase->pos = eself->pos;
-	ebase->radius = eplanet->radius;
+	/* Copy all slots */
+	ebase->slots = eself->slots;
+	ebase->slot_data->slot = eself->slot_data->slot;
+	eself->slot_data->slot = NULL;
+	eself->slots = 0;
+
+	/* Copy the lua state over */
+	lua_close(ebase->lua);
 	ebase->lua = eself->lua;
 	eself->lua = NULL;
+
+	/* Set player_id */
 	ebase->player_id = eself->player_id;
 	eplanet->player_id = eself->player_id;
-
-	/* Swap storages/slots */
-	slot_temp = ebase->slot_data;
-	ebase->slot_data = eself->slot_data;
-	eself->slot_data = slot_temp;
 
 	/* Set the new id as this lua states' "self"-pointer, as well as the active entity. */
 	lua_pushlightuserdata(L, (void*) base.id);
