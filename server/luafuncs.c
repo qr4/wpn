@@ -468,6 +468,17 @@ int lua_fire(lua_State* L) {
 		return 0;
 	}
 
+	/* Count lasers */
+	for(i=0; i<eself->slots; i++) {
+		if(eself->slot_data->slot[i] == WEAPON) {
+			num_lasers++;
+		}
+	}
+	/* Check that we have lasers at all */
+	if(num_lasers <= 0) {
+		return 0;
+	}
+
 	/* Check that we are targetting something shootable and determine it's
 	 * hit probability */
 	switch(e->type) {
@@ -553,12 +564,6 @@ int lua_fire(lua_State* L) {
 	/* TODO: Do we have to nudge the autopilot again? */
 
 	/* Now we are busy recharging our lasers */
-	/* Count lasers */
-	for(i=0; i<eself->slots; i++) {
-		if(eself->slot_data->slot[i] == WEAPON) {
-			num_lasers++;
-		}
-	}
 	set_entity_timer(eself, config_get_int("laser_recharge_duration")/num_lasers, WEAPONS_READY, self);
 
 	/* TODO: Return whether we hit? */
