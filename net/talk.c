@@ -194,8 +194,8 @@ struct automaton {
   {
     .msg = "\n"
       " Hier kannst Du noch Informationen angeben, die Du uns mitteilen moechtest.\n"
-      " Z.B. eine E-Mail-Adresse, unter der Dich erreichen koenne, oder wo auf der\n"
-      " GPN Du sitzt damit wir Dich schuetteln koennen wenn Du was boeses machst.\n"
+      " Z.B. eine E-Mail-Adresse, unter der wir Dich erreichen koennen, oder wo auf\n"
+      " der GPN Du sitzt damit wir Dich schuetteln koennen wenn Du was boeses machst.\n"
       " Auch ueber Rueckmeldung wie GEILES SPIEL WAS IHR DA GEBAUT HABT!! freuen wir\n"
       " uns natuerlich :-)\n"
       " Eine leere Zeile beendet die Eingabe.\n"
