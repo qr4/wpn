@@ -148,6 +148,7 @@ void net_client_connect(int fd, fd_set* master, int* fdmax, struct timeval* tv) 
   if (net.nc[newfd].data_fd == -1) {
     log_perror("dup");
     close(newfd);
+    FD_CLR(newfd, master);
     return;
   }
 
