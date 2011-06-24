@@ -13,7 +13,7 @@ double MAXIMUM_CLUSTER_SIZE = 500;
 
 double MINIMUM_PLANET_SIZE = 30;
 double MAXIMUM_PLANET_SIZE = 50;
-double PLANETS = 128;
+double PLANETS = 200;
 
 double ASTEROIDS = 150;
 double MINIMUM_ASTEROIDS = 5;
@@ -21,8 +21,8 @@ double MAXIMUM_ASTEROIDS = 5;
 
 double AVERAGE_GRID_SIZE = 500;
 
-double MAP_SIZE_X = 20000.;
-double MAP_SIZE_Y = 20000.;
+double MAP_SIZE_X = 150000.;
+double MAP_SIZE_Y = 76250.;
 
 size_t CLUSTERS_X = 40;
 size_t CLUSTERS_Y = 40;
