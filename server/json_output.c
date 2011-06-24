@@ -184,7 +184,7 @@ char* shot_to_json(entity_t* source, entity_t* target) {
 	char* retval;
 
 	/* TODO: Unique-id for shots? */
-	asprintf(&retval, "{\"id\": %lu, \"owner\": %u, \"source\": %lu, \"target\": %lu}", INVALID_ID.id, source->player_id, source->unique_id.id, target->unique_id.id);
+	asprintf(&retval, "{\"id\": %lu, \"owner\": %u, \"source\": %lu, \"target\": %lu}", 123, source->player_id, source->unique_id.id, target->unique_id.id);
 
 	return retval;
 }
