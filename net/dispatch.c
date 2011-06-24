@@ -59,7 +59,7 @@ int dispatch(struct pipe_com* pc, int read_pipe, char** data, int* data_len) {
   return pc->header.head.len - pc->read_body;
 }
 
-int send_dispatch_msg(int fd, unsigned int user_id, char* msg, int msg_len) {
+int send_dispatch_msg(int fd, unsigned int user_id, const char* msg, int msg_len) {
   struct pipe_com tmp = { .header.head.id = user_id, .header.head.len = msg_len };
 
   if (msg_len == 0) {

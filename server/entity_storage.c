@@ -80,7 +80,7 @@ entity_t* get_entity_from_storage_by_id(entity_storage_t* s, entity_id_t id) {
 
 	if(s->offsets[index] >= s->first_free) {
 		/* This entity is already dead. */
-		DEBUG("Entity %i is dead.", id.id);
+		DEBUG("Entity %lu is dead.", id.id);
 		return NULL;
 	}
 
@@ -114,7 +114,7 @@ void free_entity(entity_storage_t* s, entity_id_t id) {
 
 	if(e == NULL) {
 		if (id.id != INVALID_ID.id) {
-			DEBUG("Attempted to free nonexistent entity with id %lu\n", id);
+			DEBUG("Attempted to free nonexistent entity with id %lu\n", id.id);
 		}
 		return;
 	}

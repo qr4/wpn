@@ -53,7 +53,7 @@ void new_player(unsigned int player_id) {
 	}
 
 	/* Read username from one file */
-	fscanf(f, "%as", &(players[n_players].name));
+	if(fscanf(f, "%as", &(players[n_players].name)));
 
 	/* If this fails for some reason, set an empty name */
 	if(!players[n_players].name) {
@@ -104,7 +104,7 @@ void create_homebase(player_data_t* player) {
 	b = get_entity_by_id(base_id);
 	b->player_id = player->player_id;
 
-	DEBUG("Created homebase %li for player %i.\n", base_id, player->player_id);
+	DEBUG("Created homebase %lu for player %u.\n", base_id.id, player->player_id);
 }
 
 /* Scan through the player-by-id directory and add all players marked there */

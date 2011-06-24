@@ -31,7 +31,7 @@ void pstr_set(struct pstr* dest, struct pstr* src) {
 }
 
 // setzt src als string
-int pstr_set_cstr(struct pstr* p, char* src, int src_len) {
+int pstr_set_cstr(struct pstr* p, const char* src, int src_len) {
   const size_t str_size = sizeof((struct pstr*)0)->str - 1;  // -1 wegen \0-terminierung
   size_t len = str_size < src_len ? str_size : src_len;
   memcpy(p->str, src, len);
@@ -47,7 +47,7 @@ int pstr_append(struct pstr* dest, struct pstr* src) {
 }
 
 // an den pstr was drannhaengen
-int pstr_append_cstr(struct pstr* dest, char* src, int src_len) {
+int pstr_append_cstr(struct pstr* dest, const char* src, int src_len) {
   if (src_len == 0) return 0;
 
   const size_t str_size = sizeof ((struct pstr*)0)->str - 1;  // -1 wegen \0-terminierung
@@ -59,7 +59,7 @@ int pstr_append_cstr(struct pstr* dest, char* src, int src_len) {
 }
 
 // an den pstr das zeux von printf drann haengen
-int pstr_append_printf(struct pstr* p, char* msg, ...) {
+int pstr_append_printf(struct pstr* p, const char* msg, ...) {
   va_list ap;
   va_start(ap, msg);
 
@@ -191,7 +191,7 @@ char* dstr_as_cstr(struct dstr* p) {
 }
 
 // setzt src als string
-int dstr_set(struct dstr* p, char* src, size_t src_len) {
+int dstr_set(struct dstr* p, const char* src, size_t src_len) {
   size_t size = p->size;
 
   if (size < src_len + 1) {
@@ -212,7 +212,7 @@ int dstr_set(struct dstr* p, char* src, size_t src_len) {
 }
 
 // fuegt src mit der laenge src_len an dstr an
-int dstr_append(struct dstr* p, char* src, size_t src_len) {
+int dstr_append(struct dstr* p, const char* src, size_t src_len) {
   if (src_len == 0) return 0;
 
   // da wir data mit \0 terminieren wollen muessen wir
@@ -247,8 +247,8 @@ int dstr_append(struct dstr* p, char* src, size_t src_len) {
   return 0;
 }
 
-// wie oebn, nur hier ist src \0-terminiert
-int dstr_append_cstr(struct dstr* p, char* src) {
+// wie oben, nur hier ist src \0-terminiert
+int dstr_append_cstr(struct dstr* p, const char* src) {
   return dstr_append(p, src, strlen(src));
 }
 

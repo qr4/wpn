@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -69,7 +71,6 @@ int main(int argc, char *argv[]) {
 	log_open("test_net_main.log");
 	log_msg("---------------- new start");
 
-	entity_t *e;
 	struct timeval t;
 	struct timeval t_prev;
 	struct timeval t_diff;
@@ -111,19 +112,6 @@ int main(int argc, char *argv[]) {
 	 * and initialize their station code. */
 	add_all_known_players();
 	evaluate_all_player_code();
-
-	/* Create a test user and -ships */
-	//entity_id_t ship1;
-	//for(int i=0; i<200; i++)  {
-	//	vector_t v1 = vector(i);
-	//	ship1 = init_ship(ship_storage, v1, 6);
-	//	e = get_entity_by_id(ship1);
-	//	if(e) {
-	//		e->player_id = 100;
-	//		e->ship_data->slot[0] = DRIVE;
-	//		register_object(e);
-	//	}
-	//}
 
 	map_to_network();
 
@@ -196,6 +184,7 @@ int main(int argc, char *argv[]) {
 					call_entity_callback(self, ENTITY_APPROACHING, other->unique_id);
 				}
 			}
+			free(neigh);
 		}
 
 		/* Move ships by one physics-step */
@@ -204,7 +193,7 @@ int main(int argc, char *argv[]) {
 			fprintf(stderr, "Not enough ram for ship updates\n");
 			exit(1);
 		}
-		int updates = 0;
+
 		for(int i=0; i<ship_storage->first_free; i++) {
 			if(ship_storage->entities[i].ship_data->flightplan != NULL) {
 				move_ship(ship_storage->entities + i);

@@ -72,7 +72,10 @@ static const lua_function_entry lua_wrappers[] = {
 void register_lua_functions(entity_t *s) {
 	size_t i;
 	for (i = 0; i < sizeof(lua_wrappers) / sizeof(lua_function_entry); i++) {
-		DEBUG("Registering \"%s\" at 0x%lx for 0x%lx\n", lua_wrappers[i].lua_function_name, lua_wrappers[i].c_function, s);
+		DEBUG("Registering \"%s\" at 0x%lx for 0x%lx\n", 
+				lua_wrappers[i].lua_function_name, 
+				(unsigned long) lua_wrappers[i].c_function, 
+				(unsigned long) s);
 		lua_register(s->lua, lua_wrappers[i].lua_function_name, lua_wrappers[i].c_function);
 	}
 }
@@ -1013,7 +1016,6 @@ int lua_transfer_slot(lua_State* L) {
 
 	/* Swap the slots */
 	switch(swap_slots(eself, local_slot, e, remote_slot)) {
-
 		case OUT_OF_BOUNDS_LEFT:
 			DEBUG("Out of bounds in source of transfer\n");
 			return 0;
@@ -1022,6 +1024,8 @@ int lua_transfer_slot(lua_State* L) {
 			return 0;
 		case OK:
 			break;
+		default:
+			DEBUG("Unexpected return valua of swap_slots()");
 	}
 
 	/* Now the little robognomes on board are busy carrying over the chests. */
@@ -1509,7 +1513,6 @@ int lua_colonize(lua_State* L) {
 	int n;
 	entity_id_t self, planet, base;
 	entity_t* eself, *eplanet, *ebase;
-	slot_data_t* slot_temp;
 
 	n = lua_gettop(L);
 	if(n!=1 || !lua_islightuserdata(L,1)) {
@@ -1733,6 +1736,7 @@ int lua_reset_lua_state(lua_State* L) {
 	do_reset = 1;
 	lua_pushstring(L,"reset_lua_state invoked.");
 	lua_error(L);
+	return 0; // this is senseless, but it surpresses compiler warnings
 }
 
 /* Override lua's "print" function, so that output is not going to a terminal,

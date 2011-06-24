@@ -1202,7 +1202,7 @@ int talk_get_user_code_fd() {
   return talk.user_code_pipe;
 }
 
-int talk_set_user_code_reply_msg(unsigned int user_id, char* msg, int msg_len) {
+int talk_set_user_code_reply_msg(unsigned int user_id, const char* msg, int msg_len) {
   return send_dispatch_msg(talk.user_code_reply_pipe, user_id, msg, msg_len);
 } 
 
@@ -1212,7 +1212,7 @@ int talk_get_user_code_upload_fd() {
 }
 
 // menupunkt 3
-int talk_log_lua_msg(unsigned int user_id, char* msg, int msg_len) {
+int talk_log_lua_msg(unsigned int user_id, const char* msg, int msg_len) {
   return send_dispatch_msg(talk.log_lua_msg_pipe, user_id, msg, msg_len);
 }
 

@@ -21,11 +21,11 @@ struct pstr {
 void pstr_clear(struct pstr* p);
 
 void pstr_set(struct pstr* dest, struct pstr* src);
-int pstr_set_cstr(struct pstr* p, char* src, int src_len);
+int pstr_set_cstr(struct pstr* p, const char* src, int src_len);
 
 int pstr_append(struct pstr* dest, struct pstr* src);
-int pstr_append_cstr(struct pstr* dest, char* src, int src_len);
-int pstr_append_printf(struct pstr* dest, char* msg, ...);
+int pstr_append_cstr(struct pstr* dest, const char* src, int src_len);
+int pstr_append_printf(struct pstr* dest, const char* msg, ...);
 
 int pstr_cmp(struct pstr* a, struct pstr* b);
 
@@ -52,9 +52,9 @@ int dstr_malloc(struct dstr* p);
 void dstr_free(struct dstr* p);
 void dstr_clear(struct dstr* p);
 char* dstr_as_cstr(struct dstr* p);
-int dstr_set(struct dstr* p, char* src, size_t src_len);
-int dstr_append(struct dstr* p, char* src, size_t src_len);
-int dstr_append_cstr(struct dstr* p, char* src);
+int dstr_set(struct dstr* p, const char* src, size_t src_len);
+int dstr_append(struct dstr* p, const char* src, size_t src_len);
+int dstr_append_cstr(struct dstr* p, const char* src);
 int dstr_len(struct dstr* p);
 int dstr_read_line(struct dstr* p, char** data, int* len);
 int dstr_write_file(struct pstr* p, struct dstr* data, int flags);

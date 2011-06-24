@@ -1,3 +1,4 @@
+#include "entities.h"
 #include "storages.h"
 #include "config.h"
 #include "debug.h"

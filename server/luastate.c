@@ -174,7 +174,7 @@ void call_entity_callback(entity_t* e, event_t event, entity_id_t context) {
 	if(lua_pcall(e->lua, 1,0,0)) {
 
 		/* Lua errors send the ship adrift */
-		DEBUG("Entity %u killed due to lua error:\n%s\n", e->unique_id.id, lua_tostring(e->lua, -1));
+		DEBUG("Entity %lu killed due to lua error:\n%s\n", e->unique_id.id, lua_tostring(e->lua, -1));
 		kill_computer(e);
 	}
 

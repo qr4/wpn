@@ -60,7 +60,9 @@ void map_flush() {
 
   close(net.map_fd);   // fertig mit der map
 
-  write(net.pipefd[1], now, sizeof(now));  //  client benachrichtigen
+  if(write(net.pipefd[1], now, sizeof(now)) < 1) {  //  client benachrichtigen
+	  fprintf(stderr, "write failed in %s\n", __func__);
+  }
 
   net.current_map = (net.current_map + 1) % ('z' - 'a' + 1);  // auf die naechste zeigen
   now[0] = 'a' + net.current_map;
@@ -92,7 +94,9 @@ void update_flush() {
 
   close(net.update_fd);
 
-  write(net.pipefd[1], now, sizeof(now));
+  if(write(net.pipefd[1], now, sizeof(now)) < 0) {
+	  fprintf(stderr, "write failed in %s\n", __func__);
+  }
 
   net.current_update = (net.current_update + 1) % ('Z' - 'A' + 1);
   now[0] = 'A' + net.current_update;
@@ -246,6 +250,8 @@ void net_timer(struct timeval* tv) {
         break;
 
       } while(0);
+	  default:
+		break;
     }
   }
 
@@ -278,9 +284,6 @@ int net_pipe(int fd, struct timeval* tv) {
   }
 
 //  log_msg("neue sachen zum verteilen (%.*s)...", len, buffer);
-
-  char map[] = NET_MAP;
-  char update[] = NET_UPDATE;
 
   int moep_fd = -1;
 
