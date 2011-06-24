@@ -1070,7 +1070,7 @@ static void talk_client_loop(int net_fd) {
     rfds_tmp = rfds;
     ret = select(max_fd + 1, &rfds_tmp, NULL, NULL, NULL);
 
-    if (ret == -1) { log_perror("select"); exit(EXIT_FAILURE); }
+    if (ret == -1) { log_perror("talk_client_loop select"); exit(EXIT_FAILURE); }
 
     int max_fd_tmp = max_fd;  // brauchen wir, da sich max_fd durch client-connects ??ndern kann
     for (int fd = 0; fd <= max_fd_tmp; ++fd) {
