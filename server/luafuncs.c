@@ -18,6 +18,8 @@
 
 #include "lua_help_messages.h"
 
+int do_reset=0;
+
 /* Type of functions which we make available to lua states */
 #define MAX_LUA_NAME_LEN 32
 typedef struct {
@@ -64,6 +66,7 @@ static const lua_function_entry lua_wrappers[] = {
 	/* More lowlevel stuff */
 	{lua_help,                  "help",                  help_help},
 	{lua_print,                 "print",                 print_help},
+	{lua_reset_lua_state,       "reset_lua_state",       NULL},
 };
 
 void register_lua_functions(entity_t *s) {
@@ -1723,6 +1726,13 @@ int lua_get_timestep(lua_State* L) {
 	lua_pushnumber(L, timestep);
 
 	return 1;
+}
+
+/* Completely reset the lua state of this ship. */
+int lua_reset_lua_state(lua_State* L) {
+	do_reset = 1;
+	lua_pushstring(L,"reset_lua_state invoked.");
+	lua_error(L);
 }
 
 /* Override lua's "print" function, so that output is not going to a terminal,

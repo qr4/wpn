@@ -11,6 +11,7 @@
 #include "../net/talk.h"
 #include "../net/dispatch.h"
 #include "debug.h"
+#include "luafuncs.h"
 #include "config.h"
 #include "json_output.h"
 #include "luastate.h"
@@ -206,6 +207,13 @@ void player_check_code_updates(long usec_wait) {
               errortext = (char*) lua_tostring(ebase->lua, -1);
               talk_set_user_code_reply_msg(user, errortext, strlen(errortext));
               lua_pop(ebase->lua, 1);
+
+							if(do_reset) {
+								lua_close(ebase->lua);
+								ebase->lua=NULL;
+								init_ship_computer(ebase);
+								do_reset = 0;
+							}
             } else {
 
 							/* Send return values to the client, as strings */
@@ -274,6 +282,13 @@ void player_check_code_updates(long usec_wait) {
                 errortext = (char*) lua_tostring(ebase->lua, -1);
                 talk_log_lua_msg(user, errortext, strlen(errortext));
                 lua_pop(ebase->lua, 1);
+
+								if(do_reset) {
+									lua_close(ebase->lua);
+									ebase->lua=NULL;
+									init_ship_computer(ebase);
+									do_reset = 0;
+								}
               }
 
               free(lua_source_file);
@@ -340,6 +355,13 @@ void evaluate_all_player_code() {
 			errortext = (char*) lua_tostring(ebase->lua, -1);
 			talk_log_lua_msg(players[i].player_id, errortext, strlen(errortext));
 			lua_pop(ebase->lua, 1);
+
+			if(do_reset) {
+				lua_close(ebase->lua);
+				ebase->lua=NULL;
+				init_ship_computer(ebase);
+				do_reset = 0;
+			}
 		}
 
 		free(lua_source_file);

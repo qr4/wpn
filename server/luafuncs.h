@@ -11,7 +11,11 @@
  * in luastate.c
  */
 
+/* The timestep from the mainloop */
 extern uint64_t timestep;
+
+/* A bool value specifying whether to reset the base's lua code on error */
+extern int do_reset;
 
 /* These Functions are grouped by:
  *
@@ -102,6 +106,9 @@ void register_lua_functions(entity_t *s);
 
 /* Debugging helper function, creating a string description of the given entity */
 extern int lua_entity_to_string(lua_State* L);
+
+/* Reset yourself */
+int lua_reset_lua_state(lua_State* L);
 
 /* Override lua's "print" function, so that output is not going to a terminal,
  * but rather the player's console buffer */
