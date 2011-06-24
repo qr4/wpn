@@ -21,8 +21,8 @@ double MAXIMUM_ASTEROIDS = 5;
 
 double AVERAGE_GRID_SIZE = 500;
 
-double MAP_SIZE_X = 100000.;
-double MAP_SIZE_Y = 100000.;
+double MAP_SIZE_X = 20000.;
+double MAP_SIZE_Y = 20000.;
 
 size_t CLUSTERS_X = 40;
 size_t CLUSTERS_Y = 40;
@@ -199,6 +199,12 @@ static void get_search_bounds(vector_t pos, double radius, quad_index_t *start, 
 
 	up_left.v = pos.v - vector(radius).v;
 	down_right.v = pos.v + vector(radius).v;
+
+	down_right.x = fmin(down_right.x, map.right_bound);
+	down_right.y = fmin(down_right.y, map.lower_bound);
+
+	up_left.x = fmax(up_left.x, map.left_bound);
+	up_left.y = fmax(up_left.y, map.upper_bound);
 
 	*start = get_quad_index_by_pos(up_left);
 	*end = get_quad_index_by_pos(down_right);
