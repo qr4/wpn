@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef ENABLE_DEBUG
 	DEBUG("Listen to your mum kids. Never devide by zero. I'm watching you.\n");
-	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+	//feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 #endif
 
 	/* Start networking code */
