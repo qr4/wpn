@@ -333,7 +333,7 @@ void explode_entity(entity_t* e) {
 	}
 
 	/* Remove from docking partner */
-	if(e->ship_data->docked_to != INVALID_ID) {
+	if(e->ship_data->docked_to.id != INVALID_ID.id) {
 		entity_t* other = get_entity_by_id(e->ship_data->docked_to);
 		if(other) {
 			other->ship_data->docked_to = INVALID_ID;
