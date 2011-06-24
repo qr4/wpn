@@ -332,6 +332,14 @@ void explode_entity(entity_t* e) {
 		create_homebase(p);
 	}
 
+	/* Remove from docking partner */
+	if(e->ship_data->docked_to != INVALID_ID) {
+		entity_t* other = get_entity_by_id(e->ship_data->docked_to);
+		if(other) {
+			other->ship_data->docked_to = INVALID_ID;
+		}
+	}
+
 	/* Remove the exploding entity */
 	switch(e->type) {
 		case SHIP:
