@@ -63,6 +63,7 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_get_world_size,          "get_world_size",          get_world_size_help},
 	{lua_get_type,                "get_type",                get_type_help},
 	{lua_get_timestep,            "get_timestep",            NULL},
+	{lua_get_ongoing,           "get_ongoing",           NULL},
 
 	/* More lowlevel stuff */
 	{lua_help,                    "help",                    help_help},
@@ -1223,8 +1224,11 @@ int lua_busy(lua_State* L) {
 		return 1;
 	}
 
-	/* If no timer is set, we are idle. */
-	lua_pushboolean(L,is_busy(e));
+	if(is_busy(e)) {
+		lua_pushnumber(L, e->ship_data->timer_event);
+	} else {
+		lua_pushboolean(L,0);
+	}
 	return 1;
 }
 
@@ -1583,6 +1587,9 @@ int lua_colonize(lua_State* L) {
 	}
 
 	/* TODO: Range checking */
+	if(dist(eself, eplanet) > config_get_double("colonize_range")) {
+		return 0;
+	}
 
 	/* Well, I guess everything's fine. Create a base here */
 	unregister_object(eself);
@@ -1768,6 +1775,28 @@ int lua_get_timestep(lua_State* L) {
 
 	lua_pushnumber(L, timestep);
 
+	return 1;
+}
+
+/* Return, if we are busy, what exactly we are waiting for. */
+int lua_get_ongoing(lua_State* L) {
+
+	entity_id_t self;
+	entity_t* eself;
+	int n;
+
+	n=lua_gettop(L);
+
+	lua_pop(L,n);
+
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	if(eself->ship_data->timer_value == -1) {
+		return 0;
+	}
+
+	lua_pushnumber(L,eself->ship_data->timer_event);
 	return 1;
 }
 

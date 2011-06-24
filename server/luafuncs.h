@@ -103,6 +103,9 @@ int lua_get_type(lua_State* L);
 /* Get the current simulation timestep */
 int lua_get_timestep(lua_State* L);
 
+/* Returns what type of event we are currently waiting for */
+int lua_get_ongoing(lua_State* L);
+
 /* --- Debugging and administrative functions --- */
 /* Registers all lua_functions available through c-api */
 void register_lua_functions(entity_t *s);
