@@ -19,8 +19,9 @@ max_ship_estimation = 8192
 max_base_estimation = 32
 
 -- Range Limits:
-weapon_range = 200
+weapon_range = 500
 docking_range = 100
+colonize_range = 100
 scanner_range = 5000
 
 -- Durations for a number of actions (measured in ticks)
