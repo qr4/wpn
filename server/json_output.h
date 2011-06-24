@@ -20,6 +20,8 @@ char* explosion_to_json(entity_t* e);
 char* player_to_json(player_data_t* p);
 char* players_to_json();
 char* shot_to_json(entity_t* source, entity_t* target);
+void send_base_update(entity_t* e);
+void send_planet_update(entity_t* e);
 void asteroids_to_network();
 void bases_to_network();
 void planets_to_network();

@@ -492,6 +492,35 @@ void player_updates_to_network() {
 	}
 }
 
+/* Send an update about a single base */
+void send_base_update(entity_t* e) {
+
+	char* updatestring;
+
+	updatestring = base_to_json(e);
+
+	if(updatestring) {
+		update_printf("{ \"update\":\n{ \"bases\": [\n%s\n]\n}\n}\n\n", updatestring);
+		free(updatestring);
+		update_flush();
+	}
+}
+
+/* Send an update about a single planet */
+void send_planet_update(entity_t* e) {
+
+	char* updatestring;
+
+	updatestring = planet_to_json(e);
+
+	if(updatestring) {
+		update_printf("{ \"update\":\n{ \"planets\": [\n%s\n]\n}\n}\n\n", updatestring);
+		free(updatestring);
+		update_flush();
+	}
+
+}
+
 void ship_updates_to_network() {
 	char* joined_updates;
 
