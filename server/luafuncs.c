@@ -59,6 +59,7 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_get_slots,             "get_slots",             get_slots_help},
 	{lua_get_world_size,        "get_world_size",        get_world_size_help},
 	{lua_get_type,              "get_type",              get_type_help},
+	{lua_get_timestep,          "get_timestep",          NULL},
 
 	/* More lowlevel stuff */
 	{lua_help,                  "help",                  help_help},
@@ -1706,6 +1707,20 @@ int lua_get_type(lua_State* L) {
 
 	/* Push the type and return */
 	lua_pushnumber(L,id.type);
+
+	return 1;
+}
+
+/* Return the current simulation tick number */
+int lua_get_timestep(lua_State* L) {
+
+	int n;
+
+	n = lua_gettop(L);
+
+	lua_pop(L,n);
+
+	lua_pushnumber(L, timestep);
 
 	return 1;
 }

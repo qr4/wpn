@@ -11,6 +11,7 @@
  * in luastate.c
  */
 
+extern uint64_t timestep;
 
 /* These Functions are grouped by:
  *
@@ -91,6 +92,9 @@ int lua_get_world_size(lua_State* L);
 
 /* Get the type of an entity */
 int lua_get_type(lua_State* L);
+
+/* Get the current simulation timestep */
+int lua_get_timestep(lua_State* L);
 
 /* --- Debugging and administrative functions --- */
 /* Registers all lua_functions available through c-api */

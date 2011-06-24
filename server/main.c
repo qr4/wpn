@@ -43,6 +43,8 @@ double epsilon = 1e-10;
 double asteroid_radius_to_slots_ratio = 1;
 double planet_size = 50;
 
+uint64_t timestep=0;
+
 extern int netpid;
 extern int talkpid;
 
@@ -129,7 +131,7 @@ int main(int argc, char *argv[]) {
 	gettimeofday(&t_prev, NULL);
 
 	/* Main simulation loop */
-	for (uint64_t timestep=0;;timestep++) {
+	for (timestep=0;;timestep++) {
 		/* Iterate through all sentient entities (ships and bases) and determine if
 		 * any timer-based callbacks should be triggered (like completed actions or
 		 * expired explicit timers) */
