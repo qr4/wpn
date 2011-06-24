@@ -316,6 +316,19 @@ static const char get_distance_help[] =
 "\n"
 "";
 
+static const char get_collision_distance_help[] = 
+"\n"
+"get_collision_distance(entity)\n"
+"\n"
+"Returns the collision distance to the given entity.\n"
+"\n"
+"The entity can be out of scanner range.\n"
+"\n"
+"Return value: collision distance to the target enitty,\n"
+"or nil if it is dead/out of range.\n"
+"\n"
+"";
+
 static const char get_docking_partner_help[] =
 "\n"
 "get_docking_partner()\n"

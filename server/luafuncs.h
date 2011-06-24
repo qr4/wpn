@@ -82,6 +82,9 @@ int lua_get_docking_partner(lua_State* L);
 /* Get the distance of another entity */
 int lua_get_distance(lua_State* L);
 
+/* Get the collision distance of another entity */
+int lua_get_collision_distance(lua_State* L);
+
 /* Determine wether you're busy (waiting for some action to finish */
 int lua_busy(lua_State* L);
 

@@ -33,40 +33,41 @@ static const lua_function_entry lua_wrappers[] = {
 //   C-function name,           Lua-function name,       Help message
 
 	/* Action */
-	{lua_killself,              "killself",              killself_help},
-	{lua_moveto,                "moveto",                moveto_help},
-	{lua_set_autopilot_to,      "set_autopilot_to",      set_autopilot_to_help},
-	{lua_set_timer,             "set_timer",             set_timer_help},
-	{lua_dock,                  "dock",                  dock_help},
-	{lua_undock,                "undock",                undock_help},
-	{lua_transfer_slot,         "transfer_slot",         transfer_slot_help},
-	{lua_send_data,             "send_data",             send_data_help},
-	{lua_build_ship,            "build_ship",            build_ship_help},
-	{lua_fire,                  "fire",                  fire_help},
-	{lua_mine,                  "mine",                  mine_help},
-	{lua_manufacture,           "manufacture",           manufacture_help},
-	{lua_colonize,              "colonize",              colonize_help},
-	{lua_upgrade_base,          "upgrade_base",          upgrade_base_help},
+	{lua_killself,                "killself",                killself_help},
+	{lua_moveto,                  "moveto",                  moveto_help},
+	{lua_set_autopilot_to,        "set_autopilot_to",        set_autopilot_to_help},
+	{lua_set_timer,               "set_timer",               set_timer_help},
+	{lua_dock,                    "dock",                    dock_help},
+	{lua_undock,                  "undock",                  undock_help},
+	{lua_transfer_slot,           "transfer_slot",           transfer_slot_help},
+	{lua_send_data,               "send_data",               send_data_help},
+	{lua_build_ship,              "build_ship",              build_ship_help},
+	{lua_fire,                    "fire",                    fire_help},
+	{lua_mine,                    "mine",                    mine_help},
+	{lua_manufacture,             "manufacture",             manufacture_help},
+	{lua_colonize,                "colonize",                colonize_help},
+	{lua_upgrade_base,            "upgrade_base",            upgrade_base_help},
 
 	/* Queries */
-	{lua_entity_to_string,      "entity_to_string",      entity_to_string_help},
-	{lua_get_player,            "get_player",            get_player_help},
-	{lua_get_entities,          "get_entities",          get_entities_help},
-	{lua_find_closest,          "find_closest",          find_closest_help},
-	{lua_get_position,          "get_position",          get_position_help},
-	{lua_get_distance,          "get_distance",          get_distance_help},
-	{lua_get_docking_partner,   "get_docking_partner",   get_docking_partner_help},
-	{lua_busy,                  "is_busy",               is_busy_help},
-	{lua_flying,                "is_flying",             is_flying_help},
-	{lua_get_slots,             "get_slots",             get_slots_help},
-	{lua_get_world_size,        "get_world_size",        get_world_size_help},
-	{lua_get_type,              "get_type",              get_type_help},
-	{lua_get_timestep,          "get_timestep",          NULL},
+	{lua_entity_to_string,        "entity_to_string",        entity_to_string_help},
+	{lua_get_player,              "get_player",              get_player_help},
+	{lua_get_entities,            "get_entities",            get_entities_help},
+	{lua_find_closest,            "find_closest",            find_closest_help},
+	{lua_get_position,            "get_position",            get_position_help},
+	{lua_get_distance,            "get_distance",            get_distance_help},
+	{lua_get_collision_distance,  "get_collision_distance",  get_collision_distance_help},
+	{lua_get_docking_partner,     "get_docking_partner",     get_docking_partner_help},
+	{lua_busy,                    "is_busy",                 is_busy_help},
+	{lua_flying,                  "is_flying",               is_flying_help},
+	{lua_get_slots,               "get_slots",               get_slots_help},
+	{lua_get_world_size,          "get_world_size",          get_world_size_help},
+	{lua_get_type,                "get_type",                get_type_help},
+	{lua_get_timestep,            "get_timestep",            NULL},
 
 	/* More lowlevel stuff */
-	{lua_help,                  "help",                  help_help},
-	{lua_print,                 "print",                 print_help},
-	{lua_reset_lua_state,       "reset_lua_state",       NULL},
+	{lua_help,                    "help",                    help_help},
+	{lua_print,                   "print",                   print_help},
+	{lua_reset_lua_state,         "reset_lua_state",         NULL},
 };
 
 void register_lua_functions(entity_t *s) {
@@ -844,7 +845,7 @@ int lua_get_player(lua_State* L) {
 				return 0;
 			} else {
 				/* Check that the target entity is within scanner range */
-				if(dist(eself, e) < config_get_double("scanner_range")) {
+				if(in_scanner_range(self, id)) {
 					lua_pushnumber(L,e->player_id);
 					return 1;
 				} else {
@@ -890,7 +891,7 @@ int lua_get_position(lua_State* L) {
 				return 0;
 			} else {
 				/* Check that the target entity is within scanner range */
-				if(dist(eself, e) < config_get_double("scanner_range")) {
+				if(in_scanner_range(self, id)) {
 					lua_pushnumber(L,e->pos.x);
 					lua_pushnumber(L,e->pos.y);
 					return 2;
@@ -962,10 +963,47 @@ int lua_get_distance(lua_State* L) {
 		return 0;
 	} else {
 		/* Check that the target entity is within scanner range */
-		if(dist(eself, e) < config_get_double("scanner_range")) {
+		if(in_scanner_range(self, id)) {
 
 			/* Return its distance */
-			lua_pushnumber(L,dist(eself, e));
+			lua_pushnumber(L, dist(eself, e));
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+}
+
+/* Get the distance of another entity */
+int lua_get_collision_distance(lua_State* L) {
+	entity_id_t id, self;
+	entity_t *e, *eself;
+	int n;
+
+	n = lua_gettop(L);
+
+	/* Set self entity */
+	self = get_self(L);
+	eself = get_entity_by_id(self);
+
+	if(n != 1 || !lua_islightuserdata(L,-1)) {
+			lua_pushstring(L, "get_collision_distance expects exactly one entity argument");
+			lua_error(L);
+	}
+
+	/* Get target */
+	id.id = (uint64_t) lua_touserdata(L,-1);
+	lua_pop(L,1);
+	e = get_entity_by_id(id);
+	if(e == NULL) {
+		/* Return nil if the entity doesn't exist */
+		return 0;
+	} else {
+		/* Check that the target entity is within scanner range */
+		if(in_scanner_range(self, id)) {
+
+			/* Return its distance */
+			lua_pushnumber(L, collision_dist(eself, e));
 			return 1;
 		} else {
 			return 0;
@@ -1168,7 +1206,7 @@ int lua_busy(lua_State* L) {
 			}
 
 			/* Check that entity is within scanner range */
-			if(dist(eself, e) > config_get_double("scanner_range")) {
+			if(!in_scanner_range(self, id)) {
 				return 0;
 			}
 

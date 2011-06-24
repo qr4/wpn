@@ -65,7 +65,7 @@ static inline int in_scanner_range(entity_id_t ship, entity_id_t object) {
 	if (object.type != SHIP && object.type != BASE) {
 		return 1 == 1;
 	} else {
-		return dist(get_entity_by_id(ship), get_entity_by_id(object)) < config_get_double("scanner_range");
+		return collision_dist(get_entity_by_id(ship), get_entity_by_id(object)) < config_get_double("scanner_range");
 	}
 }
 
