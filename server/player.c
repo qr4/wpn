@@ -6,6 +6,8 @@
 #include <poll.h>
 #include <unistd.h>
 #include <lauxlib.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include "types.h"
 #include "../net/config.h"
 #include "../net/talk.h"
@@ -114,6 +116,8 @@ void add_all_known_players() {
 	DIR* playerdir;
 	struct dirent* direntry;
 	int number;
+	struct stat codestat;
+	char* codefile;
 
 	playerdir = opendir(USER_HOME_BY_ID);
 	if(!playerdir) {
@@ -129,8 +133,19 @@ void add_all_known_players() {
 
 		/* Don't add direntrys that don't resolve to a number */
 		number = atoi(direntry->d_name);
-		if(number)
-			new_player(number);
+		if(!number)
+			continue;
+
+		/* Don't add direntries that don't contain code. */
+		asprintf(&codefile, USER_HOME_BY_ID "/%i/current", number);
+		if(!stat(codefile, &codestat) || codestat.st_size == 0) {
+			free(codefile);
+			continue;
+		}
+		free(codefile);
+
+		new_player(number);
+
 	}
 
 	closedir(playerdir);
