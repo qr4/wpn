@@ -31,7 +31,7 @@ int parseJson(buffer_t* b) {
 	json_t* root = json_loads(b->data, 0, &error);
 	if(!root) {
 		fprintf(stderr, "Error %s in line %d, column %d\n", error.text, error.line, error.column);
-		exit(1);
+		//exit(1);
 	} else {
 		//fprintf(stderr, "Found valid json\n");
 		json_t* world = json_object_get(root, "world");

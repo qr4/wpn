@@ -1,5 +1,5 @@
 #include "sdl.h"
-#include "fontrender.h"
+#include <SDL_ttf.h>
 
 SDL_Surface* screen;
 
@@ -8,6 +8,8 @@ SDL_Surface* explosion_image;
 SDL_Surface* planet_image;
 SDL_Surface* ship_small_image;
 SDL_Surface* ship_medium_image;
+SDL_Surface* ship_large_image;
+SDL_Surface* ship_huge_image;
 SDL_Surface* shot_image;
 SDL_Surface* slot_empty_image;
 SDL_Surface* slot_L_image;
@@ -36,7 +38,13 @@ float offset_y;
 
 #define default_mag 64
 float mag = default_mag;
-char show_text = 0;
+
+
+#define FONT_FILE "terminus.ttf"
+#define FONT_SIZE 9
+TTF_Font* font;
+char show_text_id = 1;
+char show_text_coords = 0;
 
 void screen_init() {
 	screen = SDL_SetVideoMode(display_x, display_y, 0, SDL_RESIZABLE | SDL_HWSURFACE | SDL_DOUBLEBUF);
@@ -56,6 +64,11 @@ void SDLinit() {
 	atexit(SDL_Quit);
 
 	screen_init();
+
+	/* Initialize font rendering */
+	TTF_Init();
+	atexit(TTF_Quit);
+	font = TTF_OpenFont(FONT_FILE, FONT_SIZE);
 
 	// load support for the JPG and PNG image formats
 	int flags = IMG_INIT_JPG;
@@ -92,6 +105,18 @@ void SDLinit() {
 	ship_medium_image = IMG_LoadPNG_RW(SDL_RWFromFile("ship_medium.png", "rb"));
 	if(!ship_medium_image) {
 		printf("IMG_LoadPNG_RW: Loading image for medium ship failed: %s\n", IMG_GetError());
+		exit(1);
+	}
+
+	ship_large_image = IMG_LoadPNG_RW(SDL_RWFromFile("ship_large.png", "rb"));
+	if(!ship_large_image) {
+		printf("IMG_LoadPNG_RW: Loading image for large ship failed: %s\n", IMG_GetError());
+		exit(1);
+	}
+
+	ship_huge_image = IMG_LoadPNG_RW(SDL_RWFromFile("ship_huge.png", "rb"));
+	if(!ship_huge_image) {
+		printf("IMG_LoadPNG_RW: Loading image for huge ship failed: %s\n", IMG_GetError());
 		exit(1);
 	}
 
@@ -158,12 +183,20 @@ void checkSDLevent() {
 							mag /= 1.5;
 						}
 						break;
-					case SDLK_t:
+					case SDLK_c:
 						if((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) {
-							// T
-							show_text = 0;
+							// C
+							show_text_coords = 0;
 						} else {
-							show_text = 1;
+							show_text_coords = 1;
+						}
+						break;
+					case SDLK_i:
+						if((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) {
+							// I
+							show_text_id = 0;
+						} else {
+							show_text_id = 1;
 						}
 						break;
 					case SDLK_q:
@@ -302,6 +335,28 @@ double player_to_h(int playerid) {
 	return 293*(playerid-100);
 }
 
+void drawText(int x,int y, char* text) {
+	SDL_Color text_color = {255,255,255,0};
+	SDL_Color bg = {0,0,0,0};
+	SDL_Surface* text_surf;
+	SDL_Rect pos;
+
+	if(x < 0 || y < 0) {
+		return;
+	}
+
+	text_surf = TTF_RenderText_Shaded(font, text, text_color, bg);
+
+	pos.x = x;
+	pos.y = y;
+	pos.w = text_surf->w;
+	pos.h = text_surf->h;
+
+	SDL_BlitSurface(text_surf, NULL, screen, &pos);
+
+	SDL_FreeSurface(text_surf);
+}
+
 void drawAsteroid(asteroid_t* a) {
 	static float last_zoom = 1;
 	static float last_mag = default_mag;
@@ -350,12 +405,18 @@ void drawShip(ship_t * s) {
 	static float last_mag = default_mag;
 	static SDL_Surface* ship_small_sprite = NULL;
 	static SDL_Surface* ship_medium_sprite = NULL;
+	static SDL_Surface* ship_large_sprite = NULL;
+	static SDL_Surface* ship_huge_sprite = NULL;
 
-	if(!ship_small_sprite || !ship_medium_sprite || (zoom != last_zoom) || (mag != last_mag)) {
+	if(!ship_small_sprite || !ship_medium_sprite || !ship_large_sprite || !ship_huge_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(ship_small_sprite);
 		ship_small_sprite = zoomSurface(ship_small_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
 		SDL_FreeSurface(ship_medium_sprite);
 		ship_medium_sprite = zoomSurface(ship_medium_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
+		SDL_FreeSurface(ship_large_sprite);
+		ship_medium_sprite = zoomSurface(ship_large_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
+		SDL_FreeSurface(ship_huge_sprite);
+		ship_medium_sprite = zoomSurface(ship_huge_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
 		last_zoom = zoom;
 		last_mag = mag;
 	}
@@ -385,6 +446,10 @@ void drawShip(ship_t * s) {
 			drawSlot(offset_x + (s->x + 0.13 * mag) * zoom, offset_y + (s->y + 0.10 * mag) * zoom, s->contents[3]);
 			drawSlot(offset_x + (s->x - 1.1 * mag) * zoom, offset_y + (s->y - 1.165 * mag) * zoom, s->contents[4]);
 			drawSlot(offset_x + (s->x + 0.13 * mag) * zoom, offset_y + (s->y - 1.165 * mag) * zoom, s->contents[5]);
+		} else if (s->size <= 12) {
+			SDL_BlitSurface(ship_large_sprite, NULL, screen, &dst_rect);
+		} else if (s->size <= 24) {
+			SDL_BlitSurface(ship_huge_sprite, NULL, screen, &dst_rect);
 		}
 	}
 }
@@ -432,6 +497,7 @@ void drawPlanet(planet_t* p) {
 	static float last_zoom = 1;
 	static float last_mag = default_mag;
 	static SDL_Surface* planet_sprite = NULL;
+	char* text;
 
 	if(!planet_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(planet_sprite);
@@ -454,11 +520,20 @@ void drawPlanet(planet_t* p) {
 
 		SDL_BlitSurface(planet_sprite, NULL, screen, &dst_rect);
 
-		if(show_text) {
-			char* coord;
-			asprintf(&coord, "% 6.0f\n% 6.0f", p->x, p->y);
-			fontrender(offset_x + p->x * zoom - 3*7, offset_y + p->y * zoom - 14, coord, screen);
-			free(coord);
+		if(show_text_id) {
+			if(p->owner > 0) {
+				asprintf(&text, "%i", p->owner);
+				drawText(dst_rect.x+14, dst_rect.y-14, text);
+				free(text);
+			}
+		}
+		if(show_text_coords) {
+			asprintf(&text, "% 6.0f", p->x);
+			drawText(dst_rect.x+14, dst_rect.y, text);
+			free(text);
+			asprintf(&text, "% 6.0f", p->y);
+			drawText(dst_rect.x+14, dst_rect.y+10, text);
+			free(text);
 		}
 	}
 }
