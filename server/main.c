@@ -181,6 +181,22 @@ int main(int argc, char *argv[]) {
 
 		/* Look for any proximity-triggers in spacecraft */
 		/* TODO: Implement proximity warnings */
+		for(int i=0; i<ship_storage->first_free; i++) {
+			double range = config_get_double("scanner_range");
+			entity_t* self = &(ship_storage->entities[i]);
+			size_t n;
+			entity_id_t* neigh = get_entities(self->pos, config_get_double("scanner_range"), SHIP, &n);
+			for(int j=0; j<n; j++) {
+				entity_t* other = get_entity_by_id(neigh[j]);
+				vector_t oldpos_self;
+				oldpos_self.v = self->pos.v - self->v.v * (v2d){dt, dt};
+				vector_t oldpos_other;
+				oldpos_other.v = other->pos.v - other->v.v * (v2d){dt, dt};
+				if(vector_quaddist(&oldpos_self, &oldpos_other) > range*range) {
+					call_entity_callback(self, ENTITY_APPROACHING, other->unique_id);
+				}
+			}
+		}
 
 		/* Move ships by one physics-step */
 		char** updated_ships = malloc((ship_storage->first_free + 1)*sizeof(char*));
