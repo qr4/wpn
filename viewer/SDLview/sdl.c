@@ -1,4 +1,5 @@
 #include "sdl.h"
+#include "fontrender.h"
 
 SDL_Surface* screen;
 
@@ -35,6 +36,7 @@ float offset_y;
 
 #define default_mag 64
 float mag = default_mag;
+char show_text = 0;
 
 void screen_init() {
 	screen = SDL_SetVideoMode(display_x, display_y, 0, SDL_RESIZABLE | SDL_HWSURFACE | SDL_DOUBLEBUF);
@@ -154,6 +156,14 @@ void checkSDLevent() {
 							mag *= 1.5;
 						} else {
 							mag /= 1.5;
+						}
+						break;
+					case SDLK_t:
+						if((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) {
+							// T
+							show_text = 0;
+						} else {
+							show_text = 1;
 						}
 						break;
 					case SDLK_q:
@@ -443,6 +453,13 @@ void drawPlanet(planet_t* p) {
 		dst_rect.h = 16 * mag * zoom;
 
 		SDL_BlitSurface(planet_sprite, NULL, screen, &dst_rect);
+
+		if(show_text) {
+			char* coord;
+			asprintf(&coord, "% 6.0f\n% 6.0f", p->x, p->y);
+			fontrender(offset_x + p->x * zoom - 3*7, offset_y + p->y * zoom - 14, coord, screen);
+			free(coord);
+		}
 	}
 }
 

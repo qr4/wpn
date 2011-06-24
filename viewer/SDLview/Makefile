@@ -2,7 +2,7 @@ CXX = gcc
 FLAGS = -Wall -g3 -O2 -march=native -mtune=native
 CLIBS = `sdl-config --cflags` -I ~/include
 LDFLAGS = `sdl-config --libs` -L ~/lib -lSDL_gfx -lSDL_image -lm -lpthread -ljansson
-OBJ = buffer.o json.o main.o sdl.o
+OBJ = buffer.o json.o main.o sdl.o fontrender.o
 
 main: $(OBJ)
 	$(CXX) $(FLAGS) $(LDFLAGS) -o $@ $(OBJ)
