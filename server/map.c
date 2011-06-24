@@ -13,7 +13,7 @@ double MAXIMUM_CLUSTER_SIZE = 500;
 
 double MINIMUM_PLANET_SIZE = 30;
 double MAXIMUM_PLANET_SIZE = 50;
-double PLANETS = 25;
+double PLANETS = 128;
 
 double ASTEROIDS = 150;
 double MINIMUM_ASTEROIDS = 5;
