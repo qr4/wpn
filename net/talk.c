@@ -989,7 +989,7 @@ static void net_client_talk(int fd, fd_set* master) {
   char buffer[4000];
   ssize_t len = recv(fd, buffer, sizeof(buffer), 0);
 
-  if (len == 0) {
+  if (len == 0 || len == -1) {
     // client mag nicht mehr mit uns reden
     log_msg("<%d> client hang up", fd);
     us[fd].id = -1;
