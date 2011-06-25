@@ -138,7 +138,7 @@ void add_all_known_players() {
 
 		/* Don't add direntries that don't contain code. */
 		asprintf(&codefile, USER_HOME_BY_ID "/%i/current", number);
-		if(!stat(codefile, &codestat) || codestat.st_size == 0) {
+		if(stat(codefile, &codestat) || codestat.st_size == 0) {
 			free(codefile);
 			continue;
 		}
