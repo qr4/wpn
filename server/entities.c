@@ -330,6 +330,9 @@ void explode_entity(entity_t* e) {
 	if(p && p->homebase.id == e->unique_id.id) {
 		p->homebase=INVALID_ID;
 		create_homebase(p);
+
+		/* Re-load the player base code into it */
+		evaluate_player_base_code(p, p->homebase);
 	}
 
 	/* If we are a base, free our planet */

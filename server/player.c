@@ -337,53 +337,55 @@ player_data_t* find_player(unsigned int player_id) {
 }
 
 
-/* When starting up, evaluate all "old" lua code we got flying around */
-void evaluate_all_player_code() {
+/* Load the initial player data of a player */
+void evaluate_player_base_code(player_data_t* p, entity_id_t base) {
 	char* lua_source_file;
-	entity_id_t base;
 	entity_t* ebase;
 	char* errortext;
 
-	for(int i=0; i<n_players; i++) {
-		/* Get the location we're reading code from */
-		asprintf(&lua_source_file, USER_HOME_BY_ID "/%i/current", players[i].player_id);
+	/* Get the location we're reading code from */
+	asprintf(&lua_source_file, USER_HOME_BY_ID "/%i/current", p->player_id);
 
-		base = players[i].homebase;
-		ebase = get_entity_by_id(base);
+	ebase = get_entity_by_id(base);
 
-		if(!ebase) {
-			ERROR("Player %u has got no homebase.\n", players[i].player_id);
-			continue;
-		}
+	if(!ebase) {
+		ERROR("Base to evaluate player '%s' basecode in not found!\n", p->name);
+		return;
+	}
 
-		/* Evaluate the code in the context of the player's homebase */
-		lua_active_entity = base;
+	/* Evaluate the code in the context of the player's homebase */
+	lua_active_entity = base;
 
-		if(!(ebase->lua)) {
-			ERROR("Player %u's homebase lua state is dead. This shouldn't happen.\n", players[i].player_id);
-			free(lua_source_file);
-			continue;
-		}
-
-		/* Set the execution time limit */
-		lua_sethook(ebase->lua, time_exceeded_hook, LUA_MASKCOUNT, config_get_int("lua_max_cycles"));
-
-		DEBUG("Executing %s in the context of entity %lu\n", lua_source_file, base.id);
-		if(luaL_dofile(ebase->lua, lua_source_file)) {
-			DEBUG("Execution failed.\n");
-			errortext = (char*) lua_tostring(ebase->lua, -1);
-			talk_log_lua_msg(players[i].player_id, errortext, strlen(errortext));
-			lua_pop(ebase->lua, 1);
-
-			if(do_reset) {
-				lua_close(ebase->lua);
-				ebase->lua=NULL;
-				init_ship_computer(ebase);
-				do_reset = 0;
-			}
-		}
-
+	if(!(ebase->lua)) {
+		ERROR("Player '%s' homebase lua state is dead. This shouldn't happen.\n", p->name);
 		free(lua_source_file);
+		return;
+	}
 
+	/* Set the execution time limit */
+	lua_sethook(ebase->lua, time_exceeded_hook, LUA_MASKCOUNT, config_get_int("lua_max_cycles"));
+
+	DEBUG("Executing %s in the context of entity %lu\n", lua_source_file, base.id);
+	if(luaL_dofile(ebase->lua, lua_source_file)) {
+		DEBUG("Execution failed.\n");
+		errortext = (char*) lua_tostring(ebase->lua, -1);
+		talk_log_lua_msg(p->player_id, errortext, strlen(errortext));
+		lua_pop(ebase->lua, 1);
+
+		if(do_reset) {
+			lua_close(ebase->lua);
+			ebase->lua=NULL;
+			init_ship_computer(ebase);
+			do_reset = 0;
+		}
+	}
+
+	free(lua_source_file);
+}
+
+/* When starting up, evaluate all "old" lua code we got flying around */
+void evaluate_all_player_code() {
+	for(int i=0; i<n_players; i++) {
+		evaluate_player_base_code(&(players[i]), players[i].homebase);
 	}
 }

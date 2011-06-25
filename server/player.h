@@ -20,6 +20,9 @@ void evaluate_all_player_code();
 /* Check for incoming code from a player */
 void player_check_code_updates();
 
+/* Load the initial base code of a player */
+void evaluate_player_base_code(player_data_t* p, entity_id_t base);
+
 /* Find the data structure belonging to a player */
 player_data_t* find_player(unsigned int player_id);
 
