@@ -1119,7 +1119,7 @@ static int data_transfer_writer (lua_State *L, const void* b, size_t size, void*
 /* Send arbitrary lua data to your docking partner */
 int lua_send_data(lua_State* L) {
 	entity_id_t self, partner;
-	entity_t* eself, *epartner;
+	entity_t* eself, *epartner, *eplanet;
 	int n = lua_gettop(L);
 	luaL_Buffer b;
 	const char* temp;
@@ -1141,6 +1141,7 @@ int lua_send_data(lua_State* L) {
 	epartner = get_entity_by_id(partner);
 	if(!epartner) {
 		/* Looks like our docking partner vanished. */
+		eself->ship_data->docked_to = INVALID_ID;
 		return 0;
 	}
 
@@ -1152,7 +1153,8 @@ int lua_send_data(lua_State* L) {
 	/* Check whether the other entity even has a lua-state, and whether that one
 	 * can handle incoming data */
 	if(!(epartner->lua)) {
-		return 0;
+		/* Reset it */
+		init_ship_computer(epartner);
 	}
 	lua_getglobal(epartner->lua, "on_incoming_data"); /* TODO: Don't hardcode this name */
 	if(lua_isnil(epartner->lua, -1)) {
@@ -1200,6 +1202,21 @@ int lua_send_data(lua_State* L) {
 			lua_pop(epartner->lua,1);
 			lua_pushnil(L);
 		}
+	}
+
+	/* The other entity is now considered to belong to us. An update will be sent
+	 * about this... eventually. */
+	epartner->player_id = eself->player_id;
+	if(epartner->type == BASE) {
+		eplanet = get_entity_by_id(epartner->base_data->my_planet);
+		if(!eplanet) {
+			ERROR("A base without a planet?!\n");
+		}
+		eplanet->player_id = eself->player_id;
+
+		/* In case of bases, updates have to be sent by hand */
+		send_base_update(epartner);
+		send_planet_update(eplanet);
 	}
 
 	lua_active_entity = self;
