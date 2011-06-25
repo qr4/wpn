@@ -14,6 +14,7 @@ void SDLinit();
 void SDLplot();
 void checkSDLevent();
 void drawAsteroid(asteroid_t* a);
+void drawBase(base_t * b);
 void drawExplosion(explosion_t* e);
 void drawPlanet(planet_t* p);
 void drawShip(ship_t * s);

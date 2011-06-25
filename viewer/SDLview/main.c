@@ -17,6 +17,9 @@
 asteroid_t* asteroids;
 int n_asteroids, n_asteroids_max;
 
+ship_t* bases;
+int n_bases, n_bases_max;
+
 explosion_t* explosions;
 int n_explosions, n_explosions_max;
 
@@ -102,6 +105,14 @@ void allocStuff() {
 	}
 	n_asteroids = 0;
 	n_asteroids_max = 1000;
+
+	bases = malloc(1000 * sizeof(base_t));
+	if(!bases) {
+		fprintf(stderr, "No space left for bases\n");
+		exit(1);
+	}
+	n_bases = 0;
+	n_bases_max = 1000;
 
 	explosions = malloc(1000 * sizeof(explosion_t));
 	if(!explosions) {

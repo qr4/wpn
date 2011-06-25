@@ -18,6 +18,10 @@ extern ship_t* ships;
 extern int n_ships;
 extern int n_ships_max;
 
+extern base_t* bases;
+extern int n_bases;
+extern int n_bases_max;
+
 extern shot_t* shots;
 extern int n_shots;
 extern int n_shots_max;
@@ -25,6 +29,13 @@ extern int n_shots_max;
 extern float zoom;
 extern float offset_x;
 extern float offset_y;
+
+typedef struct {
+	int id;
+	char* name;
+} player_t;
+
+player_t* players = NULL;
 
 int parseJson(buffer_t* b) {
 	json_error_t error;
@@ -65,6 +76,10 @@ void jsonWorld(json_t* world) {
 	if(j_ships) {
 		jsonShips(j_ships, OVERWRITE);
 	}
+	json_t* j_bases = json_object_get(world, "bases");
+	if(j_bases) {
+		jsonBases(j_bases, OVERWRITE);
+	}
 }
 
 void jsonUpdate(json_t* update) {
@@ -84,12 +99,16 @@ void jsonUpdate(json_t* update) {
 	if(j_ships) {
 		jsonShips(j_ships, UPDATE);
 	}
+	json_t* j_bases = json_object_get(update, "bases");
+	if(j_bases) {
+		jsonBases(j_bases, UPDATE);
+	}
 	n_shots = 0;
 	json_t* j_shots = json_object_get(update, "shots");
 	if(j_shots) {
 		jsonShots(j_shots);
 	}
-	// Explosions nach ships, damit diese korrekt zerstört werden
+	// Explosions nach ships und bases, damit diese korrekt zerstört werden
 	json_t* j_explosions = json_object_get(update, "explosions");
 	if(j_explosions) {
 		jsonExplosions(j_explosions);
@@ -125,6 +144,26 @@ void jsonShips(json_t* s, int updatemode) {
 			j_ship = json_array_get(s, i);
 			if(json_is_object(j_ship)) {
 				jsonShip(j_ship);
+			}
+		}
+	}
+}
+
+void jsonBases(json_t* b, int updatemode) {
+	int i;
+
+	if(updatemode == OVERWRITE) {
+		for(i = 0; i < n_bases; i++) {
+			bases[i].active = 0;
+		}
+	}
+
+	if(b && json_is_array(b)) {
+		json_t* j_base;
+		for(i = 0; i < json_array_size(b); i++) {
+			j_base = json_array_get(b, i);
+			if(json_is_object(j_base)) {
+				jsonBase(j_base);
 			}
 		}
 	}
@@ -179,6 +218,13 @@ void jsonExplosion(json_t* explosion) {
 		if(ships[i].id == id) {
 			//fprintf(stderr, "Invalidated ship %d\n", i);
 			ships[i].active = 0;
+		}
+	}
+	// Invalidate the base with this id
+	for(i = 0; i < n_bases; i++) {
+		if(bases[i].id == id) {
+			//fprintf(stderr, "Invalidated base %d\n", i);
+			bases[i].active = 0;
 		}
 	}
 
@@ -251,6 +297,63 @@ void jsonShip(json_t* ship) {
 	updateShip(id, x, y, owner, size, contents, docked_to);
 }
 
+void jsonBase(json_t* base) {
+	int id = 0;
+	float x,y;
+	int owner = 0;
+	int size = 0;
+	const char* contents;
+	int docked_to = 0;
+
+	json_t* j_id = json_object_get(base, "id");
+	if(!j_id || !json_is_integer(j_id)) return;
+	id = json_integer_value(j_id);
+
+	json_t* j_x = json_object_get(base, "x");
+	if(!j_x || !json_is_real(j_x)) return;
+	x = json_real_value(j_x);
+
+	json_t* j_y = json_object_get(base, "y");
+	if(!j_y || !json_is_real(j_y)) return;
+	y = json_real_value(j_y);
+
+	json_t* j_owner = json_object_get(base, "owner");
+	if(j_owner) {
+		if(json_is_null(j_owner)) {
+			// Unowned
+		} else if(json_is_integer(j_owner)) {
+			owner = json_integer_value(j_owner);
+		} else {
+			return;
+		}
+	} else {
+		return;
+	}
+
+	json_t* j_size = json_object_get(base, "size");
+	if(!j_size || !json_is_integer(j_size)) return;
+	size = json_integer_value(j_size);
+
+	json_t* j_contents = json_object_get(base, "contents");
+	if(!j_contents || !json_is_string(j_contents)) return;
+	contents = json_string_value(j_contents);
+
+	json_t* j_docked = json_object_get(base, "docked_to");
+	if(j_docked) {
+		if(json_is_null(j_docked)) {
+			// Undocked
+		} else if(json_is_integer(j_docked)) {
+			docked_to = json_integer_value(j_docked);
+		} else {
+			return;
+		}
+	} else {
+		return;
+	}
+
+	updateBase(id, x, y, owner, size, contents, docked_to);
+}
+
 void jsonShot(json_t* shot) {
 	int id;
 	int owner;
@@ -285,6 +388,18 @@ void jsonShot(json_t* shot) {
 		if(!found_src && ships[i].id == source) {
 			r_src_x = ships[i].x;
 			r_src_y = ships[i].y;
+			found_src = 1;
+		}
+		if(!found_trg && ships[i].id == target) {
+			r_trg_x = ships[i].x;
+			r_trg_y = ships[i].y;
+			found_trg = 1;
+		}
+	}
+	for(i = 0; i < n_bases; i++) {
+		if(!found_src && bases[i].id == source) {
+			r_src_x = bases[i].x;
+			r_src_y = bases[i].y;
 			found_src = 1;
 		}
 		if(!found_trg && ships[i].id == target) {
@@ -442,6 +557,44 @@ void updateShip(int id, float x, float y, int owner, int size, const char* conte
 		ships[n_ships].docked_to = docked_to;
 		ships[n_ships].active = 1;
 		n_ships++;
+	}
+
+}
+
+void updateBase(int id, float x, float y, int owner, int size, const char* contents, int docked_to) {
+	int i;
+	char found = 0;
+	for(i = 0; i < n_bases; i++) {
+		if(bases[i].id == id) {
+			bases[i].x = x;
+			bases[i].y = y;
+			bases[i].owner = owner;
+			bases[i].size = size;
+			strncpy(bases[i].contents, contents, 10);
+			bases[i].docked_to = docked_to;
+			bases[i].active = 1;
+			found = 1;
+			break;
+		}
+	}
+	if(!found) {
+		if(n_bases >= n_bases_max -1) {
+			ships = realloc(bases, (n_bases_max + 100) * sizeof(ship_t));
+			if(!ships) {
+				fprintf(stderr, "No more  bases :-(\n");
+				exit(1);
+			}
+			n_bases += 100;
+		}
+		bases[n_bases].id = id;
+		bases[n_bases].x = x;
+		bases[n_bases].y = y;
+		bases[n_bases].owner = owner;
+		bases[n_bases].size = size;
+		strncpy(bases[n_bases].contents, contents, 10);
+		bases[n_bases].docked_to = docked_to;
+		bases[n_bases].active = 1;
+		n_bases++;
 	}
 
 }

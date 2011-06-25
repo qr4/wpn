@@ -41,6 +41,17 @@ typedef struct {
 } ship_t;
 
 typedef struct {
+	int id;
+	float x;
+	float y;
+	int owner;
+	int size;
+	char contents[10];
+	int docked_to;
+	char active;
+} base_t;
+
+typedef struct {
 	float src_x;
 	float src_y;
 	float trg_x;

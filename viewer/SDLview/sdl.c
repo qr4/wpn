@@ -4,6 +4,10 @@
 SDL_Surface* screen;
 
 SDL_Surface* asteroid_image;
+SDL_Surface* base_small_image;
+SDL_Surface* base_medium_image;
+SDL_Surface* base_large_image;
+SDL_Surface* base_huge_image;
 SDL_Surface* explosion_image;
 SDL_Surface* planet_image;
 SDL_Surface* ship_small_image;
@@ -17,12 +21,14 @@ SDL_Surface* slot_R_image;
 SDL_Surface* slot_T_image;
 
 extern asteroid_t* asteroids;
+extern base_t* bases;
 extern explosion_t* explosions;
 extern planet_t* planets;
 extern ship_t* ships;
 extern shot_t* shots;
 
 extern int n_asteroids;
+extern int n_bases;
 extern int n_explosions;
 extern int n_planets;
 extern int n_ships;
@@ -83,6 +89,30 @@ void SDLinit() {
 	asteroid_image = IMG_LoadPNG_RW(SDL_RWFromFile("asteroid.png", "rb"));
 	if(!asteroid_image) {
 		printf("IMG_LoadPNG_RW: Loading asteroid image failed: %s\n", IMG_GetError());
+		exit(1);
+	}
+
+	base_small_image = IMG_LoadPNG_RW(SDL_RWFromFile("base_small.png", "rb"));
+	if(!base_small_image) {
+		printf("IMG_LoadPNG_RW: Loading image for small base failed: %s\n", IMG_GetError());
+		exit(1);
+	}
+
+	base_medium_image = IMG_LoadPNG_RW(SDL_RWFromFile("base_medium.png", "rb"));
+	if(!base_medium_image) {
+		printf("IMG_LoadPNG_RW: Loading image for medium base failed: %s\n", IMG_GetError());
+		exit(1);
+	}
+
+	base_large_image = IMG_LoadPNG_RW(SDL_RWFromFile("base_large.png", "rb"));
+	if(!base_large_image) {
+		printf("IMG_LoadPNG_RW: Loading image for large base failed: %s\n", IMG_GetError());
+		exit(1);
+	}
+
+	base_huge_image = IMG_LoadPNG_RW(SDL_RWFromFile("base_huge.png", "rb"));
+	if(!base_huge_image) {
+		printf("IMG_LoadPNG_RW: Loading image for huge base failed: %s\n", IMG_GetError());
 		exit(1);
 	}
 
@@ -262,6 +292,10 @@ void SDLplot() {
 		drawPlanet(&(planets[i]));
 	}
 
+	for(i = 0; i < n_bases; i++) {
+		drawBase(&(bases[i]));
+	}
+
 	for(i = 0; i < n_ships; i++) {
 		drawShip(&(ships[i]));
 	}
@@ -413,6 +447,47 @@ void drawHalo(double x, double y, double r, double h) {
 	filledCircleRGBA(screen, x, y, r - 4.0, red_from_H(h), green_from_H(h), blue_from_H(h), 6);
 	filledCircleRGBA(screen, x, y, r - 5.7, red_from_H(h), green_from_H(h), blue_from_H(h), 6);
 	filledCircleRGBA(screen, x, y, r - 8.0, red_from_H(h), green_from_H(h), blue_from_H(h), 6);
+}
+
+void drawBase(base_t * b) {
+	static float last_zoom = 1;
+	static float last_mag = default_mag;
+	static SDL_Surface* base_small_sprite = NULL;
+	static SDL_Surface* base_medium_sprite = NULL;
+	static SDL_Surface* base_large_sprite = NULL;
+	static SDL_Surface* base_huge_sprite = NULL;
+
+	if(!base_small_sprite || !base_medium_sprite || !base_large_sprite || !base_huge_sprite || (zoom != last_zoom) || (mag != last_mag)) {
+		SDL_FreeSurface(base_small_sprite);
+		base_small_sprite = zoomSurface(base_small_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
+		SDL_FreeSurface(base_medium_sprite);
+		base_medium_sprite = zoomSurface(base_medium_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
+		SDL_FreeSurface(base_large_sprite);
+		base_large_sprite = zoomSurface(base_large_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
+		SDL_FreeSurface(base_huge_sprite);
+		base_huge_sprite = zoomSurface(base_huge_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
+		last_zoom = zoom;
+		last_mag = mag;
+	}
+
+	if(b->active > 0) {
+		SDL_Rect dst_rect;
+
+		dst_rect.x = offset_x + (b->x - 6 * mag) * zoom;
+		dst_rect.y = offset_y + (b->y - 6 * mag) * zoom;
+		dst_rect.w = 12 * mag * zoom;
+		dst_rect.h = 12 * mag * zoom;
+
+		if(b->size > 0 && b-> size <= 3) {
+			SDL_BlitSurface(base_small_sprite, NULL, screen, &dst_rect);
+		} else if (b->size <= 6) {
+			SDL_BlitSurface(base_medium_sprite, NULL, screen, &dst_rect);
+		} else if (b->size <= 12) {
+			SDL_BlitSurface(base_large_sprite, NULL, screen, &dst_rect);
+		} else if (b->size <= 24) {
+			SDL_BlitSurface(base_huge_sprite, NULL, screen, &dst_rect);
+		}
+	}
 }
 
 void drawShip(ship_t * s) {
