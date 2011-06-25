@@ -332,6 +332,14 @@ void explode_entity(entity_t* e) {
 		create_homebase(p);
 	}
 
+	/* If we are a base, free our planet */
+	if(e->type == BASE) {
+		if(!e->base_data || !get_entity_by_id(e->base_data->my_planet)) {
+			ERROR("Base lacking a planet!");
+		}
+		get_entity_by_id(e->base_data->my_planet)->player_id = 0;
+	}
+
 	/* Remove from docking partner */
 	if(e->ship_data && (e->ship_data->docked_to.id != INVALID_ID.id)) {
 		entity_t* other = get_entity_by_id(e->ship_data->docked_to);

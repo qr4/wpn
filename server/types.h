@@ -229,6 +229,9 @@ struct base_data_t {
 	 * shooting again?) */
 	entity_id_t timer_context;
 
+	/* The planet I sit on. */
+	entity_id_t my_planet;
+
 };
 
 /* Information belonging to a player */

@@ -693,7 +693,7 @@ int lua_get_entities(lua_State *L) {
 	n = 0;
 
 	for (i = 0; i < n_found; i++) {
-		if (in_scanner_range(self, found[i])) {
+		if (in_scanner_range(self, found[i]) || get_entity_by_id(found[i])->type == PLANET) {
 			n++;
 			lua_pushnumber(L, n);                           // key
 			lua_pushlightuserdata(L, (void *) found[i].id); // valua
@@ -907,7 +907,7 @@ int lua_get_position(lua_State* L) {
 				return 0;
 			} else {
 				/* Check that the target entity is within scanner range */
-				if(in_scanner_range(self, id)) {
+				if(in_scanner_range(self, id) || e->type == PLANET) {
 					lua_pushnumber(L,e->pos.x);
 					lua_pushnumber(L,e->pos.y);
 					return 2;
@@ -999,7 +999,7 @@ int lua_get_distance(lua_State* L) {
 		return 0;
 	} else {
 		/* Check that the target entity is within scanner range */
-		if(in_scanner_range(self, id)) {
+		if(in_scanner_range(self, id) || e->type == PLANET) {
 
 			/* Return its distance */
 			lua_pushnumber(L, dist(eself, e));
@@ -1036,7 +1036,7 @@ int lua_get_collision_distance(lua_State* L) {
 		return 0;
 	} else {
 		/* Check that the target entity is within scanner range */
-		if(in_scanner_range(self, id)) {
+		if(in_scanner_range(self, id) || e->type == PLANET) {
 
 			/* Return its distance */
 			lua_pushnumber(L, collision_dist(eself, e));
@@ -1655,6 +1655,9 @@ int lua_colonize(lua_State* L) {
 	/* Zero the timer */
 	ebase->base_data->timer_value=-1;
 	ebase->base_data->timer_event=0;
+
+	/* Set the planet ownership */
+	ebase->base_data->my_planet = planet;
 
 	/* Set the new id as this lua states' "self"-pointer, as well as the active entity. */
 	lua_pushlightuserdata(L, (void*) base.id);
