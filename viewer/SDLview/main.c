@@ -7,6 +7,8 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include <pstr.h>
+
 #include "buffer.h"
 #include "json.h"
 #include "sdl.h"
@@ -38,66 +40,81 @@ int n_players, n_players_max;
 bbox_t boundingbox;
 int local_player = -1;
 
-int checkInput(int net, buffer_t* b) {
+// puffer-eumel fuer net-data
+struct dstr net_puffer;
+struct dstr json_puffer;
+
+// -1 = error -> close connection
+// 0 = nur gewartet
+// 1 = have new json-data
+int checkInput(int net, buffer_t* b, int usleep_time) {
+
+  static int need_empty_json_puffer = 1;
+
+  // leeren wenn das letzte mal ein kompletter block gefunden wurde
+  if (need_empty_json_puffer == 1) {
+    need_empty_json_puffer = 0;
+    dstr_clear(&json_puffer);
+  }
+
 	int ret;
 	fd_set inputset;
 	struct timeval timeout;
-
-	static char lc = 0; // Char der in der letzten Runde gelesen wurde
 
 	FD_ZERO(&inputset);
 	FD_SET(net, &inputset); // Add stdin to the (empty) set of input file descriptores
 
 	timeout.tv_sec = 0;
-	timeout.tv_usec = 100;
+	timeout.tv_usec = usleep_time;
 
 	/* select returns 0 if timeout, 1 if input available, -1 if error. */
 	ret = select(net + 1, &inputset, NULL, NULL, &timeout);
 
-	if(ret == 1) {
-		// Input available
-		if(FD_ISSET(net, &inputset)) {
-
-			// TODO
-			// ich hasse den code!!!! armes netzwerk!
-			char c[1];
-			ssize_t len = recv(net, c, sizeof(c), 0);
-
-			if (len == 0) {
-				// handle server hang-up
-				fprintf(stderr, "server hang up. Goodbye.\n");
-				return -1;
-			}
-
-			if(b->fill >= b->size - 1) {
-				growBuffer(b);
-			}
-			b->data[b->fill] = c[0];
-			b->fill++;
-			if(lc == '\n' && c[0] == '\n') {
-				// Wir haben eine Leerzeile, sprich ein JSON-Objekt sollte zu Ende sein
-				return 2;
-			}
-			lc = c[0];
-			return 1;
-		}
-		// War wohl falscher Alarm
-		return 0;
-	} else if(ret == -1) {
-		// Error
+  if (ret == -1) {
 		if(errno == EINTR) {
-			// Unix is slightly stupid
-			return 0;
+			return 0; // Unix is slightly stupid
 		} else {
 			// This is a real error
 			fprintf(stderr, "select() produced error %d\n", errno);
       perror("select()");
 			return -1;
 		}
-	} else {
-		// Timeout
-		return 0;
+  }
+
+  if (ret == 0) {
+    // timer
+    return 0;
+  }
+
+	// Input available
+	if(FD_ISSET(net, &inputset)) {
+    char buffer[40000];
+    ssize_t len = recv(net, buffer, sizeof(buffer), 0);
+
+    if ((len == -1) || (len == 0)) {
+      printf("server hang up. Goodbye.\n");
+      return -1;
+    }
+
+    dstr_append(&net_puffer, buffer, len);
+    
+    char* line;
+    int line_len;
+    while (dstr_read_line(&net_puffer, &line, &line_len) != -1) {
+      if (line_len == 0) {
+        b->size = dstr_len(&json_puffer);
+        b->fill = dstr_len(&json_puffer);
+        b->data = dstr_as_cstr(&json_puffer);
+        need_empty_json_puffer = 1;
+        return 1;
+      } else if (len > 0) {
+        dstr_append(&json_puffer, line, line_len);
+      }
+    }
 	}
+
+	// War wohl falscher Alarm ?!
+	return 0;
 }
 
 void allocStuff() {
@@ -167,7 +184,7 @@ void *get_in_addr(struct sockaddr *sa) {
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int connect2server(char* server) {
+int connect2server(const char* server) {
 	int sockfd;
 	struct addrinfo hints, *servinfo, *p;
 	int rv;
@@ -212,7 +229,7 @@ int connect2server(char* server) {
 }
 
 int main(int argc, const char* argv[] ) {
-	buffer_t* buffer = getBuffer();
+	buffer_t buffer; // wir verwenden nur die datenstruktur = getBuffer();
 	int ret;
 
 	if (argc != 2 && argc != 3) {
@@ -224,6 +241,8 @@ int main(int argc, const char* argv[] ) {
 		local_player = atoi(argv[2]);
 	}
 
+  dstr_malloc(&net_puffer);
+  dstr_malloc(&json_puffer);
 	int net = connect2server(argv[1]);
 
 	allocStuff();
@@ -240,25 +259,16 @@ int main(int argc, const char* argv[] ) {
 
 		SDLplot();
 
-		ret = 1;
-		while(ret == 1) {
-			ret = checkInput(net, buffer);
-		}
+    ret = checkInput(net, &buffer, 1000);
 
-		if(ret < 0) {
-			fprintf(stderr, "I guess we better quit\n");
-			exit(1);
-		}
+    if (ret == -1) {
+      fprintf(stderr, "I guess we better quit\n");
+      exit(1);
+    }
 
-		if(ret == 0) {
-			usleep(1000);
-		}
-
-		if(ret == 2) {
-			//fprintf(stdout, "Read %d chars to find an empty line\n", buffer->fill);
-			parseJson(buffer);
-			clearBuffer(buffer);
-		}
+    if (ret == 1) {
+      parseJson(&buffer);
+    }
 	}
 
 	close(net);
