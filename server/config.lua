@@ -4,6 +4,9 @@
 -- Maximum amount of cycles a ship may use per lua function call
 lua_max_cycles = 10000
 
+-- If we didn't have an complete map in $n cycles send one
+map_interval = 500
+
 -- Minimum time of one "tick", in microseconds
 -- (this is 1000000/framerate)
 frametime = 100000

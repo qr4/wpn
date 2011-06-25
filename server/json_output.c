@@ -22,6 +22,7 @@ size_t n_current_shots = 0;
 char** current_ships = NULL;
 size_t n_current_ships = 0;
 
+extern uint64_t timestep, time_of_last_map;
 
 // Joins strings separated by sep until strings contain a NULL element
 // Arguments and return string need to be freed by the caller
@@ -563,4 +564,5 @@ void map_to_network() {
 	players_to_network();
 	map_printf("}\n}\n\n");
 	map_flush();
+	time_of_last_map = timestep;
 }

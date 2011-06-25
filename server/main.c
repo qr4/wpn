@@ -46,6 +46,7 @@ double asteroid_radius_to_slots_ratio = 1;
 double planet_size = 50;
 
 uint64_t timestep=0;
+uint64_t time_of_last_map=0;
 
 extern int netpid;
 extern int talkpid;
@@ -243,7 +244,9 @@ int main(int argc, char *argv[]) {
 		}
 
 		/* Push Map-Data out to clients */
-		//map_to_network();
+		if(timestep - time_of_last_map > config_get_int("map_interval")) {
+			map_to_network();
+		}
 
 		/* Check whether any new player-provided lua code has arrived and evaluate it */
 		player_check_code_updates(0);
