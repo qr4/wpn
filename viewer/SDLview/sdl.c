@@ -43,6 +43,8 @@ extern bbox_t boundingbox;
 float zoom;
 float offset_x;
 float offset_y;
+float mouse_pos_x;
+float mouse_pos_y;
 
 extern int local_player;
 
@@ -274,6 +276,8 @@ void checkSDLevent() {
 				}
 				break;
 			case SDL_MOUSEMOTION:
+				mouse_pos_x = event.motion.x;
+				mouse_pos_y = event.motion.y;
 				if(event.motion.state & 1) {
 					offset_x += event.motion.xrel;
 					offset_y += event.motion.yrel;
@@ -321,6 +325,11 @@ void SDLplot() {
 	for(i = 0; i < n_explosions; i++) {
 		drawExplosion(&(explosions[i]));
 	}
+
+	char* pos;
+	asprintf(&pos, "% 6.0f % 6.0f", (mouse_pos_x-offset_x)/zoom, (mouse_pos_y-offset_y)/zoom);
+	drawText(16, 10, pos);
+	free(pos);
 
 	SDL_Flip(screen);
 }
@@ -411,7 +420,8 @@ void drawText(int x,int y, char* text) {
 	pos.w = text_surf->w;
 	pos.h = text_surf->h;
 
-	if(x < text_surf->w || y < text_surf->h || x > screen->w - text_surf->w || y > screen->h - text_surf->h) {
+	// Warum auch immer 15. Mit 14 platzt es.
+	if(x < 15 || x > screen->w - text_surf->w || y > screen->h - text_surf->h) {
 		return;
 	}
 

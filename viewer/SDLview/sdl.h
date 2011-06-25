@@ -20,5 +20,6 @@ void drawPlanet(planet_t* p);
 void drawShip(ship_t * s);
 void drawShot(shot_t * s);
 void drawSlot(float x, float y, char type);
+void drawText(int x,int y, char* text);
 
 #endif
