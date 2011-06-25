@@ -111,6 +111,10 @@ void init_ship_computer(entity_t* s) {
 	lua_pushlightuserdata(s->lua, (void*)(s->unique_id.id));
 	lua_setglobal(s->lua, "self");
 
+	/* Load the config into it, so config-variables are available to the clients */
+	if(!luaL_dofile(s->lua, config_filename)) {
+		ERROR("Warning: Couldn't evaluate config in entity %lu's lua state.\n", s->unique_id.id);
+	}
 
 	/* Load the (player-independent) init code into it */
 	lua_active_entity = s->unique_id;

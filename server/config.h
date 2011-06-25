@@ -12,6 +12,8 @@ struct OPTIONS_T {
 
 extern OPTIONS_T OPTIONS;
 
+extern char* config_filename;
+
 int config(int argc, char *argv[]);
 int init_config_from_file(char* filename);
 int config_get_int(char* param_name);

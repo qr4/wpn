@@ -13,6 +13,7 @@
 
 
 lua_State* config_state = NULL;
+char* config_filename;
 
 OPTIONS_T OPTIONS = {NULL};
 
@@ -27,7 +28,7 @@ int config(int argc, char *argv[]) {
 
 	int c;
 	int lines = 0;
-	char *config_filename = strdup("config.lua");
+	config_filename = strdup("config.lua");
 	char *init_filename   = strdup("init.lua");
 	char **lua_lines = NULL;
 
