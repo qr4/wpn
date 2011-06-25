@@ -251,6 +251,8 @@ int main(int argc, char *argv[]) {
 			timersub(&t, &t_prev, &t_diff);
 		}
 		t_prev = t;
+
+		fprintf(stderr, ".");
 	}
 
 	//free_entity(ship_storage,ship1);
