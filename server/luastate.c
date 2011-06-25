@@ -2,9 +2,11 @@
  * Methods pertaining to handling of a ships lua state (as a whole, in contrast
  * to the lua-callable functions in luafuncs.c)
  */
+#define _GNU_SOURCE
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
+#include <time.h>
 #include <string.h>
 #include "luastate.h"
 #include "luafuncs.h"
@@ -72,6 +74,7 @@ void time_exceeded_hook(lua_State* L, lua_Debug* ar) {
 void init_ship_computer(entity_t* s) {
 
 	const luaL_Reg* lib = lualibs;
+	char* random_seed_command;
 
 	/* If the ship already has a running program, delete it. */
 	if(s->lua) {
@@ -91,6 +94,11 @@ void init_ship_computer(entity_t* s) {
 		lua_pushstring(s->lua, lib->name);
 		lua_call(s->lua, 1, 0);
 	}
+
+	/* Set the ship's unique random seed */
+	asprintf(&random_seed_command, "math.randomseed(%lu)", time(NULL) * s->unique_id.id);
+	luaL_dostring(s->lua, random_seed_command);
+	free(random_seed_command);
 
 	/* registier lua-callable functions */
 	register_lua_functions(s);
@@ -124,6 +132,8 @@ void kill_computer(entity_t* s) {
 	}
 
 	/* Do not kill the lua state of a homebase */
+	/* (Note that when exploding, the homebase will be set to somewhere else
+	 * before this is called) */
 	p = find_player(s->player_id);
 	if(p && p->homebase.id == s->unique_id.id) {
 		return;
