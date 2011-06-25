@@ -25,23 +25,23 @@ typedef enum {
 /* Enum of possible events which can trigger callbacks in a ship */
 /* (Corresponding lua function names are define in luastate.c) */
 typedef enum {
-	AUTOPILOT_ARRIVED,    // The autopilot has finished it's flight plan
-	ENTITY_APPROACHING,   // Another entity has appeared within sensor radius
-	ENTITY_IN_RANGE,      // Another entity is in weapons range
-	SHOT_AT,              // You are being shot at
-	WEAPONS_READY,        // After firing, the weapons have recharged and are back on-line
-	BEING_DOCKED,         // You are being docked
-	DOCKING_COMPLETE,     // The docking operation you requested has completed
-	UNDOCKING_COMPLETE,   // Releasing the docking clamps has completed
-	BEING_UNDOCKED,       // The other ship is undocking us.
-	TRANSFER_COMPLETE,    // Transfer of a slot has completed.
-	BUILD_COMPLETE,       // Production of a new ship completed (for bases)
-	TIMER_EXPIRED,        // A fixed timer has expired
-	MINING_COMPLETE,      // Digging pays off afterall
-	MANUFACTURE_COMPLETE, // Congratulations, you built something
-	COLONIZE_COMPLETE,  // A new planet has been colonized.
-	UPGRADE_COMPLETE,  // A base finished doubling its own size
-	HOMEBASE_KILLED,       // The player's homebase has been killed.
+	AUTOPILOT_ARRIVED = 0,    // The autopilot has finished it's flight plan
+	ENTITY_APPROACHING = 1,   // Another entity has appeared within sensor radius
+	ENTITY_IN_RANGE = 2,      // Another entity is in weapons range
+	SHOT_AT = 3,              // You are being shot at
+	WEAPONS_READY = 4,        // After firing, the weapons have recharged and are back on-line
+	BEING_DOCKED = 5,         // You are being docked
+	DOCKING_COMPLETE = 6,     // The docking operation you requested has completed
+	UNDOCKING_COMPLETE = 7,   // Releasing the docking clamps has completed
+	BEING_UNDOCKED = 8,       // The other ship is undocking us.
+	TRANSFER_COMPLETE = 9,    // Transfer of a slot has completed.
+	BUILD_COMPLETE = 10,      // Production of a new ship completed (for bases)
+	TIMER_EXPIRED = 11,       // A fixed timer has expired
+	MINING_COMPLETE = 12,     // Digging pays off afterall
+	MANUFACTURE_COMPLETE = 13, // Congratulations, you built something
+	COLONIZE_COMPLETE = 14,    // A new planet has been colonized.
+	UPGRADE_COMPLETE = 15,     // A base finished doubling its own size
+	HOMEBASE_KILLED = 16,      // The player's homebase has been killed.
 
 	NUM_EVENTS
 } event_t;
