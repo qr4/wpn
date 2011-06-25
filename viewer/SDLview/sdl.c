@@ -806,10 +806,10 @@ void drawExplosion(explosion_t* e) {
 		*/
 
 		// Terrible, terrbible cheating
-		for(i = 0; i < e->strength * e->strength / 1024; i++) {
+		for(i = 0; i < (e->strength * e->strength) / 4096; i++) {
 			SDL_BlitSurface(explosion_sprite, NULL, screen, &dst_rect);
 		}
-		e->strength -= 1;
+		e->strength -= 3;
 	}
 
 }
