@@ -40,6 +40,8 @@
 #define NET_UPDATE "/wpn_update_"
 #define NET_UPDATE_SIZE 16
 
+int netpid;
+
 struct {
   int map_pipe;         // pipe papa <-> sohn fuer notify new map
   unsigned int map_id;  // zaehler fuer name der akt. map
@@ -612,6 +614,7 @@ void net_init() {
 
   // fork
   net.pid = fork();
+  netpid = net.pid;
   if (net.pid == -1) { log_perror("fork"); exit(EXIT_FAILURE); }
 
   if (net.pid == 0) {
