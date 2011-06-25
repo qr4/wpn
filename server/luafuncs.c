@@ -348,6 +348,11 @@ int lua_dock(lua_State* L) {
 
 	DEBUG("Attempting dock...");
 
+	/* Does this thing even exist? */
+	if(!e) {
+		return 0;
+	}
+
 	/* Check that we are targetting something dockable */
 	if(e->type & ~(SHIP|BASE|ASTEROID)) {
 		DEBUG("Not dockable!\n");
