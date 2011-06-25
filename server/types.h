@@ -27,6 +27,7 @@ typedef enum {
 typedef enum {
 	AUTOPILOT_ARRIVED,    // The autopilot has finished it's flight plan
 	ENTITY_APPROACHING,   // Another entity has appeared within sensor radius
+	ENTITY_IN_RANGE,      // Another entity is in weapons range
 	SHOT_AT,              // You are being shot at
 	WEAPONS_READY,        // After firing, the weapons have recharged and are back on-line
 	BEING_DOCKED,         // You are being docked

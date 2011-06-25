@@ -20,6 +20,7 @@ entity_id_t lua_active_entity;
 char* callback_names[NUM_EVENTS] = {
 	/* AUTOPILOT_ARRIVED */ "on_autopilot_arrived",
 	/* ENTITY_APPROACHING */ "on_entity_approaching",
+	/* ENTITY_IN_RANGE */ "on_entity_in_range",
 	/* SHOT_AT */ "on_shot_at",
 	/* WEAPONS_READY */ "on_weapons_ready",
 	/* BEING_DOCKED */ "on_being_docked",
