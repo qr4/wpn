@@ -544,17 +544,23 @@ int lua_fire(lua_State* L) {
 			}
 			set_entity_timer(eself, config_get_int("laser_recharge_duration")/num_lasers, WEAPONS_READY, self);
 
-			return 0;
+			lua_pushboolean(L,1);
+			return 1;
 		}
 
 		/* Otherwise we select a slot */
-		i = rand() % num_occ_slots;
+		//i = rand() % num_occ_slots;
 		for(slot=0; slot < e->slots; slot++) {
 			if(e->slot_data->slot[slot] != EMPTY) {
-				i--;
-				if(i<0)
-					break;
+				break;
+				//i--;
+				//if(i<=0)
+				//	break;
 			}
+		}
+
+		if(slot >= e->slots) {
+			DEBUG("Lecker Drama beim schiesssen!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 		}
 
 		/* Functional components are turned into ore */
@@ -575,8 +581,8 @@ int lua_fire(lua_State* L) {
 	/* Now we are busy recharging our lasers */
 	set_entity_timer(eself, config_get_int("laser_recharge_duration")/num_lasers, WEAPONS_READY, self);
 
-	/* TODO: Return whether we hit? */
-	return 0;
+	lua_pushboolean(L,1);
+	return 1;
 }
 
 /* Let a base get one resource chunk from a planet */
