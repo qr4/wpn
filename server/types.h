@@ -41,6 +41,7 @@ typedef enum {
 	MANUFACTURE_COMPLETE, // Congratulations, you built something
 	COLONIZE_COMPLETE,  // A new planet has been colonized.
 	UPGRADE_COMPLETE,  // A base finished doubling its own size
+	HOMEBASE_KILLED,       // The player's homebase has been killed.
 
 	NUM_EVENTS
 } event_t;

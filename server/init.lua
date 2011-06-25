@@ -21,6 +21,12 @@ function on_incoming_data(d)
 end
 
 
+-- A handler that screams if your homebase is destroyed
+function on_homebase_killed()
+	print("OH NOES! MY HOMEBASE HAS BEEN NUKED! AAAAAAH!")
+end
+
+
 -- Override global functions which should not be available within spaceships
 --print = nil   -- Ships are not supposed to be able to write to stdout
 pcall = nil   -- Lua errors can't be caught, but lead to distruption of the ship

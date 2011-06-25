@@ -333,6 +333,9 @@ void explode_entity(entity_t* e) {
 
 		/* Re-load the player base code into it */
 		evaluate_player_base_code(p, p->homebase);
+
+		/* Inform him! */
+		call_entity_callback(get_entity_by_id(p->homebase), HOMEBASE_KILLED, p->homebase);
 	}
 
 	/* If we are a base, free our planet */
