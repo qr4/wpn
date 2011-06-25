@@ -26,16 +26,16 @@ maximum_cluster_size = 500;
 
 minimum_planet_size = 30;
 maximum_planet_size = 50;
-planets = 20;
+planets = 300;
 
-asteroids = 150;
+asteroids = 250;
 minimum_asteroids = 5;
 maximum_asteroids = 5;
 
 average_grid_size = 500;
 
-map_size_x = 150000.;
-map_size_y = 76250.;
+map_size_x = 170000.;
+map_size_y = 96250.;
 
 -- Range Limits:
 weapon_range = 500
