@@ -5,9 +5,11 @@
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
+#include <string.h>
 #include "luastate.h"
 #include "luafuncs.h"
 #include "entities.h"
+#include "../net/talk.h"
 #include "config.h"
 #include "debug.h"
 #include "player.h"
@@ -136,6 +138,7 @@ void call_entity_callback(entity_t* e, event_t event, entity_id_t context) {
 
 	char* function_name;
 	entity_id_t prev_active_entity;
+	char* errortext;
 
 	/* First: check lua-workyness */
 	if(!e->lua) {
@@ -174,8 +177,11 @@ void call_entity_callback(entity_t* e, event_t event, entity_id_t context) {
 	/* Call it.*/
 	if(lua_pcall(e->lua, 1,0,0)) {
 
+		errortext = lua_tostring(e->lua, -1);
+
 		/* Lua errors send the ship adrift */
-		DEBUG("Entity %lu killed due to lua error:\n%s\n", e->unique_id.id, lua_tostring(e->lua, -1));
+		DEBUG("Entity %lu killed due to lua error:\n%s\n", e->unique_id.id, errortext);
+		talk_log_lua_msg(e->player_id, errortext, strlen(errortext));
 		kill_computer(e);
 	}
 
