@@ -416,7 +416,11 @@ int lua_undock(lua_State* L) {
 	/* Make certain that our docking partner hasn't exploded... or worse. */
 	e = get_entity_by_id(eself->ship_data->docked_to);
 	if(!e) {
-		return 0;
+		eself->ship_data->docked_to.id = INVALID_ID.id;
+
+		/* This counts as a success. */
+		set_entity_timer(eself, config_get_int("undocking_duration"), UNDOCKING_COMPLETE, INVALID_ID);
+		return 1;
 	}
 
 	/* Check that we are not currently waiting for some other action to complete */
