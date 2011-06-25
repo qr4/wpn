@@ -596,6 +596,18 @@ void drawShip(ship_t * s) {
 			drawSlot(offset_x + (s->x + 0.13 * mag) * zoom, offset_y + (s->y - 1.165 * mag) * zoom, s->contents[5]);
 		} else if (s->size <= 12) {
 			SDL_BlitSurface(ship_large_sprite, NULL, screen, &dst_rect);
+			drawSlot(offset_x + (s->x - 2.1 * mag) * zoom, offset_y + (s->y + 3.4 * mag) * zoom, s->contents[0]);
+			drawSlot(offset_x + (s->x - 2.1 * mag) * zoom, offset_y + (s->y + 0.0 * mag) * zoom, s->contents[10]);
+			drawSlot(offset_x + (s->x - 0.6 * mag) * zoom, offset_y + (s->y - 1.6 * mag) * zoom, s->contents[2]);
+			drawSlot(offset_x + (s->x - 0.6 * mag) * zoom, offset_y + (s->y - 0.5 * mag) * zoom, s->contents[4]);
+			drawSlot(offset_x + (s->x - 0.6 * mag) * zoom, offset_y + (s->y + 0.6 * mag) * zoom, s->contents[6]);
+			drawSlot(offset_x + (s->x - 0.6 * mag) * zoom, offset_y + (s->y + 1.7 * mag) * zoom, s->contents[8]);
+			drawSlot(offset_x + (s->x + 1.6 * mag) * zoom, offset_y + (s->y - 1.6 * mag) * zoom, s->contents[3]);
+			drawSlot(offset_x + (s->x + 1.6 * mag) * zoom, offset_y + (s->y - 0.5 * mag) * zoom, s->contents[5]);
+			drawSlot(offset_x + (s->x + 1.6 * mag) * zoom, offset_y + (s->y + 0.6 * mag) * zoom, s->contents[7]);
+			drawSlot(offset_x + (s->x + 1.6 * mag) * zoom, offset_y + (s->y + 1.7 * mag) * zoom, s->contents[9]);
+			drawSlot(offset_x + (s->x + 3.1 * mag) * zoom, offset_y + (s->y + 0.0 * mag) * zoom, s->contents[11]);
+			drawSlot(offset_x + (s->x + 3.1 * mag) * zoom, offset_y + (s->y + 3.4 * mag) * zoom, s->contents[1]);
 		} else if (s->size <= 24) {
 			dst_rect.x -= 3 * mag * zoom;
 			dst_rect.y -= 3 * mag * zoom;
