@@ -826,14 +826,27 @@ void drawShot(shot_t* s) {
 		last_mag = mag;
 	}
 
+	if(s->strength <= 0) {
+		return;
+	}
+	s->strength--;
+
+	uint8_t width = 0.25*mag*zoom;
+	if(width < 1) {
+		width = 1;
+	} else if(width > 16) {
+		width = 16;
+	}
+	// This hangs indefinitely once in a while....
+	//thickLineRGBA(screen, offset_x + s->src_x * zoom, offset_y + s->src_y * zoom, offset_x + s->trg_x * zoom, offset_y + s->trg_y * zoom, width, 0, 255, 0, 128);
 	aalineRGBA(screen, offset_x + s->src_x * zoom, offset_y + s->src_y * zoom, offset_x + s->trg_x * zoom, offset_y + s->trg_y * zoom, 0, 255, 0, 128);
 
 	SDL_Rect dst_rect;
 
 	dst_rect.x = offset_x + (s->trg_x - 4 * mag) * zoom;
 	dst_rect.y = offset_y + (s->trg_y - 4 * mag) * zoom;
-	dst_rect.w = 8 * mag * zoom;
-	dst_rect.h = 8 * mag * zoom;
+	dst_rect.w = 4 * mag * zoom;
+	dst_rect.h = 4 * mag * zoom;
 
 	SDL_BlitSurface(shot_sprite, NULL, screen, &dst_rect);
 }

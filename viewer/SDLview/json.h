@@ -13,7 +13,7 @@
 int parseJson(buffer_t* b);
 
 void createExplosion(float x, float y);
-void createShot(int id, int owner, float x, float y, float length, float angle);
+void createShot(json_int_t id, int owner, float x, float y, float length, float angle);
 void jsonAsteroid(json_t* asteroid);
 void jsonAsteroids(json_t* a, int updatemode);
 void jsonBbox(json_t* bbox);
@@ -31,9 +31,9 @@ void jsonShot(json_t* shot);
 void jsonShots(json_t* s);
 void jsonUpdate(json_t* update);
 void jsonWorld(json_t* world);
-void updateAsteroid(int id, float x, float y, const char* contents);
-void updateBase(int id, float x, float y, int owner, int size, const char* contents, int docked_to);
-void updatePlanet(int id, float x, float y, int owner);
-void updateShip(int id, float x, float y, int owner, int size, const char* contents, int docked_to);
+void updateAsteroid(json_int_t id, float x, float y, const char* contents);
+void updateBase(json_int_t id, float x, float y, int owner, int size, const char* contents, int docked_to);
+void updatePlanet(json_int_t id, float x, float y, int owner);
+void updateShip(json_int_t id, float x, float y, int owner, int size, const char* contents, int docked_to);
 
 #endif

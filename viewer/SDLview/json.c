@@ -109,7 +109,6 @@ void jsonUpdate(json_t* update) {
 	if(j_bases) {
 		jsonBases(j_bases, UPDATE);
 	}
-	n_shots = 0;
 	json_t* j_shots = json_object_get(update, "shots");
 	if(j_shots) {
 		jsonShots(j_shots);
@@ -213,7 +212,7 @@ void jsonPlanets(json_t* p, int updatemode) {
 
 void jsonExplosion(json_t* explosion) {
 	int i;
-	int id = 0;
+	json_int_t id = 0;
 	float x,y;
 
 	json_t* j_id = json_object_get(explosion, "exploding_entity");
@@ -247,7 +246,7 @@ void jsonExplosion(json_t* explosion) {
 }
 
 void jsonShip(json_t* ship) {
-	int id = 0;
+	json_int_t id = 0;
 	float x,y;
 	int owner = 0;
 	int size = 0;
@@ -304,7 +303,7 @@ void jsonShip(json_t* ship) {
 }
 
 void jsonBase(json_t* base) {
-	int id = 0;
+	json_int_t id = 0;
 	float x,y;
 	int owner = 0;
 	int size = 0;
@@ -361,16 +360,12 @@ void jsonBase(json_t* base) {
 }
 
 void jsonShot(json_t* shot) {
-	int id;
-	int owner;
-	int source = 0;
-	int target = 0;
-	float r_src_x, r_src_y;
-	float r_trg_x, r_trg_y;
-	float v_src_x, v_src_y;
-	float v_trg_x, v_trg_y;
-	float length = 0;
-	int i;
+	json_int_t id;
+	json_int_t owner;
+	float r_src_x = 0;
+	float r_src_y = 0;
+	float r_trg_x = 0;
+	float r_trg_y = 0;
 
 	json_t* j_id = json_object_get(shot, "id");
 	if(!j_id || !json_is_integer(j_id)) return;
@@ -380,89 +375,59 @@ void jsonShot(json_t* shot) {
 	if(!j_owner || !json_is_integer(j_owner)) return;
 	owner = json_integer_value(j_owner);
 
-	json_t* j_source = json_object_get(shot, "source");
-	if(!j_source || !json_is_integer(j_source)) return;
-	source = json_integer_value(j_source);
+	json_t* j_src_x = json_object_get(shot, "srcx");
+	if(!j_src_x || !json_is_real(j_src_x)) return;
+	r_src_x = json_real_value(j_src_x);
 
-	json_t* j_target = json_object_get(shot, "target");
-	if(!j_target || !json_is_integer(j_target)) return;
-	target = json_integer_value(j_target);
+	json_t* j_src_y = json_object_get(shot, "srcy");
+	if(!j_src_y || !json_is_real(j_src_y)) return;
+	r_src_y = json_real_value(j_src_y);
 
-	char found_src = 0;
-	char found_trg = 0;
-	for(i = 0; i < n_ships; i++) {
-		if(!found_src && ships[i].id == source) {
-			r_src_x = ships[i].x;
-			r_src_y = ships[i].y;
-			found_src = 1;
-		}
-		if(!found_trg && ships[i].id == target) {
-			r_trg_x = ships[i].x;
-			r_trg_y = ships[i].y;
-			found_trg = 1;
-		}
-	}
-	for(i = 0; i < n_bases; i++) {
-		if(!found_src && bases[i].id == source) {
-			r_src_x = bases[i].x;
-			r_src_y = bases[i].y;
-			found_src = 1;
-		}
-		if(!found_trg && ships[i].id == target) {
-			r_trg_x = ships[i].x;
-			r_trg_y = ships[i].y;
-			found_trg = 1;
-		}
-	}
-	for(i = 0; i < n_asteroids; i++) {
-		if(!found_src && asteroids[i].id == source) {
-			r_src_x = asteroids[i].x;
-			r_src_y = asteroids[i].y;
-			found_src = 1;
-		}
-		if(!found_trg && asteroids[i].id == target) {
-			r_trg_x = asteroids[i].x;
-			r_trg_y = asteroids[i].y;
-			found_trg = 1;
-		}
-	}
-	for(i = 0; i < n_planets; i++) {
-		if(!found_src && planets[i].id == source) {
-			r_src_x = planets[i].x;
-			r_src_y = planets[i].y;
-			found_src = 1;
-		}
-		if(!found_trg && planets[i].id == target) {
-			r_trg_x = planets[i].x;
-			r_trg_y = planets[i].y;
-			found_trg = 1;
-		}
-	}
-	if(found_src && found_trg) {
-		length = hypot(r_trg_x - r_src_x, r_trg_y - r_src_y);
-		if(length > 5 && length < 100) {
-			v_trg_x = r_trg_x - 4 * (r_trg_x - r_src_x) / length;
-			v_trg_y = r_trg_y - 4 * (r_trg_y - r_src_y) / length;
-			v_src_x = r_trg_x - (length-1) * (r_trg_x - r_src_x) / length;
-			v_src_y = r_trg_y - (length-1) * (r_trg_y - r_src_y) / length;
-			createShot(id, owner, v_src_x, v_src_y, v_trg_x, v_trg_y);
-		}
-	}
+	json_t* j_trg_x = json_object_get(shot, "tgtx");
+	if(!j_trg_x || !json_is_real(j_trg_x)) return;
+	r_trg_x = json_real_value(j_trg_x);
+
+	json_t* j_trg_y = json_object_get(shot, "tgty");
+	if(!j_trg_y || !json_is_real(j_trg_y)) return;
+	r_trg_y = json_real_value(j_trg_y);
+
+	createShot(id, owner, r_src_x, r_src_y, r_trg_x, r_trg_y);
 }
 
-void createShot(int id, int owner, float src_x, float src_y, float trg_x, float trg_y) {
-	// Not important enought to realloc
-	if(n_shots < n_shots_max) {
+void createShot(json_int_t id, int owner, float src_x, float src_y, float trg_x, float trg_y) {
+	int i;
+	char foundEmpty = 0;
+	for(i = 0; i < n_shots; i++) {
+		if(shots[i].strength <= 0) {
+			shots[i].src_x = src_x;
+			shots[i].src_y = src_y;
+			shots[i].trg_x = trg_x;
+			shots[i].trg_y = trg_y;
+			shots[i].strength = 20;
+			foundEmpty = 1;
+			break;
+		}
+	}
+	if(!foundEmpty) {
+		if(n_shots >= n_shots_max - 1) {
+			shots = realloc(shots, (n_shots_max + 10) * sizeof(shot_t));
+			if(!shots) {
+				fprintf(stderr, "No more shots :-(\n");
+				exit(1);
+			}
+			n_shots_max += 10;
+		}
 		shots[n_shots].src_x = src_x;
 		shots[n_shots].src_y = src_y;
 		shots[n_shots].trg_x = trg_x;
 		shots[n_shots].trg_y = trg_y;
+		shots[n_shots].strength = 20;
 		n_shots++;
 	}
 }
 
 void jsonPlanet(json_t* planet) {
-	int id = 0;
+	json_int_t id = 0;
 	float x;
 	float y;
 	int owner = 0;
@@ -496,7 +461,7 @@ void jsonPlanet(json_t* planet) {
 	//fprintf(stdout, "Found planet %d at (%f, %f), owned by %d\n", id, x, y, owner);
 }
 
-void updatePlanet(int id, float x, float y, int owner) {
+void updatePlanet(json_int_t id, float x, float y, int owner) {
 	int i;
 	char found = 0;
 	for(i = 0; i < n_planets; i++) {
@@ -529,7 +494,7 @@ void updatePlanet(int id, float x, float y, int owner) {
 	}
 }
 
-void updateShip(int id, float x, float y, int owner, int size, const char* contents, int docked_to) {
+void updateShip(json_int_t id, float x, float y, int owner, int size, const char* contents, int docked_to) {
 	int i;
 	char found = 0;
 	for(i = 0; i < n_ships; i++) {
@@ -567,7 +532,7 @@ void updateShip(int id, float x, float y, int owner, int size, const char* conte
 
 }
 
-void updateBase(int id, float x, float y, int owner, int size, const char* contents, int docked_to) {
+void updateBase(json_int_t id, float x, float y, int owner, int size, const char* contents, int docked_to) {
 	int i;
 	char found = 0;
 	for(i = 0; i < n_bases; i++) {
@@ -648,7 +613,7 @@ void jsonPlayers(json_t* p) {
 }
 
 void jsonPlayer(json_t* player) {
-	int id = 0;
+	json_int_t id = 0;
 	const char* name;
 
 	json_t* j_id = json_object_get(player, "id");
@@ -708,7 +673,7 @@ void jsonAsteroids(json_t* a, int updatemode) {
 }
 
 void jsonAsteroid(json_t* asteroid) {
-	int id = 0;
+	json_int_t id = 0;
 	float x;
 	float y;
 	const char* contents;
@@ -732,7 +697,7 @@ void jsonAsteroid(json_t* asteroid) {
 	updateAsteroid(id, x, y, contents);
 }
 
-void updateAsteroid(int id, float x, float y, const char* contents) {
+void updateAsteroid(json_int_t id, float x, float y, const char* contents) {
 	int i;
 	char found = 0;
 	for(i = 0; i < n_asteroids; i++) {

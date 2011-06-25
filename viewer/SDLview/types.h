@@ -1,5 +1,6 @@
 #ifndef _TYPES_H
 #define _TYPES_H
+#include <jansson.h>
 
 typedef struct {
 	int size;
@@ -8,7 +9,7 @@ typedef struct {
 } buffer_t;
 
 typedef struct {
-	int id;
+	json_int_t id;
 	float x;
 	float y;
 	char contents[10];
@@ -16,7 +17,7 @@ typedef struct {
 } asteroid_t;
 
 typedef struct {
-	int id;
+	json_int_t id;
 	float x;
 	float y;
 	int owner;
@@ -30,7 +31,7 @@ typedef struct {
 } explosion_t;
 
 typedef struct {
-	int id;
+	json_int_t id;
 	float x;
 	float y;
 	int owner;
@@ -41,7 +42,7 @@ typedef struct {
 } ship_t;
 
 typedef struct {
-	int id;
+	json_int_t id;
 	float x;
 	float y;
 	int owner;
@@ -56,6 +57,7 @@ typedef struct {
 	float src_y;
 	float trg_x;
 	float trg_y;
+	float strength;
 } shot_t;
 
 typedef struct {
