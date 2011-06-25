@@ -58,7 +58,7 @@ char show_text_id = 0;
 char show_text_coords = 0;
 
 void screen_init() {
-	screen = SDL_SetVideoMode(display_x, display_y, 0, SDL_RESIZABLE | SDL_HWSURFACE | SDL_DOUBLEBUF);
+	screen = SDL_SetVideoMode(display_x, display_y, 0, SDL_RESIZABLE | SDL_SWSURFACE | SDL_DOUBLEBUF);
 
 	if (screen == NULL) {
 		fprintf(stderr, "SDL_SetVideoMode() failed: %s\n", SDL_GetError());
@@ -493,12 +493,57 @@ void drawBase(base_t * b) {
 
 		if(b->size > 0 && b-> size <= 3) {
 			SDL_BlitSurface(base_small_sprite, NULL, screen, &dst_rect);
+			drawSlot(offset_x + (b->x - .45 * mag) * zoom, offset_y + (b->y - 0.2 * mag) * zoom, b->contents[0]);
+			drawSlot(offset_x + (b->x + 0.1 * mag) * zoom, offset_y + (b->y + 0.8 * mag) * zoom, b->contents[1]);
+			drawSlot(offset_x + (b->x - 1.0 * mag) * zoom, offset_y + (b->y + 0.8 * mag) * zoom, b->contents[2]);
 		} else if (b->size <= 6) {
 			SDL_BlitSurface(base_medium_sprite, NULL, screen, &dst_rect);
+			drawSlot(offset_x + (b->x - 1.0 * mag) * zoom, offset_y + (b->y - 1.5 * mag) * zoom, b->contents[0]);
+			drawSlot(offset_x + (b->x + 0.1 * mag) * zoom, offset_y + (b->y - 1.5 * mag) * zoom, b->contents[1]);
+			drawSlot(offset_x + (b->x - 1.0 * mag) * zoom, offset_y + (b->y - 0.4 * mag) * zoom, b->contents[2]);
+			drawSlot(offset_x + (b->x + 0.1 * mag) * zoom, offset_y + (b->y - 0.4 * mag) * zoom, b->contents[3]);
+			drawSlot(offset_x + (b->x - 1.0 * mag) * zoom, offset_y + (b->y + 0.7 * mag) * zoom, b->contents[4]);
+			drawSlot(offset_x + (b->x + 0.1 * mag) * zoom, offset_y + (b->y + 0.7 * mag) * zoom, b->contents[5]);
 		} else if (b->size <= 12) {
 			SDL_BlitSurface(base_large_sprite, NULL, screen, &dst_rect);
+			drawSlot(offset_x + (b->x - 4.5 * mag) * zoom, offset_y + (b->y - 1.3 * mag) * zoom, b->contents[0]);
+			drawSlot(offset_x + (b->x - 3.4 * mag) * zoom, offset_y + (b->y - 1.3 * mag) * zoom, b->contents[1]);
+			drawSlot(offset_x + (b->x - 4.5 * mag) * zoom, offset_y + (b->y - 0.2 * mag) * zoom, b->contents[2]);
+			drawSlot(offset_x + (b->x - 3.4 * mag) * zoom, offset_y + (b->y - 0.2 * mag) * zoom, b->contents[3]);
+			drawSlot(offset_x + (b->x - 1.1 * mag) * zoom, offset_y + (b->y - 1.8 * mag) * zoom, b->contents[4]);
+			drawSlot(offset_x + (b->x + 0.0 * mag) * zoom, offset_y + (b->y - 1.8 * mag) * zoom, b->contents[5]);
+			drawSlot(offset_x + (b->x - 1.1 * mag) * zoom, offset_y + (b->y - 0.7 * mag) * zoom, b->contents[6]);
+			drawSlot(offset_x + (b->x + 0.0 * mag) * zoom, offset_y + (b->y - 0.7 * mag) * zoom, b->contents[7]);
+			drawSlot(offset_x + (b->x + 2.5 * mag) * zoom, offset_y + (b->y - 1.3 * mag) * zoom, b->contents[8]);
+			drawSlot(offset_x + (b->x + 3.6 * mag) * zoom, offset_y + (b->y - 1.3 * mag) * zoom, b->contents[9]);
+			drawSlot(offset_x + (b->x + 2.5 * mag) * zoom, offset_y + (b->y - 0.2 * mag) * zoom, b->contents[10]);
+			drawSlot(offset_x + (b->x + 3.6 * mag) * zoom, offset_y + (b->y - 0.2 * mag) * zoom, b->contents[11]);
 		} else if (b->size <= 24) {
 			SDL_BlitSurface(base_huge_sprite, NULL, screen, &dst_rect);
+			drawSlot(offset_x + (b->x - 4.8 * mag) * zoom, offset_y + (b->y - 1.7 * mag) * zoom, b->contents[0]);
+			drawSlot(offset_x + (b->x - 3.5 * mag) * zoom, offset_y + (b->y - 1.7 * mag) * zoom, b->contents[1]);
+			drawSlot(offset_x + (b->x - 5.4 * mag) * zoom, offset_y + (b->y - 0.5 * mag) * zoom, b->contents[2]);
+			drawSlot(offset_x + (b->x - 2.9 * mag) * zoom, offset_y + (b->y - 0.5 * mag) * zoom, b->contents[3]);
+			drawSlot(offset_x + (b->x - 4.8 * mag) * zoom, offset_y + (b->y + 0.7 * mag) * zoom, b->contents[4]);
+			drawSlot(offset_x + (b->x - 3.5 * mag) * zoom, offset_y + (b->y + 0.7 * mag) * zoom, b->contents[5]);
+			drawSlot(offset_x + (b->x + 2.5 * mag) * zoom, offset_y + (b->y - 1.7 * mag) * zoom, b->contents[6]);
+			drawSlot(offset_x + (b->x + 3.8 * mag) * zoom, offset_y + (b->y - 1.7 * mag) * zoom, b->contents[7]);
+			drawSlot(offset_x + (b->x + 1.9 * mag) * zoom, offset_y + (b->y - 0.5 * mag) * zoom, b->contents[8]);
+			drawSlot(offset_x + (b->x + 4.4 * mag) * zoom, offset_y + (b->y - 0.5 * mag) * zoom, b->contents[9]);
+			drawSlot(offset_x + (b->x + 2.5 * mag) * zoom, offset_y + (b->y + 0.7 * mag) * zoom, b->contents[10]);
+			drawSlot(offset_x + (b->x + 3.8 * mag) * zoom, offset_y + (b->y + 0.7 * mag) * zoom, b->contents[11]);
+			drawSlot(offset_x + (b->x - 1.2 * mag) * zoom, offset_y + (b->y - 5.3 * mag) * zoom, b->contents[12]);
+			drawSlot(offset_x + (b->x + 0.2 * mag) * zoom, offset_y + (b->y - 5.3 * mag) * zoom, b->contents[13]);
+			drawSlot(offset_x + (b->x - 1.7 * mag) * zoom, offset_y + (b->y - 4.1 * mag) * zoom, b->contents[14]);
+			drawSlot(offset_x + (b->x + 0.6 * mag) * zoom, offset_y + (b->y - 4.1 * mag) * zoom, b->contents[15]);
+			drawSlot(offset_x + (b->x - 1.2 * mag) * zoom, offset_y + (b->y - 2.9 * mag) * zoom, b->contents[16]);
+			drawSlot(offset_x + (b->x + 0.2 * mag) * zoom, offset_y + (b->y - 2.9 * mag) * zoom, b->contents[17]);
+			drawSlot(offset_x + (b->x - 1.2 * mag) * zoom, offset_y + (b->y + 1.9 * mag) * zoom, b->contents[18]);
+			drawSlot(offset_x + (b->x + 0.2 * mag) * zoom, offset_y + (b->y + 1.9 * mag) * zoom, b->contents[19]);
+			drawSlot(offset_x + (b->x - 1.7 * mag) * zoom, offset_y + (b->y + 3.1 * mag) * zoom, b->contents[20]);
+			drawSlot(offset_x + (b->x + 0.6 * mag) * zoom, offset_y + (b->y + 3.1 * mag) * zoom, b->contents[21]);
+			drawSlot(offset_x + (b->x - 1.2 * mag) * zoom, offset_y + (b->y + 4.3 * mag) * zoom, b->contents[22]);
+			drawSlot(offset_x + (b->x + 0.2 * mag) * zoom, offset_y + (b->y + 4.3 * mag) * zoom, b->contents[23]);
 		}
 	}
 }

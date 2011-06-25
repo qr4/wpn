@@ -35,7 +35,7 @@ typedef struct {
 	float y;
 	int owner;
 	int size;
-	char contents[10];
+	char contents[25];
 	int docked_to;
 	char active;
 } ship_t;
@@ -46,7 +46,7 @@ typedef struct {
 	float y;
 	int owner;
 	int size;
-	char contents[10];
+	char contents[25];
 	int docked_to;
 	char active;
 } base_t;
