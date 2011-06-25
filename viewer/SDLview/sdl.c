@@ -352,7 +352,7 @@ void drawText(int x,int y, char* text) {
 	SDL_Surface* text_surf;
 	SDL_Rect pos;
 
-	if(x < 0 || y < 0) {
+	if(x < 0 || y < 0 || x > screen->w || y > screen->h) {
 		return;
 	}
 
@@ -362,6 +362,10 @@ void drawText(int x,int y, char* text) {
 	pos.y = y;
 	pos.w = text_surf->w;
 	pos.h = text_surf->h;
+
+	if(x < text_surf->w || y < text_surf->h || x > screen->w - text_surf->w || y > screen->h - text_surf->h) {
+		return;
+	}
 
 	SDL_BlitSurface(text_surf, NULL, screen, &pos);
 
