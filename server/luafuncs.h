@@ -30,6 +30,8 @@ extern int lua_moveto(lua_State* L);
  * avoiding planets and asteroid fields */
 extern int lua_set_autopilot_to(lua_State* L);
 
+int lua_stop(lua_State* L);
+
 /* Register a timer to re-enter execution after the specified number of ticks */
 int lua_set_timer(lua_State* L);
 

@@ -36,6 +36,7 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_killself,                "killself",                killself_help},
 	{lua_moveto,                  "moveto",                  moveto_help},
 	{lua_set_autopilot_to,        "set_autopilot_to",        set_autopilot_to_help},
+	{lua_stop,                    "autopilot_stop",          NULL},
 	{lua_set_timer,               "set_timer",               set_timer_help},
 	{lua_dock,                    "dock",                    dock_help},
 	{lua_undock,                  "undock",                  undock_help},
