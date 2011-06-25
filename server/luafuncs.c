@@ -918,28 +918,48 @@ int lua_get_position(lua_State* L) {
 int lua_get_docking_partner(lua_State* L) {
 
 	entity_id_t self;
+	entity_id_t id;
 	entity_t *eself;
+	entity_t *e;
 	int n;
 
 	n = lua_gettop(L);
 
-	/* Syntax check */
-	if(n!=0) {
-		lua_pushstring(L, "Invalid number of arguments: get_docking_partner() doesn't need any.");
-		lua_error(L);
-	}
-
 	self = get_self(L);
 	eself = get_entity_by_id(self);
 
+	/* Syntax check */
+	switch(n) {
+		case 0:
+			e = eself;
+			break;
+		case 1:
+			id.id = (uint64_t) lua_touserdata(L,1);
+			lua_pop(L,1);
+
+			e = get_entity_by_id(id);
+			if(!e) {
+				return 0;
+			}
+
+		default:
+			lua_pushstring(L, "Invalid number of arguments: get_docking_partner() takes one or no arguments.");
+			lua_error(L);
+			break;
+	}
+
+	if(!(e->type & (BASE|ASTEROID|SHIP))) {
+		return 0;
+	}
+
 	/* Check whether we're docked */
-	if(eself->ship_data->docked_to.id == INVALID_ID.id) {
+	if(e->ship_data->docked_to.id == INVALID_ID.id) {
 		return 0;
 	} else {
-		DEBUG("Docked: %lu <-> %lu\n", eself->unique_id.id, eself->ship_data->docked_to.id);
+		DEBUG("Docked: %lu <-> %lu\n", e->unique_id.id, e->ship_data->docked_to.id);
 
 		/* Return our docking partner's id */
-		lua_pushlightuserdata(L, (void*)(eself->ship_data->docked_to.id));
+		lua_pushlightuserdata(L, (void*)(e->ship_data->docked_to.id));
 		return 1;
 	}
 }
