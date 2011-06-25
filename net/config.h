@@ -7,7 +7,7 @@
 
 #define TALK_PORT "8090"
 #define TALK_MAX_CONNECTION 512
-#define TALK_MAX_USERS 100
+#define TALK_MAX_USERS 200
 
 #define HOME "/opt/wpn"
 #define USER_HOME HOME"/user"

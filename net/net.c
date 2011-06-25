@@ -29,16 +29,16 @@
 #include "net.h"
 
 #define PORT "8080"
-#define MAX_CONNECTION 50
+#define MAX_CONNECTION 256
 
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
 #define MAX(a, b)  (((a) > (b)) ? (a) : (b))
 
 #define NET_MAP "/wpn_map_"
-#define NET_MAP_SIZE 4
+#define NET_MAP_SIZE 8
 
 #define NET_UPDATE "/wpn_update_"
-#define NET_UPDATE_SIZE 16
+#define NET_UPDATE_SIZE 64
 
 int netpid;
 
