@@ -453,7 +453,7 @@ void net_send(int fd, fd_set* rfds, fd_set* wfds) {
     uint64_t latest_relation = 0;
     int latest_map_id = ci[fd].current_map_id;
     for (int i = 0; i < NET_MAP_SIZE; ++i) {
-      if (map_si[i].relation > latest_relation) {
+      if ((map_si[i].relation > latest_relation) && (map_si[i].fd >= 0)) {
         latest_relation = map_si[i].relation;
         latest_map_id = i;
       }
@@ -462,8 +462,9 @@ void net_send(int fd, fd_set* rfds, fd_set* wfds) {
     if (latest_map_id != ci[fd].current_map_id) {
       // es gibt eine neuere map...
       ci[fd].current_map_id = latest_map_id;
+      log_msg("map_si[latest_map_id].fd = %d", map_si[latest_map_id].fd);
       ssize_t out = write(fd, map_si[latest_map_id].addr, map_si[latest_map_id].length);
-      if (out == -1) { disconnect_client(fd, rfds, wfds, "net_send (start update) out == -1"); return; }
+      if (out == -1) { disconnect_client(fd, rfds, wfds, "net_send (start update 1) out == -1"); return; }
       ci[fd].send_pos_map = out;
       return;
     }
@@ -477,11 +478,11 @@ void net_send(int fd, fd_set* rfds, fd_set* wfds) {
       // alte updates ueberspringen
       uint64_t max_relation = min_relation;
       for (int i = 0; i < NET_UPDATE_SIZE; ++i) {
-        if (update_si[i].relation == (min_relation + 1)) {
+        if ((update_si[i].relation == (min_relation + 1)) && (update_si[i].fd >= 0)) {
           // wir haben das update nach der neuen map gefunden... -> da weiter machen
           ci[fd].current_update_id = i;
           ssize_t out = write(fd, update_si[i].addr, update_si[i].length);
-          if (out == -1) { disconnect_client(fd, rfds, wfds, "net_send (start update) out == -1"); return; }
+          if (out == -1) { disconnect_client(fd, rfds, wfds, "net_send (start update 2) out == -1"); return; }
           ci[fd].send_pos_update = out;
           return;
         }
