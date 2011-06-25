@@ -36,6 +36,8 @@ float zoom;
 float offset_x;
 float offset_y;
 
+extern int local_player;
+
 #define default_mag 64
 float mag = default_mag;
 
@@ -332,7 +334,16 @@ Uint8 blue_from_H(double h) {
 }
 
 double player_to_h(int playerid) {
-	return 293*(playerid-100);
+	if(local_player != -1) {
+		if(playerid == local_player) {
+			return 120; // green
+		} else {
+			return 0; // red
+		}
+	} else {
+		// yay coder colors
+		return 293*(playerid-100);
+	}
 }
 
 void drawText(int x,int y, char* text) {

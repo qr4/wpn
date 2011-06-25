@@ -30,6 +30,7 @@ shot_t* shots;
 int n_shots, n_shots_max;
 
 bbox_t boundingbox;
+int local_player = -1;
 
 int checkInput(int net, buffer_t* b) {
 	int ret;
@@ -51,16 +52,16 @@ int checkInput(int net, buffer_t* b) {
 		// Input available
 		if(FD_ISSET(net, &inputset)) {
 
-      // TODO
-      // ich hasse den code!!!! armes netzwerk!
-      char c[1];
-      ssize_t len = recv(net, c, sizeof(c), 0);
+			// TODO
+			// ich hasse den code!!!! armes netzwerk!
+			char c[1];
+			ssize_t len = recv(net, c, sizeof(c), 0);
 
-      if (len == 0) {
-        // handle server hang-up
-        fprintf(stderr, "server hang up. Goodbye.\n");
-        return -1;
-      }
+			if (len == 0) {
+				// handle server hang-up
+				fprintf(stderr, "server hang up. Goodbye.\n");
+				return -1;
+			}
 
 			if(b->fill >= b->size - 1) {
 				growBuffer(b);
@@ -137,69 +138,71 @@ void allocStuff() {
 
 // get sockaddr, IPv4 or IPv6:
 // TODO... das steht doch schon in der network.c
-void *get_in_addr(struct sockaddr *sa)
-{
-  if (sa->sa_family == AF_INET) {
-    return &(((struct sockaddr_in*)sa)->sin_addr);
-  }
-  return &(((struct sockaddr_in6*)sa)->sin6_addr);
+void *get_in_addr(struct sockaddr *sa) {
+	if (sa->sa_family == AF_INET) {
+		return &(((struct sockaddr_in*)sa)->sin_addr);
+	}
+	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
 int connect2server(char* server) {
+	int sockfd;
+	struct addrinfo hints, *servinfo, *p;
+	int rv;
 
-  int sockfd;
-  struct addrinfo hints, *servinfo, *p;
-  int rv;
+	bzero(&hints, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
 
-  bzero(&hints, sizeof(hints));
-  hints.ai_family = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
+	printf("connect to server %s\n", server);
+	rv = getaddrinfo(server, PORT, &hints, &servinfo);
 
-  printf("connect to server %s\n", server);
-  rv = getaddrinfo(server, PORT, &hints, &servinfo);
+	if (rv != 0) {
+		printf("getaddrinfo: %s\n", gai_strerror(rv));
+		freeaddrinfo(servinfo); // all done with this structure
+		exit(EXIT_FAILURE);
+	}
 
-  if (rv != 0) {
-    printf("getaddrinfo: %s\n", gai_strerror(rv));
-    freeaddrinfo(servinfo); // all done with this structure
-    exit(EXIT_FAILURE);
-  }
+	// loop through all the results and connect to the first we can
+	for (p = servinfo; p != NULL; p = p->ai_next) {
+		if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+			perror("connect_to_server client: socket");
+			continue;
+		}
 
-  // loop through all the results and connect to the first we can
-  for (p = servinfo; p != NULL; p = p->ai_next) {
-    if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-      perror("connect_to_server client: socket");
-      continue;
-    }
+		if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+			close(sockfd);
+			perror("connect_to_server client: connect");
+			continue;
+		}
 
-    if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-      close(sockfd);
-      perror("connect_to_server client: connect");
-      continue;
-    }
+		break;
+	}
 
-    break;
-  }
+	freeaddrinfo(servinfo); // all done with this structure
 
-  freeaddrinfo(servinfo); // all done with this structure
+	if (p == NULL) {
+		printf("connect_to_server client: failed to connect\n");
+		exit(EXIT_FAILURE);
+	}
 
-  if (p == NULL) {
-    printf("connect_to_server client: failed to connect\n");
-    exit(EXIT_FAILURE);
-  }
-
-  return sockfd;
+	return sockfd;
 }
 
 int main(int argc, const char* argv[] ) {
 	buffer_t* buffer = getBuffer();
 	int ret;
 
-  if (argc != 2) {
-    printf("%s <server-ip>\n", argv[0]);
-    exit(EXIT_FAILURE);
-  }
+	if (argc != 2 && argc != 3) {
+		printf("%s <server-ip> [userid]\n", argv[0]);
+		exit(EXIT_FAILURE);
+	}
 
-  int net = connect2server(argv[1]);
+	if(argc == 3) {
+		local_player = atoi(argv[2]);
+	}
+
+	int net = connect2server(argv[1]);
 
 	allocStuff();
 
