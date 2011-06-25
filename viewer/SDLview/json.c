@@ -53,6 +53,7 @@ int parseJson(buffer_t* b) {
 			jsonUpdate(update);
 		}
 	}
+	json_decref(root);
 	return 0;
 }
 
