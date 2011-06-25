@@ -614,6 +614,35 @@ void drawShip(ship_t * s) {
 			dst_rect.w += 6 * mag * zoom;
 			dst_rect.h += 6 * mag * zoom;
 			SDL_BlitSurface(ship_huge_sprite, NULL, screen, &dst_rect);
+			drawSlot(offset_x + (s->x - 4 * mag) * zoom, offset_y + (s->y + 4 * mag) * zoom, s->contents[0]);
+			drawSlot(offset_x + (s->x + 3 * mag) * zoom, offset_y + (s->y + 4 * mag) * zoom, s->contents[1]);
+
+			drawSlot(offset_x + (s->x - 3.1 * mag) * zoom, offset_y + (s->y - 1.6 * mag) * zoom, s->contents[2]);
+			drawSlot(offset_x + (s->x - 3.1 * mag) * zoom, offset_y + (s->y - 0.5 * mag) * zoom, s->contents[7]);
+			drawSlot(offset_x + (s->x - 3.1 * mag) * zoom, offset_y + (s->y + 0.6 * mag) * zoom, s->contents[12]);
+			drawSlot(offset_x + (s->x - 3.1 * mag) * zoom, offset_y + (s->y + 1.7 * mag) * zoom, s->contents[17]);
+
+			drawSlot(offset_x + (s->x - 1.9 * mag) * zoom, offset_y + (s->y - 2.7 * mag) * zoom, s->contents[3]);
+			drawSlot(offset_x + (s->x - 1.9 * mag) * zoom, offset_y + (s->y - 1.6 * mag) * zoom, s->contents[8]);
+			drawSlot(offset_x + (s->x - 1.9 * mag) * zoom, offset_y + (s->y - 0.5 * mag) * zoom, s->contents[13]);
+			drawSlot(offset_x + (s->x - 1.9 * mag) * zoom, offset_y + (s->y + 0.6 * mag) * zoom, s->contents[18]);
+			drawSlot(offset_x + (s->x - 1.9 * mag) * zoom, offset_y + (s->y + 1.7 * mag) * zoom, s->contents[22]);
+
+			drawSlot(offset_x + (s->x - 0.5 * mag) * zoom, offset_y + (s->y - 2.7 * mag) * zoom, s->contents[4]);
+			drawSlot(offset_x + (s->x - 0.5 * mag) * zoom, offset_y + (s->y - 1.6 * mag) * zoom, s->contents[9]);
+			drawSlot(offset_x + (s->x - 0.5 * mag) * zoom, offset_y + (s->y - 0.5 * mag) * zoom, s->contents[14]);
+			drawSlot(offset_x + (s->x - 0.5 * mag) * zoom, offset_y + (s->y + 0.6 * mag) * zoom, s->contents[19]);
+
+			drawSlot(offset_x + (s->x + 0.9 * mag) * zoom, offset_y + (s->y - 2.7 * mag) * zoom, s->contents[5]);
+			drawSlot(offset_x + (s->x + 0.9 * mag) * zoom, offset_y + (s->y - 1.6 * mag) * zoom, s->contents[10]);
+			drawSlot(offset_x + (s->x + 0.9 * mag) * zoom, offset_y + (s->y - 0.5 * mag) * zoom, s->contents[15]);
+			drawSlot(offset_x + (s->x + 0.9 * mag) * zoom, offset_y + (s->y + 0.6 * mag) * zoom, s->contents[20]);
+			drawSlot(offset_x + (s->x + 0.9 * mag) * zoom, offset_y + (s->y + 1.7 * mag) * zoom, s->contents[23]);
+
+			drawSlot(offset_x + (s->x + 2.1 * mag) * zoom, offset_y + (s->y - 1.7 * mag) * zoom, s->contents[6]);
+			drawSlot(offset_x + (s->x + 2.1 * mag) * zoom, offset_y + (s->y - 0.6 * mag) * zoom, s->contents[11]);
+			drawSlot(offset_x + (s->x + 2.1 * mag) * zoom, offset_y + (s->y + 0.5 * mag) * zoom, s->contents[16]);
+			drawSlot(offset_x + (s->x + 2.1 * mag) * zoom, offset_y + (s->y + 1.6 * mag) * zoom, s->contents[21]);
 		}
 	}
 }
