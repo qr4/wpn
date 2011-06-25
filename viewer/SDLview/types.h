@@ -65,4 +65,9 @@ typedef struct {
 	float ymax;
 } bbox_t;
 
+typedef struct {
+	int id;
+	char* name;
+} player_t;
+
 #endif

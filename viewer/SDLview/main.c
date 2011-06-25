@@ -32,6 +32,9 @@ int n_ships, n_ships_max;
 shot_t* shots;
 int n_shots, n_shots_max;
 
+player_t* players;
+int n_players, n_players_max;
+
 bbox_t boundingbox;
 int local_player = -1;
 
@@ -145,6 +148,14 @@ void allocStuff() {
 	}
 	n_shots = 0;
 	n_shots_max = 1000;
+
+	players = malloc(100 * sizeof(player_t));
+	if(!players) {
+		fprintf(stderr, "No space left for player\n");
+		exit(1);
+	}
+	n_players = 0;
+	n_players_max = 100;
 }
 
 // get sockaddr, IPv4 or IPv6:
@@ -250,7 +261,7 @@ int main(int argc, const char* argv[] ) {
 		}
 	}
 
-  close(net);
+	close(net);
 
 	return 0;
 }

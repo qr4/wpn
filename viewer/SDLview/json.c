@@ -26,16 +26,13 @@ extern shot_t* shots;
 extern int n_shots;
 extern int n_shots_max;
 
+extern player_t* players;
+extern int n_players;
+extern int n_players_max;
+
 extern float zoom;
 extern float offset_x;
 extern float offset_y;
-
-typedef struct {
-	int id;
-	char* name;
-} player_t;
-
-player_t* players = NULL;
 
 int parseJson(buffer_t* b) {
 	json_error_t error;
@@ -60,6 +57,10 @@ int parseJson(buffer_t* b) {
 }
 
 void jsonWorld(json_t* world) {
+	json_t* j_players = json_object_get(world, "players");
+	if(j_players) {
+		jsonPlayers(j_players);
+	}
 	json_t* j_asteroids = json_object_get(world, "asteroids");
 	if(j_asteroids) {
 		jsonAsteroids(j_asteroids, OVERWRITE);
@@ -83,6 +84,10 @@ void jsonWorld(json_t* world) {
 }
 
 void jsonUpdate(json_t* update) {
+	json_t* j_players = json_object_get(update, "players");
+	if(j_players) {
+		jsonPlayers(j_players);
+	}
 	json_t* j_asteroids = json_object_get(update, "asteroids");
 	if(j_asteroids) {
 		jsonAsteroids(j_asteroids, UPDATE);
@@ -625,6 +630,60 @@ void createExplosion(float x, float y) {
 		explosions[n_explosions].strength = 256;
 		n_explosions++;
 	}
+}
+
+void jsonPlayers(json_t* p) {
+	int i;
+
+	if(p && json_is_array(p)) {
+		json_t* j_player;
+		for(i = 0; i < json_array_size(p); i++) {
+			j_player = json_array_get(p, i);
+			if(json_is_object(j_player)) {
+				jsonPlayer(j_player);
+			}
+		}
+	}
+}
+
+void jsonPlayer(json_t* player) {
+	int id = 0;
+	const char* name;
+
+	json_t* j_id = json_object_get(player, "id");
+	if(!j_id || !json_is_integer(j_id)) return;
+	id = json_integer_value(j_id);
+
+	json_t* j_name = json_object_get(player, "name");
+	if(!j_name || !json_is_string(j_name)) return;
+	name = json_string_value(j_name);
+
+	int i;
+	char found = 0;
+	for(i = 0; i < n_players; i++) {
+		if(players[i].id == id) {
+			break;
+		}
+	}
+	if(!found) {
+		if(n_players >= n_players_max -1) {
+			players = realloc(players, (n_players_max + 10) * sizeof(player_t));
+			if(!players) {
+				fprintf(stderr, "No more players :-(\n");
+				exit(1);
+			}
+			n_players_max += 10;
+		}
+		players[n_players].id = id;
+		players[n_players].name = malloc(strlen(name)+1);
+		if(!players[n_players].name) {
+			fprintf(stderr, "No more player names :-(\n");
+			exit(1);
+		}
+		strncpy(players[n_players].name, name, 10);
+		n_players++;
+	}
+
 }
 
 void jsonAsteroids(json_t* a, int updatemode) {

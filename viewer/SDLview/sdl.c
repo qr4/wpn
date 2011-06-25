@@ -24,6 +24,7 @@ extern asteroid_t* asteroids;
 extern base_t* bases;
 extern explosion_t* explosions;
 extern planet_t* planets;
+extern player_t* players;
 extern ship_t* ships;
 extern shot_t* shots;
 
@@ -31,6 +32,7 @@ extern int n_asteroids;
 extern int n_bases;
 extern int n_explosions;
 extern int n_planets;
+extern int n_players;
 extern int n_ships;
 extern int n_shots;
 
@@ -51,7 +53,8 @@ float mag = default_mag;
 #define FONT_FILE "terminus.ttf"
 #define FONT_SIZE 9
 TTF_Font* font;
-char show_text_id = 1;
+char show_text_name = 1;
+char show_text_id = 0;
 char show_text_coords = 0;
 
 void screen_init() {
@@ -229,6 +232,16 @@ void checkSDLevent() {
 							show_text_id = 0;
 						} else {
 							show_text_id = 1;
+							show_text_name = 0;
+						}
+						break;
+					case SDLK_n:
+						if((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) {
+							// N
+							show_text_name = 0;
+						} else {
+							show_text_name = 1;
+							show_text_id = 0;
 						}
 						break;
 					case SDLK_q:
@@ -591,7 +604,7 @@ void drawPlanet(planet_t* p) {
 	static float last_zoom = 1;
 	static float last_mag = default_mag;
 	static SDL_Surface* planet_sprite = NULL;
-	char* text;
+	char* text = NULL;
 
 	if(!planet_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(planet_sprite);
@@ -614,7 +627,21 @@ void drawPlanet(planet_t* p) {
 
 		SDL_BlitSurface(planet_sprite, NULL, screen, &dst_rect);
 
-		if(show_text_id) {
+		if(show_text_name) {
+			if(p->owner > 0) {
+				for(int i = 0; i < n_players; i++) {
+					if(players[i].id == p->owner) {
+						asprintf(&text, "%s", players[i].name);
+						break;
+					}
+				}
+				if(!text) {
+					asprintf(&text, "(%i)", p->owner);
+				}
+				drawText(dst_rect.x+14, dst_rect.y-14, text);
+				free(text);
+			}
+		} else if(show_text_id) {
 			if(p->owner > 0) {
 				asprintf(&text, "%i", p->owner);
 				drawText(dst_rect.x+14, dst_rect.y-14, text);

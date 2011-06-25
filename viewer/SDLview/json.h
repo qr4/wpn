@@ -23,6 +23,8 @@ void jsonExplosion(json_t* e);
 void jsonExplosions(json_t* e);
 void jsonPlanet(json_t* planet);
 void jsonPlanets(json_t* p, int updatemode);
+void jsonPlayer(json_t* p);
+void jsonPlayers(json_t* p);
 void jsonShip(json_t* ship);
 void jsonShips(json_t* s, int updatemode);
 void jsonShot(json_t* shot);
