@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 
 #include "map.h"
 #include "config.h"
@@ -24,9 +25,6 @@ double AVERAGE_GRID_SIZE = 500;
 double MAP_SIZE_X = 170000.;
 double MAP_SIZE_Y = 96250.;
 
-size_t CLUSTERS_X = 40;
-size_t CLUSTERS_Y = 40;
-
 // Forward declarations for init_map()
 static int check_for_cluster_collisions(entity_t *cluster);
 static int check_for_asteroid_collisions(entity_t *asteroid, entity_t *cluster);
@@ -45,12 +43,30 @@ map_t map;
  * helper_functions at the end of this file
  */
 void init_map() {
+#ifdef ENABLE_DEBUG
 	srand48(1);
+#else
+	srand48(time(NULL));
+#endif
 	size_t i;
 	vector_t pos;
-	vector_t map_size = (vector_t) {{MAP_SIZE_X, MAP_SIZE_Y}};
+	vector_t map_size;
 	entity_t *cluster;
 
+#define from_config(VAR_NAME, CONFIG_NAME) do { double value; VAR_NAME = ((value = config_get_double(CONFIG_NAME)) > 0) ? value : VAR_NAME; } while(0)
+	from_config(MAXIMUM_CLUSTER_SIZE,  "maximum_cluster_size");
+	from_config(MINIMUM_PLANET_SIZE,   "minimum_planet_size ");
+	from_config(MAXIMUM_PLANET_SIZE,   "maximum_planet_size");
+	from_config(PLANETS,               "planets");
+	from_config(ASTEROIDS,             "asteroids");
+	from_config(MINIMUM_ASTEROIDS,     "minimum_asteroids");
+	from_config(MAXIMUM_ASTEROIDS,     "maximum_asteroids");
+	from_config(AVERAGE_GRID_SIZE,     "average_grid_size");
+	from_config(MAP_SIZE_X,            "map_size_x");
+	from_config(MAP_SIZE_Y,            "map_size_y");
+#undef from_config
+
+	map_size = (vector_t) {{MAP_SIZE_X, MAP_SIZE_Y}};
 	map.quad_size = AVERAGE_GRID_SIZE;
 
 	// distribute all planets first, we all want a place to live after all

@@ -18,6 +18,22 @@ max_ship_size = 1 -- Do not change, or everything will be blown into pieces (thi
 max_ship_estimation = 8192
 max_base_estimation = 32
 
+-- Map configuration
+maximum_cluster_size = 500;
+
+minimum_planet_size = 30;
+maximum_planet_size = 50;
+planets = 20;
+
+asteroids = 150;
+minimum_asteroids = 5;
+maximum_asteroids = 5;
+
+average_grid_size = 500;
+
+map_size_x = 150000.;
+map_size_y = 76250.;
+
 -- Range Limits:
 weapon_range = 500
 docking_range = 100

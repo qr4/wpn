@@ -935,7 +935,7 @@ int lua_get_docking_partner(lua_State* L) {
 	entity_id_t self;
 	entity_id_t id;
 	entity_t *eself;
-	entity_t *e;
+	entity_t *e = NULL;
 	int n;
 
 	n = lua_gettop(L);
