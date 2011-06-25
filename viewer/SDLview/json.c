@@ -764,22 +764,36 @@ void updateAsteroid(int id, float x, float y, const char* contents) {
 
 void jsonBbox(json_t* bbox) {
 	static char seenBbox = 0;
+	float xmin = 0;
+	float xmax = 170000;
+	float ymin = 0;
+	float ymax = 100000;
 	if(bbox) {
-		json_t* xmin = json_object_get(bbox, "xmin");
-		if(json_is_number(xmin)) {
-			boundingbox.xmin = json_number_value(xmin);
+		json_t* j_xmin = json_object_get(bbox, "xmin");
+		if(json_is_number(j_xmin)) {
+			xmin = json_number_value(j_xmin);
 		}
-		json_t* xmax = json_object_get(bbox, "xmax");
-		if(json_is_number(xmax)) {
-			boundingbox.xmax = json_number_value(xmax);
+		json_t* j_xmax = json_object_get(bbox, "xmax");
+		if(json_is_number(j_xmax)) {
+			xmax = json_number_value(j_xmax);
 		}
-		json_t* ymin = json_object_get(bbox, "ymin");
-		if(json_is_number(ymin)) {
-			boundingbox.ymin = json_number_value(ymin);
+		json_t* j_ymin = json_object_get(bbox, "ymin");
+		if(json_is_number(j_ymin)) {
+			ymin = json_number_value(j_ymin);
 		}
-		json_t* ymax = json_object_get(bbox, "ymax");
-		if(json_is_number(ymax)) {
-			boundingbox.ymax = json_number_value(ymax);
+		json_t* j_ymax = json_object_get(bbox, "ymax");
+		if(json_is_number(j_ymax)) {
+			ymax = json_number_value(j_ymax);
+		}
+
+		if((xmin != boundingbox.xmin) || (xmax != boundingbox.xmax) || (ymin != boundingbox.ymin) || (ymax != boundingbox.ymax)) {
+			boundingbox.xmin = xmin;
+			boundingbox.xmax = xmax;
+			boundingbox.ymin = ymin;
+			boundingbox.ymax = ymax;
+			fprintf(stdout, "Updated bbox to (%f, %f) x (%f, %f)\n", xmin, xmax, ymin, ymax);
+		} else {
+			return;
 		}
 
 		if(!seenBbox) {
@@ -795,5 +809,4 @@ void jsonBbox(json_t* bbox) {
 			seenBbox = 1;
 		}
 	}
-	fprintf(stdout, "Updated bbox to (%f, %f) x (%f, %f)\n", boundingbox.xmin, boundingbox.xmax, boundingbox.ymin, boundingbox.ymax);
 }
