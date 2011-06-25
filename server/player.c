@@ -107,6 +107,10 @@ void create_homebase(player_data_t* player) {
 	b->player_id = player->player_id;
 
 	DEBUG("Created homebase %lu for player %u.\n", base_id.id, player->player_id);
+
+	/* Lua update this */
+	send_base_update(b);
+	send_planet_update(get_entity_by_id(planet_id));
 }
 
 /* Scan through the player-by-id directory and add all players marked there */
