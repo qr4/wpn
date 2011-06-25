@@ -1663,7 +1663,9 @@ int lua_colonize(lua_State* L) {
 	/* update map */
 	map_to_network();
 
-	/* TODO: Send out a json-update about this */
+	/* Send out a json-update about this */
+	send_base_update(ebase);
+	send_planet_update(eplanet);
 
 	/* Sanity check. */
 	ebase = get_entity_by_id(base);
