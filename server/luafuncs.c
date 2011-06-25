@@ -956,6 +956,7 @@ int lua_get_docking_partner(lua_State* L) {
 			if(!e) {
 				return 0;
 			}
+			break;
 
 		default:
 			lua_pushstring(L, "Invalid number of arguments: get_docking_partner() takes one or no arguments.");
