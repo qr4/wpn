@@ -1663,8 +1663,6 @@ int lua_colonize(lua_State* L) {
 	/* Re-invoke the lua stuff after this time */
 	set_entity_timer(ebase, config_get_int("colonize_duration"), COLONIZE_COMPLETE, base);
 
-	register_object(ebase);
-
 	/* update map */
 	map_to_network();
 

@@ -33,6 +33,8 @@ entity_id_t init_base(entity_storage_t* s, entity_id_t planet, uint8_t size) {
 	/* No event to start with */
 	e->base_data->timer_value=-1;
 
+	register_object(e);
+
 	init_ship_computer(e);
 
 	return id;
