@@ -384,7 +384,7 @@ int lua_dock(lua_State* L) {
 	call_entity_callback(e, BEING_DOCKED, self);
 
 	/* Return one in order to denote successful initialization of docking process */
-	fprintf(stderr, "Success!\n");
+	DEBUG("Docking Success!\n");
 	lua_pushnumber(L,1);
 	return 1;
 }

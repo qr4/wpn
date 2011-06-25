@@ -373,7 +373,7 @@ void autopilot_planner(entity_t* e, double x, double y) {
 		exit(1);
 	}
 	if(get_acceleration(e) == 0) {
-		ERROR("Flying without engines? Talk to Mr. Scott first.\n");
+		DEBUG("Flying without engines? Talk to Mr. Scott first.\n");
 		return;
 	}
 	if(e->pos.x == x && e->pos.y == y) {
