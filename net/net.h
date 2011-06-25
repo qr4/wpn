@@ -19,7 +19,9 @@ int update_printf(const char *fmt, ...);
 // nochmal drueber nachdenken
 void update_flush();
 
+void net_init();
 
+#if 0
 // interne dinge die andere sowieso nicht sehen -- fork ist mein freund
 
 enum net_client_status { 
@@ -56,6 +58,7 @@ void net_timer(struct timeval* tv);
 int net_pipe(int fd, struct timeval* tv);
 void net_client_loop(int pipe_fd, int net_fd);
 */
-void net_init();
+#endif
+
 
 #endif

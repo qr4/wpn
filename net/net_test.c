@@ -12,19 +12,24 @@ int main() {
 
   net_init();
 
-  for (int loop = 0; loop < 10; ++loop) {
+//  sleep(5);
 
-    for (int i = 0; i < 5; ++i) {
-      map_printf("loop: %d, hello map %d\n", loop, i);
+  printf("now sonding stuff...\n");
+
+  for (int loop = 0; loop < 1000000; ++loop) {
+
+    for (int i = 0; i < 20; ++i) {
+      map_printf("############################################################# loop: %d, hello map %d\n", loop, i);
     }
     map_flush();
 
-    sleep(2);
+//    printf("xxx\n");
+    usleep(1000);
 
     for (int i = 0; i < 10; ++i) {
-      update_printf("loop: %d, hello update %d\n", loop, i);
+      update_printf("********************************************************** loop: %d, hello update %d\n", loop, i);
+      update_printf("***************************************************xxxxxxx loop: %d, hello update %d\n", loop, i);
       update_flush();
-      sleep(1);
     }
 
   }

@@ -24,6 +24,8 @@
 
 #include "network.h"
 
+#include "pstr.h"
+
 #include "net.h"
 
 #define PORT "8080"
@@ -32,14 +34,51 @@
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
 #define MAX(a, b)  (((a) > (b)) ? (a) : (b))
 
-// achtung: NET_MAP muss mit _a enden, da a hochgezaehlt wird bis z
-#define NET_MAP "/wpn_map_a"
-// achtung: NET_UPDATE muss mit _A enden, da A hochgezaehlt wird biw Z
-#define NET_UPDATE "/wpn_update_A"
+#define NET_MAP "/wpn_map_"
+#define NET_MAP_SIZE 4
 
-int netpid = -1;
+#define NET_UPDATE "/wpn_update_"
+#define NET_UPDATE_SIZE 16
 
-struct net_map_info net;
+struct {
+  int map_pipe;         // pipe papa <-> sohn fuer notify new map
+  unsigned int map_id;  // zaehler fuer name der akt. map
+  int map_fd;           // vater: fd zum shm der aktuellen map
+
+  int update_pipe;        // pipe papa <-> sohn fuer notify new update
+  unsigned int update_id; // zaehler fuer name des akt. updates
+  int update_fd;          // vater: fd zum shm des aktuellen updates
+
+  pid_t pid;            // pid vom sohn
+
+  uint64_t relation_counter;  // zaehlt bei jedem hoch um die reihenfolge von map und update zu erkennen
+} net = { .map_id = 0, .update_id = 0, .relation_counter = 0 };
+
+
+struct shm_info {
+  int fd;         // fd vom shm-eumel, -1 = wird nicht verwendet
+  uint64_t relation;  // wert des relation_counter bei der annahme
+  
+  // mmap info
+  void* addr;     // wo liegt das zeux?
+  size_t length;  // groesse
+};
+
+static struct shm_info* map_si;
+static struct shm_info* update_si;
+
+
+struct map_client_info {
+  int isConnected;                // 0 = nicht konnected, 1 = connected
+  
+  unsigned int current_map_id;    // id der map die gesendet wird
+  size_t send_pos_map;
+
+  unsigned int current_update_id; // id des updates was gesendet wird
+  size_t send_pos_update;
+};
+
+static struct map_client_info* ci;
 
 //
 // ---------------- public print-fkts
@@ -55,23 +94,35 @@ int map_printf(const char *fmt, ...) {
 }
 
 void map_flush() {
-  char map[] = NET_MAP;
-  char now[] = { 'a' + net.current_map };
+  close(net.map_fd); // fertig mit der map
 
-  close(net.map_fd);   // fertig mit der map
-
-  if(write(net.pipefd[1], now, sizeof(now)) < 1) {  //  client benachrichtigen
-	  fprintf(stderr, "write failed in %s\n", __func__);
+  // dem sohn was zum arbyten geben
+  unsigned char id[] = { '\0' + net.map_id };
+  switch (write(net.map_pipe, id, sizeof(id))) {
+    case -1: 
+      log_perror("map_flush write");
+      exit(EXIT_FAILURE);
+    case 0: 
+      log_msg("map_flush: blocking write schreibt 0 byte????");
+      exit(EXIT_FAILURE);
+    case sizeof(id):
+      break;  // alles okay
+    default:
+      log_msg("map_flush hae????");
+      exit(EXIT_FAILURE);
   }
 
-  net.current_map = (net.current_map + 1) % ('z' - 'a' + 1);  // auf die naechste zeigen
-  now[0] = 'a' + net.current_map;
-  map[sizeof(map) - 2] = now[0];
+  // neue id bauen
+  net.map_id = (net.map_id + 1) >= NET_MAP_SIZE ? 0 : net.map_id + 1;
 
-  while( (net.map_fd = shm_open(map, O_CREAT | O_EXCL | O_RDWR, 0666)) == -1 ) {
+  // neue map aufmachen
+  struct pstr file = { .used = 0 };
+  pstr_append_printf(&file, NET_MAP"0x%x", net.map_id);
+
+  while( (net.map_fd = shm_open(pstr_as_cstr(&file), O_CREAT | O_EXCL | O_RDWR, 0666)) == -1 ) {
     if (errno == EEXIST) {
-      log_msg("netio-client kommt nicht hinterher... schlafe 100usec");
-      usleep(100);
+      log_msg("map: netio-client kommt nicht hinterher... schlafe 100000usec");
+      usleep(100000);
     } else {
       log_perror("shm_open map");
       exit(EXIT_FAILURE);
@@ -89,23 +140,35 @@ int update_printf(const char *fmt, ...) {
 }
 
 void update_flush() {
-  char update[] = NET_UPDATE;
-  char now[] = { 'A' + net.current_update };
+  close(net.update_fd); // fertig mit dem update
 
-  close(net.update_fd);
-
-  if(write(net.pipefd[1], now, sizeof(now)) < 0) {
-	  fprintf(stderr, "write failed in %s\n", __func__);
+  // dem sohn was zum arbyten geben
+  unsigned char id[] = { '\0' + net.update_id };
+  switch (write(net.update_pipe, id, sizeof(id))) {
+    case -1: 
+      log_perror("update_flush write");
+      exit(EXIT_FAILURE);
+    case 0: 
+      log_msg("update_flush: blocking write schreibt 0 byte????");
+      exit(EXIT_FAILURE);
+    case sizeof(id):
+      break;  // alles okay
+    default:
+      log_msg("update_flush: update_flush hae????");
+      exit(EXIT_FAILURE);
   }
 
-  net.current_update = (net.current_update + 1) % ('Z' - 'A' + 1);
-  now[0] = 'A' + net.current_update;
-  update[sizeof(update) - 2] = now[0];
+  // neue id bauen
+  net.update_id = (net.update_id + 1) >= NET_UPDATE_SIZE ? 0 : net.update_id + 1;
 
-  while( (net.update_fd = shm_open(update, O_CREAT | O_EXCL | O_RDWR, 0666)) == -1 ) {
+  // neues update aufmachen
+  struct pstr file = { .used = 0 };
+  pstr_append_printf(&file, NET_UPDATE"0x%x", net.update_id);
+
+  while( (net.update_fd = shm_open(pstr_as_cstr(&file), O_CREAT | O_EXCL | O_RDWR, 0666)) == -1 ) {
     if (errno == EEXIST) {
-      log_msg("netio-client kommt nicht hinterher... schlafe 100usec");
-      usleep(100);
+      log_msg("update: netio-client kommt nicht hinterher... schlafe 100000usec");
+      usleep(100000);
     } else {
       log_perror("shm_open update");
       exit(EXIT_FAILURE);
@@ -113,339 +176,512 @@ void update_flush() {
   }
 }
 
-
-
 //
-// ---------------------- internes zeux
+// ------------------------------------------------------------------------------------------------
 //
 
 //
-// neue verbindung wurde aufgebaut
 //
-void net_client_connect(int fd, fd_set* master, int* fdmax, struct timeval* tv) {
+//
+static void new_connection(int net_fd, fd_set* rfds, fd_set* wfds, int* max_fd) {
+
   struct sockaddr_storage remoteaddr;
   socklen_t addrlen = sizeof(remoteaddr);
-  int newfd = accept(fd, (struct sockaddr *)&remoteaddr, &addrlen);
+  int newfd = accept(net_fd, (struct sockaddr *)&remoteaddr, &addrlen);
 
   if (newfd == -1) {
-    log_perror("accept");
+    log_perror("net accept");
     return;
   }
 
   if (newfd >= MAX_CONNECTION) {
-    log_msg("max connections reached. can't handle this connection");
+    log_msg("net: max connections reached. can't handle this connection");
+    close(newfd);
+    return;
+  }
+  
+  // den client non-blocking machen
+  int flags = fcntl(newfd, F_GETFL);
+  if (flags == -1) { 
+    log_perror("non-blocking (1)");
+    close(newfd);
+    return;
+  }
+  if (fcntl(newfd, F_SETFL, flags | O_NONBLOCK) == -1) {
+    log_perror("non-blocking (2)");
     close(newfd);
     return;
   }
 
+  ci[newfd].isConnected = 1;    // wir sind verbunden
+  
+  ci[newfd].current_map_id = 0; // wir brauchen die map
+  ci[newfd].send_pos_map = 0;   // haben 0 bytes gelesen
+
+  ci[newfd].current_update_id = 0;
+  ci[newfd].send_pos_update = 0;
+  
+  // 1x lauschen...
+  FD_SET(newfd, rfds);  // empfangen von daten... 
+  FD_SET(newfd, wfds);  // dem hier dinge schicken (die map!!! und dann updates!!!)
+
+  if (newfd > *max_fd) { *max_fd = newfd; } // update groessten fd
+
   char remoteIP[INET6_ADDRSTRLEN];
-  log_msg("<%d> new connection from %s",
+  log_msg("net: <%d> new connection from %s",
     newfd,
     inet_ntop(remoteaddr.ss_family, get_in_addr((struct sockaddr*)&remoteaddr), remoteIP, INET6_ADDRSTRLEN));
 
-  net.nc[newfd].data_fd = dup(net.map_fd);
-  if (net.nc[newfd].data_fd == -1) {
-    log_perror("net_client_connect: dup");
-    close(newfd);
-    return;
-  }
-
-  FD_SET(newfd, master);    // add to master set
-  if (newfd > *fdmax) {     // keep track of the max
-    *fdmax = newfd;
-  }
-
-  net.nc[newfd].status = NETCS_NEW_CONNECTED;
-  net.nc[newfd].pos = 0;
-
-  // die neue connection gleich mit sachen versorgen lassen
-  tv->tv_sec = 0;
-  tv->tv_usec = 0;
+  return;
 }
 
 //
-// client sagt irgendwas - das interessiert uns aber nicht
-// und wird deshalb nur weggeloggt
 //
-void net_client_talk(int fd, fd_set* master) {
-  char buffer[512];
+//
+static void disconnect_client(int fd, fd_set* rfds, fd_set* wfds, char* msg) {
+
+  if (ci[fd].isConnected == 0) {
+    return; // not connected
+  }
+  
+  close(fd);
+
+  FD_CLR(fd, rfds);
+  FD_CLR(fd, wfds);
+
+  ci[fd].isConnected = 0;
+
+  log_msg("disconnect_client %d - %s", fd, msg);
+
+  return;
+}
+
+//
+//
+//
+static void handle_map(fd_set* rfds, fd_set* wfds) {
+
+  unsigned char id[] = { '\0' };
+  switch (read(net.map_pipe, id, sizeof(id))) {
+    case -1:
+      log_perror("read handle_map");
+      exit(EXIT_FAILURE);
+    case 0:
+      log_msg("???????? handle_map read 0 byte");
+      exit(EXIT_FAILURE);
+    case 1:
+      break;
+    default:
+      log_msg("handle_map read hea?");
+      exit(EXIT_FAILURE);
+  }
+
+  net.map_id = id[0];
+  map_si[net.map_id].relation = ++net.relation_counter;
+
+  // die clients disconnecten die jetzt immer noch diese map verwenden
+  for (int fd = 0; fd < MAX_CONNECTION; ++fd) {
+    if (ci[fd].current_map_id == net.map_id) {
+      // try to disconnect
+      disconnect_client(fd, rfds, wfds, "to slow");
+    }
+  }
+
+  // wenn der hier schon verwendet wurde, dann dicht machen
+  if (map_si[net.map_id].fd >= 0) {
+    int ret = munmap(map_si[net.map_id].addr, map_si[net.map_id].length);
+    if (ret == -1) { log_perror("handle_map munmap"); exit(EXIT_FAILURE); }
+
+    close(map_si[net.map_id].fd);
+  }
+
+  // so, den neuen oeffnen
+  struct pstr file = { .used = 0};
+  pstr_append_printf(&file, NET_MAP"0x%x", net.map_id);
+  map_si[net.map_id].fd = shm_open(pstr_as_cstr(&file), O_RDONLY, 0666);
+  if (map_si[net.map_id].fd == -1) { log_perror("handle_map shm_open"); exit(EXIT_FAILURE); }
+
+  // groesse der nachricht holen
+  struct stat sb;
+  if (fstat(map_si[net.map_id].fd, &sb) == -1) { log_perror("handle_map stat"); exit(EXIT_FAILURE); }
+  map_si[net.map_id].length = sb.st_size;
+
+  // nach dem das ding offen ist koennen wir ihn loeschen
+  if (shm_unlink(pstr_as_cstr(&file)) == -1) { log_perror("handle_map shm_unlink"); exit(EXIT_FAILURE); }
+
+  // nun darauf nmapen um den inhat zu lesen
+  map_si[net.map_id].addr = mmap(NULL, map_si[net.map_id].length, PROT_READ, MAP_PRIVATE, map_si[net.map_id].fd, 0);
+  if (map_si[net.map_id].addr == NULL) { log_perror("handle_map mmap"); exit(EXIT_FAILURE); }
+
+  // so, die clients wollen nun die neue map haben -> auf lesewillig schalten
+  for (int fd = 0; fd < MAX_CONNECTION; ++fd) {
+    if (ci[fd].isConnected == 1) {
+      FD_SET(fd, wfds);
+    }
+  }
+}
+
+//
+//
+//
+static void handle_update(fd_set* rfds, fd_set* wfds) {
+
+  unsigned char id[] = { '\0' };
+  switch (read(net.update_pipe, id, sizeof(id))) {
+    case -1:
+      log_perror("read handle_update");
+      exit(EXIT_FAILURE);
+    case 0:
+      log_msg("???????? handle_update read 0 byte");
+      exit(EXIT_FAILURE);
+    case 1:
+      break;
+    default:
+      log_msg("handle_update read hea?");
+      exit(EXIT_FAILURE);
+  }
+
+  net.update_id = id[0];
+  update_si[net.update_id].relation = ++net.relation_counter;
+
+  // die clients disconnecten die jetzt immer noch diese update verwenden
+  for (int fd = 0; fd < MAX_CONNECTION; ++fd) {
+    if (ci[fd].current_update_id == net.update_id) {
+      // try to disconnect
+      disconnect_client(fd, rfds, wfds, "to slow");
+    }
+  }
+
+  // wenn der hier schon verwendet wurde, dann dicht machen
+  if (update_si[net.update_id].fd >= 0) {
+    int ret = munmap(update_si[net.update_id].addr, update_si[net.update_id].length);
+    if (ret == -1) { log_perror("handle_update munmap"); exit(EXIT_FAILURE); }
+
+    close(update_si[net.update_id].fd);
+  }
+
+  // so, den neuen oeffnen
+  struct pstr file = { .used = 0};
+  pstr_append_printf(&file, NET_UPDATE"0x%x", net.update_id);
+  update_si[net.update_id].fd = shm_open(pstr_as_cstr(&file), O_RDONLY, 0666);
+  if (update_si[net.update_id].fd == -1) { log_perror("handle_update shm_open"); exit(EXIT_FAILURE); }
+
+  // groesse der nachricht holen
+  struct stat sb;
+  if (fstat(update_si[net.update_id].fd, &sb) == -1) { log_perror("handle_update stat"); exit(EXIT_FAILURE); }
+  update_si[net.update_id].length = sb.st_size;
+
+  // nach dem das ding offen ist koennen wir ihn loeschen
+  if (shm_unlink(pstr_as_cstr(&file)) == -1) { log_perror("handle_update shm_unlink"); exit(EXIT_FAILURE); }
+
+  // nun darauf nmapen um den inhat zu lesen
+  update_si[net.update_id].addr = 
+    mmap(NULL, update_si[net.update_id].length, PROT_READ, MAP_PRIVATE, update_si[net.update_id].fd, 0);
+  if (update_si[net.update_id].addr == NULL) { log_perror("handle_update mmap"); exit(EXIT_FAILURE); }
+
+  // so, die clients wollen nun das neue update haben -> auf lesewillig schalten
+  for (int fd = 0; fd < MAX_CONNECTION; ++fd) {
+    if (ci[fd].isConnected == 1) {
+      FD_SET(fd, wfds);
+    }
+  }
+}
+
+
+//
+//
+//
+static void consume_client_talk(int fd, fd_set* rfds, fd_set* wfds) {
+
+  char buffer[4000];
   ssize_t len = recv(fd, buffer, sizeof(buffer), 0);
 
-  if (len == 0) {
-    // client mag nicht mehr mit uns reden
-    log_msg("<%d> client hang up", fd);
-    close(fd);
-    FD_CLR(fd, master);
-
-    net.nc[fd].status = NETCS_NOT_CONNECTED;
-    close(net.nc[fd].data_fd);
+  if ((len == 0) || (len == -1)) {
+    // client redet nicht mit uns -> disconnect
+    disconnect_client(fd, rfds, wfds, "consume_client_talk");
     return;
   }
 
-//  log_msg("<%d> client sagt >%.*s<", fd, len, buffer);
+  return;
 }
 
 //
-// timeout - verwenden um langsamen clients neue daten reinzudruecken
 //
-void net_timer(struct timeval* tv) {
-//  log_msg("timer hat zugeschlagen!!!");
-  int haveMoreWork = 0;
-  for (int fd = 0; fd < MAX_CONNECTION; ++fd) {
-    switch(net.nc[fd].status) {
-      case NETCS_NEW_CONNECTED:
-      {
-//        log_msg("-------------------------------------");
-        struct stat st;
-        int ret = fstat(net.nc[fd].data_fd, &st);
-        if (ret == -1) { log_perror("fstat"); break; }
-
-        log_msg("MAP fd = %d, size = %d", net.nc[fd].data_fd, st.st_size);
-
-        char* data = mmap(0, st.st_size, PROT_READ, MAP_PRIVATE, net.nc[fd].data_fd, 0);
-        if (data == (char*)-1) { log_perror("mmap"); break; }
-
-        ssize_t len = write(fd, data + net.nc[fd].pos, st.st_size - net.nc[fd].pos);
-        if (len == -1) {log_perror("write"); break; }
-
-        net.nc[fd].pos += len;
-
-        if (munmap(data, st.st_size) == -1) { log_perror("munmap"); break; }
-
-        if (len == st.st_size) {
-          close(net.nc[fd].data_fd);
-          net.nc[fd].status = NETCS_ACCEPT_UPDATE;
-        } else {
-          haveMoreWork = 1;
-        }
-
-        break;
-      } while(0);
-      case NETCS_UPDATE_IN_PROGRESS:
-      {
-//        log_msg("-------------------------------------");
-        struct stat st;
-        int ret = fstat(net.nc[fd].data_fd, &st);
-        if (ret == -1) { log_perror("fstat"); break; }
-
-       log_msg("UPDATE fd = %d, size = %d", net.nc[fd].data_fd, st.st_size);
-
-        char* data = mmap(0, st.st_size, PROT_READ, MAP_PRIVATE, net.nc[fd].data_fd, 0);
-        if (data == (char*)-1) { log_perror("mmap"); break; }
-
-        ssize_t len = write(fd, data + net.nc[fd].pos, st.st_size - net.nc[fd].pos);
-        if (len == -1) {log_perror("write"); break; }
-
-        net.nc[fd].pos += len;
-
-        if (munmap(data, st.st_size) == -1) { log_perror("munmap"); break; }
-
-        if (len == st.st_size) {
-          close(net.nc[fd].data_fd);
-          net.nc[fd].status = NETCS_ACCEPT_UPDATE;
-        } else {
-          haveMoreWork = 1;
-        }
-
-        break;
-
-      } while(0);
-	  default:
-		break;
-    }
-  }
-
-  if (haveMoreWork) {
-    // wenn nicht alles verschickt werden konnte, dann probieren wir es in 10ms noch einmal
-    tv->tv_sec = 0;
-    tv->tv_usec = 1000 * 10;
-    log_msg("INFO: slow client");
-  } else {
-    // alle sind glücklich und haben ihre daten -> in 5 sek wieder hier
-    tv->tv_sec = 5;
-    tv->tv_usec = 0;
-  }
-
-//  log_msg("");
-}
-
 //
-// es stehen neue daten zum verteilen an
-//
-int net_pipe(int fd, struct timeval* tv) {
-  char buffer[128];
-  ssize_t len;
-  len = read(fd, buffer, sizeof(buffer));
-  if (len == -1) { log_perror("read"); return -1; }
-  
-  if (len == 0) {
-    log_msg("keine verbindung zum vater");
-    return -1;
+void net_send(int fd, fd_set* rfds, fd_set* wfds) {
+
+  if (ci[fd].isConnected == 0) {
+    return; // wurde wohl gerade zu gemacht...
   }
 
-//  log_msg("neue sachen zum verteilen (%.*s)...", len, buffer);
-
-  int moep_fd = -1;
-
-  for (ssize_t i = 0; i < len; ++i) {
-    if ('a' <= buffer[i] && buffer[i] <= 'z') {
-      // new map
-      char map[] = NET_MAP;
-      map[sizeof(map) - 2] = buffer[i];
-
-      int map_fd = shm_open(map, O_RDONLY, 0666);
-      if (map_fd == -1) { log_perror("shm_open"); continue; } // TODO sollten wir hier nicht lieber abbrechen?
-
-      // map aus /dev/tmpfs löschen - wir haben ja noch den fd
-      if (shm_unlink(map) == -1) { log_perror("shm_unlink"); /* das knallt dann spaeter */ } 
-
-      if (net.map_fd != -1)
-        if (close(net.map_fd) == -1) { log_perror("close"); }
-
-      net.map_fd = map_fd;
-    } else if ('A' <= buffer[i] && buffer[i] <= 'Z') {
-      // new update
-      char update[] = NET_UPDATE;
-      update[sizeof(update) - 2] = buffer[i];
-
-      int update_fd = shm_open(update, O_RDONLY, 0666);
-      if (update_fd == -1) { log_perror("shm_open"); continue; } // TODO sollten wir hier nicht lieber abbrechen?
-
-      // update aus /dev/tmpfs löschen - wir haben ja den fd
-      if (shm_unlink(update) == -1) { log_perror("shm_unlink"); /* das knallt dann spaeter */ }
-
-      if (net.update_fd != -1) 
-        if (close(net.update_fd) == -1) { log_perror("close"); }
-
-      net.update_fd = update_fd;
-      moep_fd = update_fd;
-    }
-  }
-
-  if (moep_fd != -1) {
-    for (int i = 0; i < MAX_CONNECTION; ++i) {
-      if (net.nc[i].status == NETCS_ACCEPT_UPDATE) {
-        net.nc[i].status = NETCS_UPDATE_IN_PROGRESS;
-        net.nc[i].pos = 0;
-        net.nc[i].data_fd = dup(moep_fd);
-
+  {
+    // versuchen angefangene map fertig zu verschicken
+    if (ci[fd].send_pos_map > 0) {
+      ssize_t bytes_left = map_si[ci[fd].current_map_id].length - ci[fd].send_pos_map;
+      if (bytes_left > 0) {
+        ssize_t out = write(fd, map_si[ci[fd].current_map_id].addr + ci[fd].send_pos_map, bytes_left);
+        if (out == -1) { disconnect_client(fd, rfds, wfds, "net_send (net) out == -1"); return; }
+        ci[fd].send_pos_map += out;
+        return;
       }
-
     }
-
   }
 
-  // daten weitergeben
-  tv->tv_sec = 0;
-  tv->tv_usec = 0;
+  {
+    // versuchen angefangene updates fertig zu verschicken
+    if (ci[fd].send_pos_update > 0) {
+      ssize_t bytes_left = update_si[ci[fd].current_update_id].length - ci[fd].send_pos_update;
+      if (bytes_left > 0) {
+        ssize_t out = write(fd, update_si[ci[fd].current_update_id].addr + ci[fd].send_pos_update, bytes_left);
+        if (out == -1) { disconnect_client(fd, rfds, wfds, "net_send (continue update) out == -1"); return; }
+        ci[fd].send_pos_update += out;
+        return;
+      }
+    }
+  }
 
-  return 0;
+  // wenn wir hier sind, dann wurden map bzw. update komplett verschickt
+  // -> ueberpruefen ob es eine neue map gibt -> dann die schicken
+  // wenn nicht, naechstes update suchen
+
+  {
+    // gibt es eine neuere map? ja -> die schicken
+    
+    // nach neuster map suchen
+    uint64_t latest_relation = 0;
+    int latest_map_id = ci[fd].current_map_id;
+    for (int i = 0; i < NET_MAP_SIZE; ++i) {
+      if (map_si[i].relation > latest_relation) {
+        latest_relation = map_si[i].relation;
+        latest_map_id = i;
+      }
+    }
+
+    if (latest_map_id != ci[fd].current_map_id) {
+      // es gibt eine neuere map...
+      ci[fd].current_map_id = latest_map_id;
+      ssize_t out = write(fd, map_si[latest_map_id].addr, map_si[latest_map_id].length);
+      if (out == -1) { disconnect_client(fd, rfds, wfds, "net_send (start update) out == -1"); return; }
+      ci[fd].send_pos_map = out;
+      return;
+    }
+  }
+
+  {
+    // naechstes update suchen
+    // das muss von dem relation_counter von der map sein
+    uint64_t min_relation = map_si[ ci[fd].current_map_id ].relation;
+    if (update_si[ ci[fd].current_update_id ].relation < min_relation) {
+      // alte updates ueberspringen
+      uint64_t max_relation = min_relation;
+      for (int i = 0; i < NET_UPDATE_SIZE; ++i) {
+        if (update_si[i].relation == (min_relation + 1)) {
+          // wir haben das update nach der neuen map gefunden... -> da weiter machen
+          ci[fd].current_update_id = i;
+          ssize_t out = write(fd, update_si[i].addr, update_si[i].length);
+          if (out == -1) { disconnect_client(fd, rfds, wfds, "net_send (start update) out == -1"); return; }
+          ci[fd].send_pos_update = out;
+          return;
+        }
+        if (max_relation < update_si[i].relation) {
+          max_relation = update_si[i].relation;
+        }
+      }
+      if (max_relation == min_relation) {
+        // oh, da existieren wohl noch keine updates -> going to sleep
+        FD_CLR(fd, wfds);
+        return;
+      }
+    } else {
+      // einfach das naechste update finden
+      uint64_t next_relation = update_si[ ci[fd].current_update_id ].relation + 1;
+      int next_update_id = (ci[fd].current_update_id + 1) >= NET_UPDATE_SIZE ? 0 : ci[fd].current_update_id + 1;
+
+      if (next_relation == update_si[next_update_id].relation) {
+        // found :) -> lesen und da weiter machen
+        ci[fd].current_update_id = next_update_id;
+        ssize_t out = write(fd, update_si[next_update_id].addr, update_si[next_update_id].length);
+        if (out == -1) { disconnect_client(fd, rfds, wfds, "net_send (start update (2)) out == -1"); return; }
+        ci[fd].send_pos_update = out;
+        return;
+      } else if (next_relation < update_si[next_update_id].relation) {
+        // wir sind zu lahm... und sollten hier eigentlich nie landen
+        disconnect_client(fd, rfds, wfds, "net_send - was mach ich hier??");
+        return;
+      } else {
+        // was kleineres gefunden -> warten auf neue sachen
+      }
+    }
+  }
+
+  {
+    // warten auf neue dinge und sachen
+    FD_CLR(fd, wfds);
+  }
+
 }
 
+//
+//
+//
+static void net_loop(int net_fd) {
 
-void net_client_loop(int pipe_fd, int net_fd) {
   fd_set rfds, rfds_tmp;
-  struct timeval tv = {5, 0}; // 5 sec
+  fd_set wfds, wfds_tmp;
+  struct timeval tv = { .tv_sec = 1, .tv_usec = 0 };
   int ret;
- 
-  FD_ZERO(&rfds);
-  FD_SET(pipe_fd, &rfds);
-  FD_SET(net_fd, &rfds);
 
-  int max_fd = MAX(pipe_fd, net_fd);
+  FD_ZERO(&rfds);
+  FD_SET(net_fd, &rfds);
+  FD_SET(net.map_pipe, &rfds);
+  FD_SET(net.update_pipe, &rfds);
+
+  FD_ZERO(&wfds);
+
+  int max_fd = MAX(net_fd, MAX(net.map_pipe, net.update_pipe));
 
   for(;;) {
     rfds_tmp = rfds;
-    ret = select(max_fd + 1, &rfds_tmp, NULL, NULL, &tv);
+    wfds_tmp = wfds;
+    ret = select(max_fd + 1, &rfds_tmp, &wfds_tmp, NULL, &tv);
 
-    if (ret == -1) { log_perror("select"); exit(EXIT_FAILURE); }
+    if (ret == -1) { log_perror("net_loop select"); exit(EXIT_FAILURE); }
 
     if (ret == 0) {
-      net_timer(&tv);
+      // dinge mit dem timer machen...
+      tv.tv_sec = 1;
     } else {
-      int max_fd_tmp = max_fd;  // brauchen wir, da sich max_fd durch client-connects ändern kann
+      int max_fd_tmp = max_fd;
+
       for (int fd = 0; fd <= max_fd_tmp; ++fd) {
+
+        // jemand hat uns was geschickt...
         if (FD_ISSET(fd, &rfds_tmp)) {
-          if (fd == pipe_fd) {
-            ret = net_pipe(fd, &tv);
-            if (ret == -1) { return; } // papa-pipe redet nicht mehr mit uns
-          } else if (fd == net_fd) {
-            // client connect
-            net_client_connect(net_fd, &rfds, &max_fd, &tv);
+          if (fd == net_fd) {
+            // handle new connection
+            new_connection(net_fd, &rfds, &wfds, &max_fd);
+          } else if (fd == net.map_pipe) {
+            // handle new incoming map-data
+            handle_map(&rfds, &wfds);
+          } else if (fd == net.update_pipe) {
+            // handle new incoming update-data
+            handle_update(&rfds, &wfds);
           } else {
-            // client sagt irgendwas... wegloggen und gut
-            net_client_talk(fd, &rfds);
+            // handle unused client-laber-dinge
+            consume_client_talk(fd, &rfds, &wfds);
           }
-        } // FD_SET
-      } // for
+        } // FD_ISSET - read
+
+        // jemand will daten haben...
+        if (FD_ISSET(fd, &wfds_tmp)) {
+          net_send(fd, &rfds, &wfds);
+        } // FD_ISSET - write
+
+      } // for fd
     } // else
-  } // while
+  } // for
 }
 
-
+//
+//
+//
 void net_init() {
-  if (pipe(net.pipefd) == -1) { log_perror("pipe"); exit(EXIT_FAILURE); }
 
-  net.ppid = getpid();
-  net.current_map = 0;
-  net.current_update = 0;
+  // shm-left-overs beseitigen
+  for (int i = 0; i <= 0xff; ++i) {
+    struct pstr file;
 
-  net.cpid = fork();
-  if (net.cpid == -1) { log_perror("fork"); exit(EXIT_FAILURE); }
+    pstr_clear(&file);
+    pstr_append_printf(&file, NET_MAP"0x%x", i);
+    if (shm_unlink(pstr_as_cstr(&file)) == 0) {
+      log_msg("remove old shm %s", pstr_as_cstr(&file));
+    }
 
-  if (net.cpid == 0) {
-    // wir sind der client
+    pstr_clear(&file);
+    pstr_append_printf(&file, NET_UPDATE"0x%x", i);
+    if (shm_unlink(pstr_as_cstr(&file)) == 0) {
+      log_msg("remove old shm %s", pstr_as_cstr(&file));
+    }
+  }
 
+  // communication pipes bauen
+  int map_pipe[2], update_pipe[2];
+
+  if (pipe(map_pipe) == -1) { log_perror("pipe"); exit(EXIT_FAILURE); }
+  if (pipe(update_pipe) == -1) { log_perror("pipe"); exit(EXIT_FAILURE); }
+
+  // fork
+  net.pid = fork();
+  if (net.pid == -1) { log_perror("fork"); exit(EXIT_FAILURE); }
+
+  if (net.pid == 0) {
+    // wir sind der sohn
+    
     // brauchen wir nicht mehr
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
-//    close(STDERR_FILENO);
-    close(net.pipefd[1]);   // lesen reicht
+    close(STDERR_FILENO);
 
-    net.map_fd = -1;
-    net.update_fd = -1;
+    net.map_pipe = map_pipe[0];
+    close(map_pipe[1]);
 
-    net.nc = (struct net_client*)malloc(MAX_CONNECTION * sizeof(struct net_client));
-    if (net.nc == NULL) { log_msg("malloc net_client == NULL: kein platz"); exit(EXIT_FAILURE); }
-    for (int i = 0; i < MAX_CONNECTION; ++i) {
-      net.nc[i].status = NETCS_NOT_CONNECTED;
+    net.update_pipe = update_pipe[0];
+    close(update_pipe[1]);
+
+    // speicher fuer shm_info-objekte
+    map_si = (struct shm_info*)malloc(sizeof(struct shm_info) * NET_MAP_SIZE);
+    if (map_si == NULL) { log_perror("net malloc"); exit(EXIT_FAILURE); }
+    for (int i = 0; i < NET_MAP_SIZE; ++i) {
+      map_si[i].fd = -1;
     }
 
-    int listener = network_bind(PORT, MAX_CONNECTION);
-    if (listener == -1) { log_msg("kann auf port "PORT" nicht binden... exit"); exit(EXIT_FAILURE); }
+    update_si = (struct shm_info*)malloc(sizeof(struct shm_info) * NET_UPDATE_SIZE);
+    if (update_si == NULL) { log_perror("net malloc"); exit(EXIT_FAILURE); }
+    for (int i = 0; i < NET_UPDATE_SIZE; ++i) {
+      update_si[i].fd = -1;
+    }
+    
+    // speicher fuer map_client_info
+    ci = (struct map_client_info*)malloc(sizeof(struct map_client_info) * MAX_CONNECTION);
+    if (ci == NULL) { log_perror("net malloc"); exit(EXIT_FAILURE); }
+    for (int i = 0; i < MAX_CONNECTION; ++i) {
+      ci[i].isConnected = 0;
+    }
 
-   net_client_loop(net.pipefd[0], listener);
+    // bind network
+    int net_fd = network_bind(PORT, MAX_CONNECTION);
+    if (net_fd == -1) { log_msg("kann auf port "PORT" nicht binden... exit"); exit(EXIT_FAILURE); }
 
-    close(net.pipefd[0]);
-    log_msg("client exit");
+    // the big loop
+    net_loop(net_fd);
+
+    // exit
+    close(map_pipe[0]);
+    close(update_pipe[0]);
+
+    log_msg("net client exit");
     _exit(EXIT_SUCCESS);
   }
 
-  // wir sind der papa!
-  close(net.pipefd[0]); // schreiben reicht!
-  netpid = net.cpid;
+  // brauchen wir nicht mehr
+  close(map_pipe[0]);
+  net.map_pipe = map_pipe[1];
 
-  // leftovers beseitigen
-  char map[] = NET_MAP;
-  char update[] = NET_UPDATE;
-  char now[] = { '?' };
-  for (int i = 0; i < 'z' - 'a' + 1; ++i) {
-    now[0] = 'a' + i;
-    map[sizeof(map) - 2] = now[0];
-    shm_unlink(map);
+  close(update_pipe[0]);
+  net.update_pipe = update_pipe[1];
 
-    now[0] = 'A' + i;
-    update[sizeof(update) - 2] = now[0];
-    shm_unlink(update);
-  }
+  // noch die fds aufmachen damit {map_, update_}printf rein schreiben koennen
+  struct pstr file = { .used = 0 };
+  pstr_append_printf(&file, NET_MAP"0x%x", net.map_id);
+  net.map_fd = shm_open(pstr_as_cstr(&file), O_CREAT | O_RDWR, 0666);
+  if (net.map_fd == -1) { log_perror("net init shm_open"); exit(EXIT_FAILURE); }
 
-  now[0] = 'a' + net.current_map;
-  map[sizeof(map) - 2] = now[0];
-  net.map_fd = shm_open(map, O_CREAT | O_RDWR, 0666);
-  if (net.map_fd == -1) { log_perror("shm_open"); exit(EXIT_FAILURE); }
-
-  now[0] = 'A' + net.current_update;
-  update[sizeof(update) - 2] = now[0];
-  net.update_fd = shm_open(update, O_CREAT | O_RDWR, 0666);
-  if (net.update_fd == -1) { log_perror("shm_open"); exit(EXIT_FAILURE); }
+  pstr_clear(&file);
+  pstr_append_printf(&file, NET_UPDATE"0x%x", net.update_id);
+  net.update_fd = shm_open(pstr_as_cstr(&file), O_CREAT | O_RDWR, 0666);
+  if (net.map_fd == -1) { log_perror("net init shm_open"); exit(EXIT_FAILURE); }
 }
+
+
+
+
