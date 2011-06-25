@@ -414,9 +414,9 @@ void drawShip(ship_t * s) {
 		SDL_FreeSurface(ship_medium_sprite);
 		ship_medium_sprite = zoomSurface(ship_medium_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
 		SDL_FreeSurface(ship_large_sprite);
-		ship_medium_sprite = zoomSurface(ship_large_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
+		ship_large_sprite = zoomSurface(ship_large_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
 		SDL_FreeSurface(ship_huge_sprite);
-		ship_medium_sprite = zoomSurface(ship_huge_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
+		ship_huge_sprite = zoomSurface(ship_huge_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
 		last_zoom = zoom;
 		last_mag = mag;
 	}
@@ -449,6 +449,10 @@ void drawShip(ship_t * s) {
 		} else if (s->size <= 12) {
 			SDL_BlitSurface(ship_large_sprite, NULL, screen, &dst_rect);
 		} else if (s->size <= 24) {
+			dst_rect.x -= 3 * mag * zoom;
+			dst_rect.y -= 3 * mag * zoom;
+			dst_rect.w += 6 * mag * zoom;
+			dst_rect.h += 6 * mag * zoom;
 			SDL_BlitSurface(ship_huge_sprite, NULL, screen, &dst_rect);
 		}
 	}
