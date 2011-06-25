@@ -259,7 +259,7 @@ int main(int argc, const char* argv[] ) {
 
 		SDLplot();
 
-    ret = checkInput(net, &buffer, 1000);
+    ret = checkInput(net, &buffer, 100000);
 
     if (ret == -1) {
       fprintf(stderr, "I guess we better quit\n");

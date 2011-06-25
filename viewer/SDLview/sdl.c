@@ -194,7 +194,8 @@ void checkSDLevent() {
 	SDL_Event event;
 	static Uint32 lastclickat = 0;
 
-	if(SDL_PollEvent(&event)) {
+
+	while(SDL_PollEvent(&event)) {
 		switch(event.type) {
 			case SDL_KEYDOWN:
 				switch (event.key.keysym.sym) {
