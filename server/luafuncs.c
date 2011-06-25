@@ -466,6 +466,11 @@ int lua_fire(lua_State* L) {
 	lua_pop(L,1);
 	e = get_entity_by_id(id);
 
+	if(!e) {
+		/* Looks like our target has died. */
+		return 0;
+	}
+
 	/* Check that we are not trying to shoot ourselves, because that's bullshit! */
 	if(id.id == self.id) {
 		DEBUG("Trying to shoot self! Excuse me, have you lost your marbles?\n");
