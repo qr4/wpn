@@ -729,7 +729,7 @@ void drawPlanet(planet_t* p) {
 				for(int i = 0; i < n_players; i++) {
 					if(players[i].id == p->owner) {
 						if(strlen(players[i].name) > 10) {
-							asprintf(&text, "%.8s...", players[i].name);
+							asprintf(&text, "%.6s...", players[i].name);
 						} else {
 							asprintf(&text, "%s", players[i].name);
 						}
