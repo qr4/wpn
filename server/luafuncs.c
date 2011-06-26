@@ -481,6 +481,11 @@ int lua_fire(lua_State* L) {
 		return 0;
 	}
 
+	/* Check shooting range */
+	if(dist(eself, e) > config_get_double("weapon_range")) {
+		return 0;
+	}
+
 	/* Check that we are not trying to shoot ourselves, because that's bullshit! */
 	if(id.id == self.id) {
 		DEBUG("Trying to shoot self! Excuse me, have you lost your marbles?\n");
