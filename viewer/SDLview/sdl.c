@@ -48,7 +48,7 @@ float mouse_pos_y;
 
 extern int local_player;
 
-#define default_mag 64
+#define default_mag 200
 float mag = default_mag;
 
 
@@ -59,7 +59,7 @@ TTF_Font* font;
 char show_text_name = 1;
 char show_text_id = 0;
 char show_text_coords = 0;
-char show_influence = 1;
+char show_influence = 0;
 
 void screen_init() {
 	screen = SDL_SetVideoMode(display_x, display_y, 0, SDL_RESIZABLE | SDL_SWSURFACE | SDL_DOUBLEBUF);
@@ -250,7 +250,12 @@ void checkSDLevent() {
 						}
 						break;
 					case SDLK_p:
-						show_influence = !show_influence;
+						if((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) {
+							// P
+							show_influence = 0;
+						} else {
+							show_influence = 1;
+						}
 						break;
 					case SDLK_q:
 						fprintf(stderr, "Closing by user request\n");
