@@ -628,6 +628,7 @@ void jsonPlayer(json_t* player) {
 	char found = 0;
 	for(i = 0; i < n_players; i++) {
 		if(players[i].id == id) {
+			found = 1;
 			break;
 		}
 	}
@@ -649,7 +650,6 @@ void jsonPlayer(json_t* player) {
 		strncpy(players[n_players].name, name, 10);
 		n_players++;
 	}
-
 }
 
 void jsonAsteroids(json_t* a, int updatemode) {
