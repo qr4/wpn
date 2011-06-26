@@ -503,7 +503,7 @@ void updateShip(json_int_t id, float x, float y, int owner, int size, const char
 			ships[i].y = y;
 			ships[i].owner = owner;
 			ships[i].size = size;
-			strncpy(ships[i].contents, contents, 10);
+			strncpy(ships[i].contents, contents, 25);
 			ships[i].docked_to = docked_to;
 			ships[i].active = 1;
 			found = 1;
@@ -524,7 +524,7 @@ void updateShip(json_int_t id, float x, float y, int owner, int size, const char
 		ships[n_ships].y = y;
 		ships[n_ships].owner = owner;
 		ships[n_ships].size = size;
-		strncpy(ships[n_ships].contents, contents, 10);
+		strncpy(ships[n_ships].contents, contents, 25);
 		ships[n_ships].docked_to = docked_to;
 		ships[n_ships].active = 1;
 		n_ships++;
@@ -541,7 +541,7 @@ void updateBase(json_int_t id, float x, float y, int owner, int size, const char
 			bases[i].y = y;
 			bases[i].owner = owner;
 			bases[i].size = size;
-			strncpy(bases[i].contents, contents, 10);
+			strncpy(bases[i].contents, contents, 25);
 			bases[i].docked_to = docked_to;
 			bases[i].active = 1;
 			found = 1;
@@ -550,19 +550,19 @@ void updateBase(json_int_t id, float x, float y, int owner, int size, const char
 	}
 	if(!found) {
 		if(n_bases >= n_bases_max -1) {
-			ships = realloc(bases, (n_bases_max + 100) * sizeof(ship_t));
+			bases = realloc(bases, (n_bases_max + 100) * sizeof(base_t));
 			if(!ships) {
 				fprintf(stderr, "No more  bases :-(\n");
 				exit(1);
 			}
-			n_bases += 100;
+			n_bases_max += 100;
 		}
 		bases[n_bases].id = id;
 		bases[n_bases].x = x;
 		bases[n_bases].y = y;
 		bases[n_bases].owner = owner;
 		bases[n_bases].size = size;
-		strncpy(bases[n_bases].contents, contents, 10);
+		strncpy(bases[n_bases].contents, contents, 25);
 		bases[n_bases].docked_to = docked_to;
 		bases[n_bases].active = 1;
 		n_bases++;
