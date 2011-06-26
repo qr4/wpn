@@ -54,10 +54,12 @@ float mag = default_mag;
 
 #define FONT_FILE "terminus.ttf"
 #define FONT_SIZE 9
+#define asprintf(...) if(asprintf(__VA_ARGS__))
 TTF_Font* font;
 char show_text_name = 1;
 char show_text_id = 0;
 char show_text_coords = 0;
+char show_influence = 1;
 
 void screen_init() {
 	screen = SDL_SetVideoMode(display_x, display_y, 0, SDL_RESIZABLE | SDL_SWSURFACE | SDL_DOUBLEBUF);
@@ -247,6 +249,9 @@ void checkSDLevent() {
 							show_text_id = 0;
 						}
 						break;
+					case SDLK_p:
+						show_influence = !show_influence;
+						break;
 					case SDLK_q:
 						fprintf(stderr, "Closing by user request\n");
 						exit(0);
@@ -295,10 +300,16 @@ void checkSDLevent() {
 	}
 }
 
+
+static void draw_influence();
+
 void SDLplot() {
 	int i;
 
 	SDL_FillRect(SDL_GetVideoSurface(), NULL, 0);
+
+	// draw influence of each player in player color as background
+	draw_influence();
 
 	//fprintf(stderr, "Plotting %d asteroids\n", n_asteroids);
 	for(i = 0; i < n_asteroids; i++) {
@@ -849,4 +860,89 @@ void drawShot(shot_t* s) {
 	dst_rect.h = 4 * mag * zoom;
 
 	SDL_BlitSurface(shot_sprite, NULL, screen, &dst_rect);
+}
+
+static inline double dist(double x1, double y1, double x2, double y2) {
+	return hypot(x1 - x2, y1 - y2);
+	//return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+}
+
+static int position_of_max(double values[], int n) {
+	int pos_max = -1;
+	double max = -HUGE_VAL;
+
+	for (int i = 0; i < n; i++) {
+		if (values[i] > max) {
+			max = values[i];
+			pos_max = i;
+		}
+	}
+
+	return pos_max;
+}
+	
+
+void draw_influence() {
+	double left, up;
+	double pos_x, pos_y;
+	double d;
+	int x, y;
+	int min_owner;
+	int pos_max;
+	int owner;
+	static double *influence;
+	static size_t id_range;
+
+	double threshhold = 0.000001;
+
+	if (n_bases < 1 || !show_influence) {
+		return;
+	} else {
+		int max_owner;
+		min_owner = max_owner = bases[0].owner;
+
+		for (int i = 1; i < n_bases; i++) {
+			if (bases[i].owner < min_owner) {
+				min_owner = bases[i].owner;
+			} else if (bases[i].owner > max_owner) {
+				max_owner = bases[i].owner;
+			}
+		}
+
+		if(id_range != max_owner - min_owner + 1) {
+			id_range = max_owner - min_owner + 1;
+			influence = realloc (influence, sizeof(double) * (id_range));
+		}
+	}
+	
+	d    = 1 / zoom;
+	left = -offset_x * d; 
+	up   = -offset_y * d;
+
+	for (y = 0, pos_y = up; y < display_y; y+=10, pos_y = up + y * d) {
+		for (x = 0, pos_x = left; x < display_x; x+=10, pos_x = left + x * d) {
+
+			for (int i = 0; i < id_range; i++) {
+				influence[i] = 0;
+			}
+
+			for (int i = 0; i < n_bases ; i++) {
+				influence[bases[i].owner - min_owner] += bases[i].size / dist(pos_x, pos_y, bases[i].x, bases[i].y);
+			}
+
+			for (int i = 0; i < id_range; i++) {
+				influence[i]*=influence[i];
+			}
+
+			pos_max = position_of_max(influence, n_bases);
+			owner   = min_owner + pos_max;
+
+
+			if (influence[pos_max] >= threshhold) {
+				double h = player_to_h(owner);
+
+				((uint32_t *) screen->pixels)[screen->w * y + x] = SDL_MapRGB(screen->format, red_from_H(h), green_from_H(h), blue_from_H(h));
+			}
+		}
+	}
 }
