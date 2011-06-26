@@ -78,11 +78,14 @@ void new_player(unsigned int player_id) {
 
 /* Create a new homebase for this player (either because he just joined, or
  * just died) */
+#define MAX_PLAYERS 1000
 void create_homebase(player_data_t* player) {
 	entity_id_t base_id;
 	entity_id_t planet_id;
-	entity_t* b;
+	entity_t* b, *planet;
 	int i;
+	int *planets_per_player;
+	int max_planets=0, max_player=0;
 
 	if(get_entity_by_id(player->homebase)) {
 		ERROR("Player %u already has a homebase!\n", player->player_id);
@@ -90,17 +93,61 @@ void create_homebase(player_data_t* player) {
 	}
 
 	/* Find a nice, uninhabited planet */
-	while(1) {
-		/* TODO: What if all planets are full? */
-		i=rand() % (planet_storage->first_free);
-		if(planet_storage->entities[i].player_id == 0) {
-			planet_id = planet_storage->entities[i].unique_id;
-			planet_storage->entities[i].player_id = player->player_id;
-			break;
+	planets_per_player = calloc(MAX_PLAYERS, sizeof(int));
+
+	if(!planets_per_player) {
+		ERROR("malloc failed! not adding player");
+		return;
+	}
+	for(int j=0; j < planet_storage->first_free; j++) {
+		planets_per_player[planet_storage->entities[j].player_id]++;
+	}
+
+	DEBUG("%i free planets.\n", planets_per_player[0]);
+
+	if(planets_per_player[0] > 0) {
+
+		/* Select a random free planet */
+		while(1) {
+			i=rand() % (planet_storage->first_free);
+			if(planet_storage->entities[i].player_id == 0) {
+				planet_id = planet_storage->entities[i].unique_id;
+				planet_storage->entities[i].player_id = player->player_id;
+				base_id = init_base(base_storage, planet_id, config_get_int("initial_base_size"));
+				break;
+			}
+		}
+	} else {
+
+		DEBUG("I have to steal a planet!\n");
+
+		/* Find the player with the most planets */
+		for(int j=0; j<n_players+100; j++) {
+			if(planets_per_player[j] > max_planets) {
+				max_planets = planets_per_player[j];
+				max_player = j;
+			}
+		}
+
+		/* Steal one base from him */
+		for(int j=base_storage->first_free-1; j>=0; j--) {
+			if(base_storage->entities[j].player_id == max_player) {
+
+				b = &(base_storage->entities[j]);
+				base_id = b->unique_id;
+				planet_id = b->base_data->my_planet;
+				planet = get_entity_by_id(planet_id);
+				planet->player_id = player->player_id;
+
+				b->lua = NULL;
+				init_ship_computer(b);
+
+				break;
+			}
 		}
 	}
 
-	base_id = init_base(base_storage, planet_id, config_get_int("initial_base_size"));
+	free(planets_per_player);
 	player->homebase=base_id;
 
 	b = get_entity_by_id(base_id);
