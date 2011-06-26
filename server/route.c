@@ -223,7 +223,7 @@ waypoint_t* plotCourse(vector_t* start, vector_t* stop) {
 		// inter cluster flight
 		DEBUG("Inter cluster route from (%f, %f) to (%f, %f)\n", start->x, start->y, stop->x, stop->y);
 		wp_start->next = route(start, stop);
-	} else if(e_start != NULL && e_stop != NULL && e_start->pos.x == e_stop->pos.x && e_start->pos.y == e_stop->pos.y) {
+	} else if(e_start != NULL && e_stop != NULL && e_start->unique_id.id == e_stop->unique_id.id) {
 		// flight within a cluster
 		DEBUG("Pure intra cluster route from (%f, %f) to (%f, %f), cluster at (%f, %f) with radius %f\n", start->x, start->y, stop->x, stop->y, e_start->pos.x, e_start->pos.y, e_start->radius);
 		wp_start->next = intra_cluster_route(start, stop, e_start);
