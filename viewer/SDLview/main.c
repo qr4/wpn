@@ -19,7 +19,7 @@
 asteroid_t* asteroids;
 int n_asteroids, n_asteroids_max;
 
-ship_t* bases;
+base_t* bases;
 int n_bases, n_bases_max;
 
 explosion_t* explosions;
