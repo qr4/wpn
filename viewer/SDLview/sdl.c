@@ -60,6 +60,7 @@ char show_text_name = 1;
 char show_text_id = 0;
 char show_text_coords = 0;
 char show_influence = 0;
+double influence_threshhold = 0.00000005;
 
 void screen_init() {
 	screen = SDL_SetVideoMode(display_x, display_y, 0, SDL_RESIZABLE | SDL_SWSURFACE | SDL_DOUBLEBUF);
@@ -205,15 +206,23 @@ void checkSDLevent() {
 				switch (event.key.keysym.sym) {
 					case SDLK_PLUS:
 					case SDLK_KP_PLUS:
-						zoom *= 1.2;
-						offset_x = display_x / 2 + (offset_x - display_x / 2) * 1.2;
-						offset_y = display_y / 2 + (offset_y - display_y / 2) * 1.2;
+						if((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) {
+							influence_threshhold /= 1.2;
+						} else {
+							zoom *= 1.2;
+							offset_x = display_x / 2 + (offset_x - display_x / 2) * 1.2;
+							offset_y = display_y / 2 + (offset_y - display_y / 2) * 1.2;
+						}
 						break;
 					case SDLK_MINUS:
 					case SDLK_KP_MINUS:
-						zoom /= 1.2;
-						offset_x = display_x / 2 + (offset_x - display_x / 2) / 1.2;
-						offset_y = display_y / 2 + (offset_y - display_y / 2) / 1.2;
+						if((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) {
+							influence_threshhold *= 1.2;
+						} else {
+							zoom /= 1.2;
+							offset_x = display_x / 2 + (offset_x - display_x / 2) / 1.2;
+							offset_y = display_y / 2 + (offset_y - display_y / 2) / 1.2;
+						}
 						break;
 					case SDLK_m:
 						if((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) {
@@ -868,8 +877,8 @@ void drawShot(shot_t* s) {
 }
 
 static inline double dist(double x1, double y1, double x2, double y2) {
-	return hypot(x1 - x2, y1 - y2);
-	//return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+	//return hypot(x1 - x2, y1 - y2);
+	return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
 }
 
 static int position_of_max(double values[], int n) {
@@ -898,7 +907,6 @@ void draw_influence() {
 	static double *influence;
 	static size_t id_range;
 
-	double threshhold = 0.000001;
 
 	if (n_bases < 1 || !show_influence) {
 		return;
@@ -935,15 +943,15 @@ void draw_influence() {
 				influence[bases[i].owner - min_owner] += bases[i].size / dist(pos_x, pos_y, bases[i].x, bases[i].y);
 			}
 
-			for (int i = 0; i < id_range; i++) {
-				influence[i]*=influence[i];
-			}
+			//for (int i = 0; i < id_range; i++) {
+			//	influence[i]*=influence[i];
+			//}
 
 			pos_max = position_of_max(influence, n_bases);
 			owner   = min_owner + pos_max;
 
 
-			if (influence[pos_max] >= threshhold) {
+			if (influence[pos_max] >= influence_threshhold) {
 				double h = player_to_h(owner);
 
 				((uint32_t *) screen->pixels)[screen->w * y + x] = SDL_MapRGB(screen->format, red_from_H(h), green_from_H(h), blue_from_H(h));
