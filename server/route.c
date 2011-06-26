@@ -287,14 +287,18 @@ waypoint_t* plotCourse(vector_t* start, vector_t* stop) {
 }
 
 // To be called from Lua code
-void moveto_planner(entity_t* e, double x, double y) {
+int moveto_planner(entity_t* e, double x, double y) {
 	if(e->type != SHIP) {
 		ERROR("We don't do moveto planing for non-ship entities\n");
-		exit(1);
+		return 0;
 	}
 	if(e->ship_data->flightplan != NULL) {
 		free_route(e->ship_data->flightplan);
 		e->ship_data->flightplan = NULL;
+	}
+	if(e->pos.x == x && e->pos.y == y) {
+		// Already there
+		return 0;
 	}
 	vector_t start;
 	start.x = e->pos.x;
@@ -309,16 +313,17 @@ void moveto_planner(entity_t* e, double x, double y) {
 
 	e->ship_data->flightplan = wp_start;
 	complete_flightplan(e);
+	return 1;
 }
 
 // To be called from Lua code
-void stop_planner(entity_t* e) {
+int stop_planner(entity_t* e) {
 	if(e->type != SHIP) {
 		ERROR("We don't do stop planing for non-ship entities\n");
-		exit(1);
+		return 0;
 	}
 	if(e->ship_data->flightplan == NULL) {
-		return;
+		return 0;
 	}
 
 	vector_t start;
@@ -364,22 +369,22 @@ void stop_planner(entity_t* e) {
 		}
 		e->ship_data->flightplan = wp_start;
 	}
+	return 1;
 }
 
 // To be called from Lua code
-void autopilot_planner(entity_t* e, double x, double y) {
+int autopilot_planner(entity_t* e, double x, double y) {
 	if(e->type != SHIP) {
 		ERROR("We don't do autoroute planing for non-ship entities\n");
-		exit(1);
+		return 0;
 	}
 	if(get_acceleration(e) == 0) {
 		DEBUG("Flying without engines? Talk to Mr. Scott first.\n");
-		return;
+		return 0;
 	}
 	if(e->pos.x == x && e->pos.y == y) {
 		// Already there
-		ERROR("We are already there\n");
-		return;
+		return 0;
 	}
 	if(e->ship_data->flightplan != NULL) {
 		free_route(e->ship_data->flightplan);
@@ -408,4 +413,5 @@ void autopilot_planner(entity_t* e, double x, double y) {
 	DEBUG("Going from (%f, %f) to (%f, %f)\n", start.x, start.y, stop.x, stop.y);
 	e->ship_data->flightplan = plotCourse(&start, &stop);
 	complete_flightplan(e);
+	return 1;
 }

@@ -314,7 +314,7 @@ void player_check_code_updates(long usec_wait) {
             }
           } else {
             // hu?! welcher fd war das denn?
-            ERROR("unknown fd is talking?!??!\n");
+            ERROR("unknown fd is talking?!?!\n");
           }
         }
       }

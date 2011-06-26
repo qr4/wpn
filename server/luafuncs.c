@@ -208,9 +208,9 @@ int lua_stop(lua_State* L) {
 	e = get_entity_by_id(id);
 
 	/* Now call the stop-flightplanner */
-	stop_planner(e);
-
-	return 0;
+	int ret = stop_planner(e);
+	lua_pushnumber(L,ret);
+	return 1;
 }
 
 /* Fly straight to the specified coordinates, ignoring any object in the way
@@ -261,9 +261,9 @@ int lua_moveto(lua_State* L) {
 	}
 
 	/* Now call the moveto-flightplanner */
-	moveto_planner(e, x, y);
-
-	return 0;
+	int ret = moveto_planner(e, x, y);
+	lua_pushnumber(L,ret);
+	return 1;
 }
 
 /* Fly to the specified coordinates, using the intelligent autopilot
@@ -313,9 +313,9 @@ int lua_set_autopilot_to(lua_State* L) {
 	}
 
 	/* Now call the flightplanner */
-	autopilot_planner(e, x, y);
-
-	return 0;
+	int ret = autopilot_planner(e, x, y);
+	lua_pushnumber(L,ret);
+	return 1;
 }
 
 /* Dock with another entity */
