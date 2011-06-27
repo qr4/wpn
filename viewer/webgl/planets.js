@@ -21,7 +21,7 @@ function update_planet_vbo() {
 	for(var i=0; i<planets.length; i++) {
 		planet_buffer[4*i] = planets[i].x;
 		planet_buffer[4*i+1] = planets[i].y;
-		planet_buffer[4*i+2] = planets[i].id;
+		planet_buffer[4*i+2] = planets[i].id % 16348;
 		planet_buffer[4*i+3] = planets[i].owner;
 	}
 	
@@ -54,7 +54,7 @@ function render_planets() {
 	gl.uniformMatrix4fv(gl.getUniformLocation(planet_shader, 'modelmatrix'), false, model_matrix);
 	gl.uniformMatrix4fv(gl.getUniformLocation(planet_shader, 'viewmatrix'), false, view_matrix);
 	gl.uniformMatrix4fv(gl.getUniformLocation(planet_shader, 'projectionmatrix'), false, projection_matrix);
-	gl.uniform1f(gl.getUniformLocation(planet_shader, 'scaling'), Math.sqrt(mat4.determinant(view_matrix)*canvas.width*canvas.height));
+	gl.uniform1f(gl.getUniformLocation(planet_shader, 'scaling'), planet_overbloat * Math.sqrt(mat4.determinant(view_matrix)*canvas.width*canvas.height));
 	gl.uniform1f(gl.getUniformLocation(planet_shader, 'time'), time/5000.);
 
 	/* Planeten-VBO angeben */

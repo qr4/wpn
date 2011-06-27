@@ -1,9 +1,11 @@
 <html>
 	<head>
 		<title>WebGL test</title>
+		<script type="text/javascript" src="settings.js"></script>
 		<script type="text/javascript" src="glmatrix.js"></script>
 		<script type="text/javascript" src="opengl.js"></script>
 		<script type="text/javascript" src="mouse.js"></script>
+		<script type="text/javascript" src="nebula.js"></script>
 		<script type="text/javascript" src="planets.js"></script>
 		<script type="text/javascript" src="jsonparse.js"></script>
 		<style type="text/css">
@@ -131,7 +133,7 @@
 			void main() {
 				vec3 w = worldpos;
 				w.z=time/100.;
-				highp float c = max(0.,turbulence(w/1000.));
+				highp float c = max(0.,turbulence(w/50000.));
 				gl_FragColor = vec4(0.1*c*c*c,0.1*c*c,0.3*c,0.4*c*c);
 			}
 		</script>
@@ -156,11 +158,13 @@
 				// Und planet_id an den pixelshader weitergeben
 				planet_id = planet_data.z;
 
-				// Planetenfarbe uniqe aus der planeten-id berechnen
-				planet_color = abs(vec3(cos(planet_id), sin(1.71*planet_id),sin(planet_id*planet_id)));
+				float planet_owner = planet_data.a;
+
+				// Planetenfarbe uniqe aus dem planeten-owner berechnen
+				planet_color = abs(vec3(cos(planet_owner), cos(1.71*planet_owner),cos(planet_owner*planet_owner)));
 
 				// Planetengroesse aus der ID "irgendwie rauswurschteln"
-				gl_PointSize = (2. + sin(planet_data.z))  * scaling;
+				gl_PointSize = (2. + 0.1* sin(planet_data.z))  * scaling;
 
 			}
 		</script>
@@ -282,9 +286,8 @@
 
 			// Planeten-Datenstrukturen erstellen.
 			init_planets();
+			init_nebula();
 
-
-			var bg_shader = create_shader("worldpos_vs", "space_shader");
 
 			var start_time = new Date().getTime();
 			var time=0;
@@ -301,30 +304,8 @@
 				//gl.clearDepth(100.);
 				gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-				// Hintergrund malen
-				gl.useProgram(bg_shader);
-				gl.uniformMatrix4fv(gl.getUniformLocation(bg_shader, 'modelmatrix'), false, model_matrix);
-				gl.uniformMatrix4fv(gl.getUniformLocation(bg_shader, 'viewmatrix'), false, view_matrix);
-				gl.uniformMatrix4fv(gl.getUniformLocation(bg_shader, 'projectionmatrix'), false, projection_matrix);
-				gl.uniform1i(gl.getUniformLocation(bg_shader, 'pos'), 0);
-				gl.uniform1i(gl.getUniformLocation(bg_shader, 'texcoord'), 1);
-				gl.uniform1f(gl.getUniformLocation(bg_shader, 'time'), time);
-				//gl.uniform1i(gl.getUniformLocation(space_shader, 'tex'), 0);
-				
-				//gl.activeTexture(gl.TEXTURE0);
-				//gl.bindTexture(gl.TEXTURE_2D, bg_tex);
-				gl.enable(gl.BLEND);
-				gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-				gl.bindBuffer(gl.ARRAY_BUFFER, fullscreen_vbo);
-				gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, 0); // <-- ccords
-				gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 5*4, 3*4); // <-- texcoords
-				gl.enableVertexAttribArray(0);
-				gl.enableVertexAttribArray(1);
-				gl.drawArrays( gl.TRIANGLES, 0, 6 );
-				gl.disableVertexAttribArray(0);
-				gl.disableVertexAttribArray(1);
-				gl.disable(gl.BLEND);
 
+				render_nebula();
 				render_planets();
 
 				// Und beim nächsten frame wollen wir wieder diese

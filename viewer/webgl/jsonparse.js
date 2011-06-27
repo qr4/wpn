@@ -2,6 +2,9 @@
 var ajaxobject;
 var old_pos;
 
+/* Has the bounding box been set already? */
+var bounding_box_was_set = false;
+
 function createXMLHttpRequest() {
 	if (window.XMLHttpRequest) {
 		return new XMLHttpRequest();
@@ -95,10 +98,16 @@ function parse_world(world) {
 
 		var scale=Math.min(1./(xmax-xmin), 1./(ymax-ymin));
 
-		mat4.identity(view_matrix);
-		mat4.translate(view_matrix, [0.,0.,-2.]);
-		mat4.scale(view_matrix, [scale,scale,1.]);
-		mat4.translate(view_matrix, [-(xmin+xmax)/2., -(ymin+ymax)/2., 0.]);
+		if(!bounding_box_was_set) {
+			mat4.identity(view_matrix);
+			mat4.translate(view_matrix, [0.,0.,-2.]);
+			mat4.scale(view_matrix, [scale,scale,1.]);
+			mat4.translate(view_matrix, [-(xmin+xmax)/2., -(ymin+ymax)/2., 0.]);
+		}
+
+		bounding_box_was_set = true;
+
+		resize_nebula(xmin,xmax,ymin,ymax);
 	}
 }
 
