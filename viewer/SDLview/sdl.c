@@ -51,6 +51,7 @@ extern int local_player;
 #define default_mag 200
 float mag = default_mag;
 
+json_int_t follow_ship = 0;
 
 #define FONT_FILE "terminus.ttf"
 #define FONT_SIZE 9
@@ -274,7 +275,7 @@ void checkSDLevent() {
 				}
 				break;
 			case SDL_MOUSEBUTTONDOWN:
-				if(event.button.button == 1) { // left button
+				if(event.button.button == SDL_BUTTON_LEFT) {
 					if(SDL_GetTicks() - lastclickat < 200) {
 						// center
 						offset_x = offset_x - event.button.x + display_x / 2;
@@ -292,6 +293,9 @@ void checkSDLevent() {
 				} else {
 					// disarm doubleclick detection
 					lastclickat = 0;
+					if(event.button.button == SDL_BUTTON_RIGHT) {
+						find_object_at(event.button.x, event.button.y);
+					}
 				}
 				break;
 			case SDL_MOUSEMOTION:
@@ -894,7 +898,6 @@ static int position_of_max(double values[], int n) {
 
 	return pos_max;
 }
-	
 
 void draw_influence() {
 	double left, up;
@@ -927,9 +930,9 @@ void draw_influence() {
 			influence = realloc (influence, sizeof(double) * (id_range));
 		}
 	}
-	
+
 	d    = 1 / zoom;
-	left = -offset_x * d; 
+	left = -offset_x * d;
 	up   = -offset_y * d;
 
 	for (y = 0, pos_y = up; y < display_y; y+=10, pos_y = up + y * d) {
@@ -959,3 +962,19 @@ void draw_influence() {
 		}
 	}
 }
+
+void find_object_at(int click_x, int click_y) {
+	double radius = 50;
+	follow_ship = 0;
+	for(int i = 0; i < n_ships; i++) {
+		if(ships[i].active == 0) {
+			continue;
+		}
+		double d = dist(click_x, click_y, offset_x + ships[i].x * zoom, offset_y + ships[i].y * zoom);
+		if(d < radius) {
+			radius = d;
+			follow_ship = ships[i].id;
+		}
+	}
+}
+

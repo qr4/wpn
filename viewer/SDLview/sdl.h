@@ -21,5 +21,7 @@ void drawShip(ship_t * s);
 void drawShot(shot_t * s);
 void drawSlot(float x, float y, char type);
 void drawText(int x,int y, char* text);
+void find_object_at(int click_x, int click_y);
+
 
 #endif

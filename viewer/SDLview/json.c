@@ -33,6 +33,10 @@ extern int n_players_max;
 extern float zoom;
 extern float offset_x;
 extern float offset_y;
+extern json_int_t follow_ship;
+extern int display_x;
+extern int display_y;
+
 
 int parseJson(buffer_t* b) {
 	json_error_t error;
@@ -297,6 +301,11 @@ void jsonShip(json_t* ship) {
 		}
 	} else {
 		return;
+	}
+
+	if(follow_ship != 0 && follow_ship == id) {
+		offset_x = display_x/2 - x * zoom;
+		offset_y = display_y/2 - y * zoom;
 	}
 
 	updateShip(id, x, y, owner, size, contents, docked_to);
