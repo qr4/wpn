@@ -5,11 +5,14 @@ var planets = [];
 /* Und ihre graphikkarten-representation */
 var planet_vbo;
 var planet_shader;
+var planet_glow_shader;
 
 function init_planets() {
 
+	/* VBO und shader und so einrichten */
 	planet_vbo = gl.createBuffer();
 	planet_shader = create_shader("planet_vs", "planet_fs"); 
+	planet_glow_shader = create_shader("planet_glow_vs", "planet_glow_fs");
 	update_planet_vbo();
 }
 
@@ -48,7 +51,34 @@ function parse_planet(planet) {
 /* Male alle aktuell bekannten planeten, in einem schub */
 function render_planets() {
 	
+	/* Zuerst den Glow aller Planeten malen */
+	gl.useProgram(planet_glow_shader);
+
+	/* Darstellungstransformation an den Shader übergeben */
+	gl.uniformMatrix4fv(gl.getUniformLocation(planet_glow_shader, 'modelmatrix'), false, model_matrix);
+	gl.uniformMatrix4fv(gl.getUniformLocation(planet_glow_shader, 'viewmatrix'), false, view_matrix);
+	gl.uniformMatrix4fv(gl.getUniformLocation(planet_glow_shader, 'projectionmatrix'), false, projection_matrix);
+	gl.uniform1f(gl.getUniformLocation(planet_glow_shader, 'scaling'),  planet_glow_size * Math.sqrt(mat4.determinant(view_matrix)*canvas.width*canvas.height));
+	gl.uniform1f(gl.getUniformLocation(planet_glow_shader, 'time'), time/5000.);
+
+	/* Planeten-VBO angeben */
+	gl.uniform1i(gl.getUniformLocation(planet_glow_shader, 'planet_data'), false, 0);
+	gl.bindBuffer(gl.ARRAY_BUFFER, planet_vbo);
+	gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 0, 0); // <-- 4 floats pro eintrag
+	gl.enableVertexAttribArray(0);
+
+	/* Blending an */
+	gl.enable(gl.BLEND);
+	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+
+	/* Und ab gehts */
+	gl.drawArrays(gl.POINTS, 0, planets.length);
+
 	gl.useProgram(planet_shader);
+
+
+	/* Danach: die planeten selbst */
 
 	/* Darstellungstransformation an den Shader übergeben */
 	gl.uniformMatrix4fv(gl.getUniformLocation(planet_shader, 'modelmatrix'), false, model_matrix);
@@ -59,13 +89,6 @@ function render_planets() {
 
 	/* Planeten-VBO angeben */
 	gl.uniform1i(gl.getUniformLocation(planet_shader, 'planet_data'), false, 0);
-	gl.bindBuffer(gl.ARRAY_BUFFER, planet_vbo);
-	gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 0, 0); // <-- 4 floats pro eintrag
-	gl.enableVertexAttribArray(0);
-
-	/* Blending an */
-	gl.enable(gl.BLEND);
-	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 
 	/* Und ab gehts */

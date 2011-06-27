@@ -139,6 +139,50 @@
 		</script>
 
 
+		<!-- Shader für glowbobbel um Planeten herum -->
+		<script type="x-shader/x-vertex" id="planet_glow_vs">
+			uniform mat4 modelmatrix;
+			uniform mat4 viewmatrix;
+			uniform mat4 projectionmatrix;
+			uniform float scaling;
+
+			attribute vec4 planet_data;
+
+			varying vec3 planet_color;
+			varying float planet_owner;
+
+			void main() {
+				vec4 p = vec4(planet_data.xy, 0., 1.);
+				gl_Position = projectionmatrix * viewmatrix * modelmatrix * p;
+
+				planet_owner = planet_data.a;
+
+				// Planetenfarbe uniqe aus dem planeten-owner berechnen
+				planet_color = abs(vec3(cos(planet_owner), cos(1.71*planet_owner),cos(planet_owner*planet_owner)));
+
+				// Glow-groesse wird durch scaling festgelegt.
+				gl_PointSize = scaling;
+
+			}
+		</script>
+
+		<script type="x-shader/x-fragment" id="planet_glow_fs">
+			uniform float time;
+
+			varying vec3 planet_color;
+			varying float planet_owner;
+
+			void main() {
+				if(planet_owner == 0.) {
+					discard;
+				}
+
+				vec2 p = 2.*(gl_PointCoord-vec2(.5));
+
+				gl_FragColor = vec4(planet_color,0.5) * pow(1.-length(p), 2.);
+
+			}
+		</script>
 		<!-- Planeten - shader -->
 		<script type="x-shader/x-vertex" id="planet_vs">
 			uniform mat4 modelmatrix;
