@@ -6,8 +6,11 @@
 		<script type="text/javascript" src="opengl.js"></script>
 		<script type="text/javascript" src="mouse.js"></script>
 		<script type="text/javascript" src="nebula.js"></script>
+		<script type="text/javascript" src="ships.js"></script>
 		<script type="text/javascript" src="planets.js"></script>
 		<script type="text/javascript" src="jsonparse.js"></script>
+		<script type="text/javascript" src="slots.js"></script>
+		<script type="text/javascript" src="textures.js"></script>
 		<style type="text/css">
 			body {
 				background-color: #000000;
@@ -313,6 +316,31 @@
 				gl_FragColor = vec4(c, 1. - step(1.0,length(p)));
 			}
 		</script>
+		<!-- Raumschiff-Vertex-shader -->
+		<script type="x-shader/x-vertex" id="ship_vs">
+			uniform mat4 modelmatrix;
+			uniform mat4 viewmatrix;
+			uniform mat4 projectionmatrix;
+
+			attribute vec3 vertexCoord;
+			attribute vec2 texCoord;
+			varying vec2 tc;
+
+			void main() {
+				vec4 p = vec4(vertexCoord.xy, 0., 1.);
+				//vec4 p = vec4(0.,0., 0., 0.);
+				gl_Position = projectionmatrix * viewmatrix * modelmatrix * p;
+				tc=texCoord;
+			}
+		</script>
+		<!-- Raumschiff-Fragment-shader (im Moment nur textures) -->
+		<script type="x-shader/x-fragment" id="ship_fs">
+			uniform sampler2D spriteMap;
+			varying vec2 tc;
+			void main() {
+				gl_FragColor=texture2D(spriteMap,tc);
+			}
+		</script>
 
 		<!-- Hauptprogramm -->
 		<script type="text/javascript">
@@ -326,12 +354,17 @@
 			document.onmousemove = mousemove_handler;
 			canvas.onmousewheel = mousewheel_handler;
 
+			//Raumschiff-Texturen laden
+			load_ship_textures();
 			init_json_listener();
+			init_ships();
 
 			// Planeten-Datenstrukturen erstellen.
 			init_planets();
 			init_nebula();
 
+			//Texture-Objekt für blocks
+			var g_block_texture=load_texture("sprites/blocks_x.png");
 
 			var start_time = new Date().getTime();
 			var time=0;
@@ -348,9 +381,10 @@
 				//gl.clearDepth(100.);
 				gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-
+				mat4
 				render_nebula();
 				render_planets();
+				render_ships();
 
 				// Und beim nächsten frame wollen wir wieder diese
 				// Funktion.

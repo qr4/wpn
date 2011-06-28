@@ -2881,7 +2881,10 @@
 ]
 ,
 "ships": [
-{"id": 4503599627370496, "x": 173729.844316, "y": 62080.469559, "owner": 142, "size": 3, "contents": "   ", "docked_to":null}
+{"id": 1, "x": 100000.0, "y": 96250.0, "owner": 1, "size": 3, "contents": " LT", "docked_to":null},
+{"id": 2, "x": 170000.0, "y": 96250.0, "owner": 2, "size": 6, "contents": "LLRRTT", "docked_to":null},
+{"id": 3, "x":  50000.0, "y": 26250.0, "owner": 3, "size": 12, "contents": "LLLLR R TTTT", "docked_to":null},
+{"id": 4, "x": 210000.0, "y": 86250.0, "owner": 4, "size": 24, "contents": "LLLLLLLLLLLLTTTTTTTTTTTT", "docked_to":null}
 ]
 ,
 "players": [

@@ -24,8 +24,8 @@ function init_json_listener() {
 	ajaxobject=createXMLHttpRequest();
 	ajaxobject.onprogress = new_json_data;
 	//ajaxobject.setRequestHeader('Cache-Control', 'no-cache');
-	ajaxobject.open("GET", "/cgi/test.cgi?x=" + cachebuster);
-	//ajaxobject.open("GET", "test.json?x=" + cachebuster);
+	//ajaxobject.open("GET", "/cgi/test.cgi?x=" + cachebuster);
+	ajaxobject.open("GET", "test.json?x=" + cachebuster);
 	//ajaxobject.open("GET", "visualizer-example-world.json?x=" + cachebuster);
 	ajaxobject.send(null);
 }
@@ -85,7 +85,14 @@ function parse_world(world) {
 		// Die Graphikkarte sollte davon auch wissen.
 		update_planet_vbo();
 	}
-
+	// Das gleiche für Schiffe
+	if(world.ships) {
+		ships = [];
+		for(var i=0; i<world.ships.length; i++) {
+			parse_ship(world.ships[i]);
+		}
+		update_ship_vbo();
+	}
 	// Ein world-bounding-box-update führt zum zoomen auf
 	// die gesamtwelt
 	// TODO: das ist natürlich nicht toll, wenn das immer
@@ -119,5 +126,11 @@ function parse_update(update) {
 		}
 		// Die Graphikkarte sollte davon auch wissen.
 		update_planet_vbo();
+	}
+	if(update.ships) {//...und für Schiffe
+		for(var i=0; i<update.ships.length; i++) {
+			parse_ship(update.ships[i]);
+		}
+		update_ship_vbo();
 	}
 }
