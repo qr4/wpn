@@ -24,8 +24,8 @@ function init_json_listener() {
 	ajaxobject=createXMLHttpRequest();
 	ajaxobject.onprogress = new_json_data;
 	//ajaxobject.setRequestHeader('Cache-Control', 'no-cache');
-	//ajaxobject.open("GET", "/cgi/test.cgi?x=" + cachebuster);
-	ajaxobject.open("GET", "test.json?x=" + cachebuster);
+	ajaxobject.open("GET", "/cgi/test.cgi?x=" + cachebuster);
+	//ajaxobject.open("GET", "test.json?x=" + cachebuster);
 	//ajaxobject.open("GET", "visualizer-example-world.json?x=" + cachebuster);
 	ajaxobject.send(null);
 }

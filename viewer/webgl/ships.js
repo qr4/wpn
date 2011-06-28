@@ -28,7 +28,7 @@ function update_ship_vbo() {
 		else if (ships[s].size==6) ssel=1;
 		else if (ships[s].size==12) ssel=2;
 		else ssel=3;
-		ssel+=ships[s].owner*num_ship_sizes;
+		ssel+=(ships[s].owner%num_ship_sizes)*num_ship_sizes;
 		//Position der slots am Schiff
 		var block_pos=new Float32Array(ship_block_positions[ssel]);
 		//TODO: Das aus der tatsächlichen Textur bestimmen
