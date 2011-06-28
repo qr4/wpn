@@ -106,16 +106,16 @@ function render_ships() {
 	gl.enableVertexAttribArray(1);
 
 	for (var s=0;s<ships.length;s++) {
-		/* Darstellungstransformation an den Shader übergeben */
-		gl.uniformMatrix4fv(gl.getUniformLocation(ship_shader, 'modelmatrix'), false, model_matrix);
-		gl.uniformMatrix4fv(gl.getUniformLocation(ship_shader, 'viewmatrix'), false, view_matrix);
-		gl.uniformMatrix4fv(gl.getUniformLocation(ship_shader, 'projectionmatrix'), false, projection_matrix);
 		//Matrix auf Ursprung zurücksetzen
 		mat4.identity(model_matrix);
 		//Auf Position des Schiffs verschieben
 		mat4.translate(model_matrix,[ships[s].x,ships[s].y,0.]);
 		//Nur zur Illustration: eine leichte Drehung
 		//mat4.rotate(model_matrix,0.00025*time*(s+1),[0.0,0.0,1.0]);
+		/* Darstellungstransformation an den Shader übergeben */
+		gl.uniformMatrix4fv(gl.getUniformLocation(ship_shader, 'modelmatrix'), false, model_matrix);
+		gl.uniformMatrix4fv(gl.getUniformLocation(ship_shader, 'viewmatrix'), false, view_matrix);
+		gl.uniformMatrix4fv(gl.getUniformLocation(ship_shader, 'projectionmatrix'), false, projection_matrix);
 
 		gl.activeTexture(gl.TEXTURE0);//Textur des Schiffs
 		//TODO: Das ordentlich machen!
