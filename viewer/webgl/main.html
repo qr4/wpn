@@ -349,10 +349,11 @@
 			glInit();
 
 			// Maus-event-handler anlegen
-			canvas.onmousedown = mousedown_handler;
-			document.onmouseup = mouseup_handler;
-			document.onmousemove = mousemove_handler;
-			canvas.onmousewheel = mousewheel_handler;
+			canvas.addEventListener("mousedown", mousedown_handler,false);
+			document.addEventListener("mouseup", mouseup_handler, false);
+			document.addEventListener("mousemove", mousemove_handler, false);
+			canvas.addEventListener("mousewheel", mousewheel_handler, false);
+			canvas.addEventListener("DOMMouseScroll", mousewheel_handler, false);
 
 			//Raumschiff-Texturen laden
 			load_ship_textures();
