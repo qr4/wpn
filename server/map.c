@@ -190,6 +190,8 @@ void unregister_object(entity_t *e) {
 
 	if (i == *objects) {
 		ERROR("entity is not in the quad it is supposed to.\n");
+		ERROR("%s, at %f %f\n", type_string(e->type), e->pos.x, e->pos.y);
+		return;
 	}
 
 	// move last to this position

@@ -1656,7 +1656,6 @@ int lua_colonize(lua_State* L) {
 	}
 
 	/* Well, I guess everything's fine. Create a base here */
-	unregister_object(eself);
 
 	/* TODO: Put this in it's own function! */
 	base = init_base(base_storage, planet, 0);
