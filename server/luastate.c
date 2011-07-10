@@ -148,6 +148,13 @@ void kill_computer(entity_t* s) {
 
 	lua_close(s->lua);
 	s->lua = NULL;
+
+	/* Also remove any pending event for this ship, since it can't react anyway */
+	if(s->ship_data == NULL) {
+		ERROR("What kind of weird shit is this ship? Entity %lu has no ship_data.\n", s->unique_id.id);
+	}
+	s->ship_data->timer_value=-1;
+	s->ship_data->timer_context=INVALID_ID;
 }
 
 /* Call an entitie's callback function for a given type of event */
