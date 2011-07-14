@@ -49,13 +49,13 @@ struct dstr json_puffer;
 // 1 = have new json-data
 int checkInput(int net, buffer_t* b, int usleep_time) {
 
-  static int need_empty_json_puffer = 1;
+	static int need_empty_json_puffer = 1;
 
-  // leeren wenn das letzte mal ein kompletter block gefunden wurde
-  if (need_empty_json_puffer == 1) {
-    need_empty_json_puffer = 0;
-    dstr_clear(&json_puffer);
-  }
+	// leeren wenn das letzte mal ein kompletter block gefunden wurde
+	if (need_empty_json_puffer == 1) {
+		need_empty_json_puffer = 0;
+		dstr_clear(&json_puffer);
+	}
 
 	int ret;
 	fd_set inputset;
@@ -70,47 +70,47 @@ int checkInput(int net, buffer_t* b, int usleep_time) {
 	/* select returns 0 if timeout, 1 if input available, -1 if error. */
 	ret = select(net + 1, &inputset, NULL, NULL, &timeout);
 
-  if (ret == -1) {
+	if (ret == -1) {
 		if(errno == EINTR) {
 			return 0; // Unix is slightly stupid
 		} else {
 			// This is a real error
 			fprintf(stderr, "select() produced error %d\n", errno);
-      perror("select()");
+			perror("select()");
 			return -1;
 		}
-  }
+	}
 
-  if (ret == 0) {
-    // timer
-    return 0;
-  }
+	if (ret == 0) {
+		// timer
+		return 0;
+	}
 
 	// Input available
 	if(FD_ISSET(net, &inputset)) {
-    char buffer[40000];
-    ssize_t len = recv(net, buffer, sizeof(buffer), 0);
+		char buffer[40000];
+		ssize_t len = recv(net, buffer, sizeof(buffer), 0);
 
-    if ((len == -1) || (len == 0)) {
-      printf("server hang up. Goodbye.\n");
-      return -1;
-    }
+		if ((len == -1) || (len == 0)) {
+			printf("server hang up. Goodbye.\n");
+			return -1;
+		}
 
-    dstr_append(&net_puffer, buffer, len);
-    
-    char* line;
-    int line_len;
-    while (dstr_read_line(&net_puffer, &line, &line_len) != -1) {
-      if (line_len == 0) {
-        b->size = dstr_len(&json_puffer);
-        b->fill = dstr_len(&json_puffer);
-        b->data = dstr_as_cstr(&json_puffer);
-        need_empty_json_puffer = 1;
-        return 1;
-      } else if (len > 0) {
-        dstr_append(&json_puffer, line, line_len);
-      }
-    }
+		dstr_append(&net_puffer, buffer, len);
+
+		char* line;
+		int line_len;
+		while (dstr_read_line(&net_puffer, &line, &line_len) != -1) {
+			if (line_len == 0) {
+				b->size = dstr_len(&json_puffer);
+				b->fill = dstr_len(&json_puffer);
+				b->data = dstr_as_cstr(&json_puffer);
+				need_empty_json_puffer = 1;
+				return 1;
+			} else if (len > 0) {
+				dstr_append(&json_puffer, line, line_len);
+			}
+		}
 	}
 
 	// War wohl falscher Alarm ?!
@@ -198,8 +198,7 @@ int connect2server(const char* server) {
 
 	if (rv != 0) {
 		printf("getaddrinfo: %s\n", gai_strerror(rv));
-		freeaddrinfo(servinfo); // all done with this structure
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 
 	// loop through all the results and connect to the first we can
@@ -222,10 +221,20 @@ int connect2server(const char* server) {
 
 	if (p == NULL) {
 		printf("connect_to_server client: failed to connect\n");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 
 	return sockfd;
+}
+
+int reconnect2server(const char* server) {
+	for (;;) {
+		int fd = connect2server(server);
+		if (fd != -1) {
+			return fd;
+		}
+		sleep(1);
+	}
 }
 
 int main(int argc, const char* argv[] ) {
@@ -241,9 +250,9 @@ int main(int argc, const char* argv[] ) {
 		local_player = atoi(argv[2]);
 	}
 
-  dstr_malloc(&net_puffer);
-  dstr_malloc(&json_puffer);
-	int net = connect2server(argv[1]);
+	dstr_malloc(&net_puffer);
+	dstr_malloc(&json_puffer);
+	int net = reconnect2server(argv[1]);
 
 	allocStuff();
 
@@ -259,16 +268,16 @@ int main(int argc, const char* argv[] ) {
 
 		SDLplot();
 
-    ret = checkInput(net, &buffer, 100000);
+		ret = checkInput(net, &buffer, 100000);
 
-    if (ret == -1) {
-      fprintf(stderr, "I guess we better quit\n");
-      exit(1);
-    }
+		if (ret == -1) {
+			close(net);
+			net = reconnect2server(argv[1]);
+		}
 
-    if (ret == 1) {
-      parseJson(&buffer);
-    }
+		if (ret == 1) {
+			parseJson(&buffer);
+		}
 	}
 
 	close(net);
