@@ -152,7 +152,8 @@ typedef enum {
 	WP_TURN_VIA,
 	WP_TURN_STOP,
 	WP_VIA,
-	WP_STOP
+	WP_STOP,
+	WP_ERROR
 } wptype;
 
 struct wp_t {

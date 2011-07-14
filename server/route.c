@@ -41,7 +41,8 @@ waypoint_t* _route(vector_t* start, vector_t* stop, int level) {
 
 	if(level > 30) {
 		ERROR("Dein Stack ist gleich voll\n");
-		exit(1);
+		waypoint_t* ret = create_waypoint(0, 0, 0, 0, 0, WP_ERROR);
+		return ret;
 	}
 
 	for(int i = 0; i < cluster_storage->first_free; i++) {
@@ -74,6 +75,9 @@ waypoint_t* _route(vector_t* start, vector_t* stop, int level) {
 		waypoint_t* part1 = _route(start, &(wp->point), level+1);
 		if(part1 == NULL) {
 			part1 = wp;
+		} else if (part1->type == WP_ERROR) {
+			free_waypoint(wp);
+			return part1;
 		} else {
 			waypoint_t* t = part1;
 			while(t->next != NULL) {
@@ -82,7 +86,10 @@ waypoint_t* _route(vector_t* start, vector_t* stop, int level) {
 			t->next = wp;
 		}
 		waypoint_t* part2 = _route(&(wp->point), stop, level+1);
-		if(part2 != 0) {
+		if(part2 && part2->type == WP_ERROR) {
+			free_route(part1);
+			return part2;
+		} else if(part2 != NULL) {
 			waypoint_t* t = part1;
 			while(t->next != NULL) {
 				t = t->next;
@@ -117,6 +124,9 @@ waypoint_t* _intra_cluster_route(vector_t* start, vector_t* stop, entity_t* clus
 				waypoint_t* part1 = _intra_cluster_route(start, &(wp->point), cluster, level+1);
 				if(part1 == NULL) {
 					part1 = wp;
+				} else if (part1->type == WP_ERROR) {
+					free_waypoint(wp);
+					return part1;
 				} else {
 					waypoint_t* t = part1;
 					while(t->next != NULL) {
@@ -125,7 +135,10 @@ waypoint_t* _intra_cluster_route(vector_t* start, vector_t* stop, entity_t* clus
 					t->next = wp;
 				}
 				waypoint_t* part2 = _intra_cluster_route(&(wp->point), stop, cluster, level+1);
-				if(part2 != NULL) {
+				if(part2 && part2->type == WP_ERROR) {
+					free_route(part1);
+					return part2;
+				} else if(part2 != NULL) {
 					waypoint_t* t = part1;
 					while(t->next != NULL) {
 						t = t->next;
@@ -143,7 +156,8 @@ waypoint_t* _intra_cluster_route(vector_t* start, vector_t* stop, entity_t* clus
 		if(level > 30) {
 			ERROR("We are 30 deep in an astroid cluster\n");
 			ERROR("start = (%f, %f), stop = (%f, %f)\n", start->x, start->y, stop->x, stop->y);
-			exit(1);
+			waypoint_t* ret = create_waypoint(0, 0, 0, 0, 0, WP_ERROR);
+			return ret;
 		}
 		// Routing in astroid cluster
 		int i_min = -1;
@@ -172,6 +186,9 @@ waypoint_t* _intra_cluster_route(vector_t* start, vector_t* stop, entity_t* clus
 			waypoint_t* part1 = _intra_cluster_route(start, &(wp->point), cluster, level+1);
 			if(part1 == NULL) {
 				part1 = wp;
+			} else if (part1->type == WP_ERROR) {
+				free_waypoint(part1);
+				return part1;
 			} else {
 				waypoint_t* t = part1;
 				while(t->next != NULL) {
@@ -180,7 +197,10 @@ waypoint_t* _intra_cluster_route(vector_t* start, vector_t* stop, entity_t* clus
 				t->next = wp;
 			}
 			waypoint_t* part2 = _intra_cluster_route(&(wp->point), stop, cluster, level+1);
-			if(part2 != NULL) {
+			if(part2 && part2->type == WP_ERROR) {
+				free_route(part1);
+				return part2;
+			} else if(part2 != NULL) {
 				waypoint_t* t = part1;
 				while(t->next != NULL) {
 					t = t->next;
@@ -222,11 +242,23 @@ waypoint_t* plotCourse(vector_t* start, vector_t* stop) {
 	if(e_start == NULL && e_stop == NULL) {
 		// inter cluster flight
 		DEBUG("Inter cluster route from (%f, %f) to (%f, %f)\n", start->x, start->y, stop->x, stop->y);
-		wp_start->next = route(start, stop);
+		waypoint_t* r = route(start, stop);
+		if(r && r->type == WP_ERROR) {
+			free_waypoint(wp_start);
+			free_waypoint(wp_stop);
+			return r;
+		}
+		wp_start->next = r;
 	} else if(e_start != NULL && e_stop != NULL && e_start->unique_id.id == e_stop->unique_id.id) {
 		// flight within a cluster
 		DEBUG("Pure intra cluster route from (%f, %f) to (%f, %f), cluster at (%f, %f) with radius %f\n", start->x, start->y, stop->x, stop->y, e_start->pos.x, e_start->pos.y, e_start->radius);
-		wp_start->next = intra_cluster_route(start, stop, e_start);
+		waypoint_t* r = intra_cluster_route(start, stop, e_start);
+		if(r && r->type == WP_ERROR) {
+			free_waypoint(wp_start);
+			free_waypoint(wp_stop);
+			return r;
+		}
+		wp_start->next = r;
 	} else {
 		if(e_start != NULL) {
 			// We start in a cluster
@@ -241,7 +273,14 @@ waypoint_t* plotCourse(vector_t* start, vector_t* stop) {
 				jp1->point.y = e_start->pos.y + (start->y - e_start->pos.y) * e_start->radius * 1.01 / dist;
 			}
 			DEBUG("Starting with intra cluster route from (%f, %f) to (%f, %f), cluster at (%f, %f) with radius %f\n", start->x, start->y, jp1->point.x, jp1->point.y, e_start->pos.x, e_start->pos.y, e_start->radius);
-			wp_start->next = intra_cluster_route(start, &(jp1->point), e_start);
+			waypoint_t* r = intra_cluster_route(start, &(jp1->point), e_start);
+			if(r && r->type == WP_ERROR) {
+				free_waypoint(wp_start);
+				free_waypoint(wp_stop);
+				free_waypoint(jp1);
+				return r;
+			}
+			wp_start->next = r;
 			t = wp_start;
 			while(t->next) {
 				t = t->next;
@@ -261,7 +300,14 @@ waypoint_t* plotCourse(vector_t* start, vector_t* stop) {
 				jp2->point.y = e_stop->pos.y + (stop->y - e_stop->pos.y) * e_stop->radius * 1.01 / dist;
 			}
 			DEBUG("Stoping with intra cluster route from (%f, %f) to (%f, %f), cluster at (%f, %f) with radius %f, dist = %f\n", jp2->point.x, jp2->point.y, stop->x, stop->y, e_stop->pos.x, e_stop->pos.y, e_stop->radius, dist);
-			jp2->next = intra_cluster_route(&(jp2->point), stop, e_stop);
+			waypoint_t* r = intra_cluster_route(&(jp2->point), stop, e_stop);
+			if(r && r->type == WP_ERROR) {
+				free_waypoint(wp_start);
+				free_waypoint(wp_stop);
+				free_waypoint(jp2);
+				return r;
+			}
+			jp2->next = r;
 			t = jp2;
 			while (t->next != NULL) {
 				t = t->next;
@@ -271,6 +317,11 @@ waypoint_t* plotCourse(vector_t* start, vector_t* stop) {
 
 		DEBUG("Connecting inter cluster route from (%f, %f) to (%f, %f)\n", jp1->point.x, jp1->point.y, jp2->point.x, jp2->point.y);
 		waypoint_t* s = route(&(jp1->point), &(jp2->point));
+		if(s && s->type == WP_ERROR) {
+			free_waypoint(wp_start);
+			free_waypoint(wp_stop);
+			return s;
+		}
 		t = wp_start;
 		while (t->next != NULL) {
 			t = t->next;
@@ -411,7 +462,15 @@ int autopilot_planner(entity_t* e, double x, double y) {
 	}
 
 	DEBUG("Going from (%f, %f) to (%f, %f)\n", start.x, start.y, stop.x, stop.y);
-	e->ship_data->flightplan = plotCourse(&start, &stop);
+	waypoint_t* r = plotCourse(&start, &stop);
+	if(r && r->type == WP_ERROR) {
+		DEBUG("Planing the route failed\n");
+		free_waypoint(r);
+		e->ship_data->flightplan = NULL;
+		return 0;
+	}
+	e->ship_data->flightplan = r;
 	complete_flightplan(e);
+	DEBUG("Planing complete\n");
 	return 1;
 }
