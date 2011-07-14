@@ -290,6 +290,14 @@ void checkSDLevent() {
 						// rearm double click detection
 						lastclickat = SDL_GetTicks();
 					}
+				} else if (event.button.button == SDL_BUTTON_WHEELDOWN) {
+					zoom /= 1.2;
+					offset_x = display_x / 2 + (offset_x - display_x / 2) / 1.2;
+					offset_y = display_y / 2 + (offset_y - display_y / 2) / 1.2;
+				} else if (event.button.button == SDL_BUTTON_WHEELUP) {
+					zoom *= 1.2;
+					offset_x = display_x / 2 + (offset_x - display_x / 2) * 1.2;
+					offset_y = display_y / 2 + (offset_y - display_y / 2) * 1.2;
 				} else {
 					// disarm doubleclick detection
 					lastclickat = 0;
