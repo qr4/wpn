@@ -648,6 +648,7 @@ void net_init() {
     // speicher fuer map_client_info
     ci = (struct map_client_info*)malloc(sizeof(struct map_client_info) * MAX_CONNECTION);
     if (ci == NULL) { log_perror("net malloc"); exit(EXIT_FAILURE); }
+    memset(ci, 0, sizeof(struct map_client_info) * MAX_CONNECTION);
     for (int i = 0; i < MAX_CONNECTION; ++i) {
       ci[i].isConnected = 0;
     }

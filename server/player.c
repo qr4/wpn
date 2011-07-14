@@ -68,6 +68,7 @@ void new_player(unsigned int player_id) {
 	DEBUG("New player '%s' connected with id %i\n", players[n_players].name, player_id);
 
 	/* create a homebase for this player */
+	players[n_players].homebase = INVALID_ID;
 	create_homebase(&(players[n_players]));
 
 	n_players++;

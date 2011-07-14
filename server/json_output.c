@@ -354,6 +354,7 @@ void shots_to_network() {
 	update_flush();
 
 	free(joined_shots);
+	joined_shots = NULL;
 }
 
 void explosions_to_network() {
@@ -382,6 +383,7 @@ void explosions_to_network() {
 	update_flush();
 
 	free(joined_explosions);
+	joined_explosions = NULL;
 
 	return;
 }
