@@ -371,6 +371,11 @@ void explode_entity(entity_t* e) {
 /* Setup a timer for this entity, informing it when a certain action is complete */
 void set_entity_timer(entity_t* e, int timesteps, event_t event, entity_id_t context) {
 
+	if(!e) {
+		ERROR("Attempt to set time on NULL\n");
+		return;
+	}
+
 	/* Only sentient entities can have timers */
 	switch(e->type) {
 	case SHIP:
@@ -378,6 +383,11 @@ void set_entity_timer(entity_t* e, int timesteps, event_t event, entity_id_t con
 		break;
 	default:
 		ERROR("Attempted to set a timer on a non-sentient entity!\n");
+		return;
+	}
+
+	if(!e->ship_data) {
+		ERROR("Ships really ought to have ship_data. Go and fix this urs\n");
 		return;
 	}
 
