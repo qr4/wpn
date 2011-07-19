@@ -450,6 +450,7 @@ void drawText(int x,int y, char* text) {
 		return;
 	}
 
+	/* Render the ttf string */
 	text_surf = TTF_RenderText_Shaded(font, text, text_color, bg);
 
 	pos.x = x;
@@ -457,14 +458,12 @@ void drawText(int x,int y, char* text) {
 	pos.w = text_surf->w;
 	pos.h = text_surf->h;
 
-	// Warum auch immer 15. Mit 14 platzt es.
-	if(x < 15 || x > screen->w - text_surf->w || y > screen->h - text_surf->h) {
-		goto out;
+	/* Blit only if the target position is completely within the screen bounds */
+	if(x < screen->w - text_surf->w && y < screen->h - text_surf->h) {
+		SDL_BlitSurface(text_surf, NULL, screen, &pos);
 	}
 
-	SDL_BlitSurface(text_surf, NULL, screen, &pos);
-
-out:
+	/* Let us not leak memory today */
 	SDL_FreeSurface(text_surf);
 }
 
@@ -761,6 +760,10 @@ void drawPlanet(planet_t* p) {
 		dst_rect.h = 16 * mag * zoom;
 
 		SDL_BlitSurface(planet_sprite, NULL, screen, &dst_rect);
+
+		/* Since BlitSurface modifies the rectangle to show the actual blitting area, re-set the coordinates */
+		dst_rect.x = offset_x + (p->x - 8 * mag) * zoom;
+		dst_rect.y = offset_y + (p->y - 8 * mag) * zoom;
 
 		if(show_text_name) {
 			if(p->owner > 0) {
