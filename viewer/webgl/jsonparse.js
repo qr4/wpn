@@ -87,11 +87,18 @@ function parse_world(world) {
 	}
 	// Das gleiche für Schiffe
 	if(world.ships) {
-		ships = [];
+		//ships = [];
 		for(var i=0; i<world.ships.length; i++) {
-			parse_ship(world.ships[i]);
+			parse_ship(world.ships[i],false);
 		}
-		update_ship_vbo();
+	}
+	if(world.bases) {
+		//TODO: Das ist noch nicht so richtig schön.
+		//Vielleicht doch nicht basen & Schiffe in die selbe
+		//Struktur packen?
+		for(var i=0; i<world.bases.length; i++) {
+			parse_ship(world.bases[i],true);
+		}
 	}
 	// Ein world-bounding-box-update führt zum zoomen auf
 	// die gesamtwelt
@@ -131,6 +138,5 @@ function parse_update(update) {
 		for(var i=0; i<update.ships.length; i++) {
 			parse_ship(update.ships[i]);
 		}
-		update_ship_vbo();
 	}
 }

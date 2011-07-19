@@ -15,8 +15,13 @@ ship_tex_sizes=[];
 
 /*Schiff-Textures*/
 function load_ship_textures() {
-	for(t=0;t<num_ship_sizes*num_ship_styles;t++) {
-		name="s_"+str_style_names[(t-t%num_ship_sizes)/num_ship_sizes]+"_"+ship_sizes[t%num_ship_sizes];
+	for(t=0;t<num_ship_sizes*num_ship_styles*2;t++) {
+		if (t<num_ship_sizes*num_ship_styles) {
+			prefix="s_";//Schiffe
+		} else {
+			prefix="b_";//Basen
+		}
+		name=prefix+str_style_names[((t-t%num_ship_sizes)/num_ship_sizes)%num_ship_styles]+"_"+ship_sizes[t%num_ship_sizes];
 		var new_texture=load_texture(str_sprite_dir+name+".png");
 		tex_ship_sprites.push(new_texture);
 		ship_block_positions.push(block_positions_str[name]);
