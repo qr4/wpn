@@ -87,11 +87,25 @@ function parse_ship(ship,isbase) {
 	for(var i=0;i<ship.size;i++) ship.blocks.push(block_indices[ship.contents[i]]);
 	for(var i=0;i<ships.length; i++) {
 		if(ships[i].id == ship.id) {
+			//vbo nur updaten, wenn sich der Inhalt auch geändert hat
+			var changed=false;
+			if (ship.size==ships[i].size) {
+				for (b=0;b<ship.size;b++) if (ship.blocks[b]!=ships[i].blocks[b]) changed=true;
+			} else {
+				changed=true;
+			}
+			var dx=ship.x-ships[i].x;
+			var dy=ship.y-ships[i].y;
+			if (!ship.isbase && Math.abs(dx)>0 >0.0001 && Math.abs(dy)>0.0001) {
+				if (dy==0) dy=0.00001;//Division durch 0, wissenschon.
+				ship.direction=Math.atan(-dx/dy)+Math.PI*(1+(dy>0));
+			} else {
+				ship.direction=ships[i].direction;
+			}
+			//ship.direction=(ship.id*17)%(2*Math.PI);
 			ships[i] = ship;
-			//TODO: Das vbo muss eigentlich nur geändert werden,
-			//wenn die slot-Belegung sich verändert hat.
-			//Dieses vbo existiert schon
-			update_ship_vbo(i);
+			//Dieses vbo existiert schon: Updaten
+			if (changed) update_ship_vbo(i);
 			return;
 		}
 	}	
@@ -114,8 +128,12 @@ function render_ships() {
 		mat4.identity(model_matrix);
 		//Auf Position des Schiffs verschieben
 		mat4.translate(model_matrix,[ships[s].x,ships[s].y,0.]);
-		//Nur zur Illustration: eine leichte Drehung
-		//mat4.rotate(model_matrix,0.00025*time*(s+1),[0.0,0.0,1.0]);
+		//Schiffe passend drehen
+		if (!ships[s].isbase) {
+			mat4.rotate(model_matrix,ships[s].direction,[0.0,0.0,1.0]);
+		} else {//TODO Basen, die sich langsam drehen. Nur ein Test!
+			mat4.rotate(model_matrix,(-0.0001+(ships[s].id%20)*0.00001)*time+(ships[s].id%3.14),[0.0,0.0,1.0]);
+		}
 		/* Darstellungstransformation an den Shader übergeben */
 		gl.uniformMatrix4fv(gl.getUniformLocation(ship_shader, 'modelmatrix'), false, model_matrix);
 		gl.uniformMatrix4fv(gl.getUniformLocation(ship_shader, 'viewmatrix'), false, view_matrix);

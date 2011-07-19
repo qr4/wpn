@@ -9,8 +9,9 @@ ship_sizes=[3,6,12,24];
 //Bezeichnungen der Design-Stile
 str_style_names=["tk","ar","av","kr","de"];
 str_sprite_dir="sprites/";
-
+//Positionen der slots an den Schiffen/Basen
 ship_block_positions=[];
+//Texturgrößen (wichtig für die Skalierung)
 ship_tex_sizes=[];
 
 /*Schiff-Textures*/
