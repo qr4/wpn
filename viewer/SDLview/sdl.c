@@ -459,11 +459,12 @@ void drawText(int x,int y, char* text) {
 
 	// Warum auch immer 15. Mit 14 platzt es.
 	if(x < 15 || x > screen->w - text_surf->w || y > screen->h - text_surf->h) {
-		return;
+		goto out;
 	}
 
 	SDL_BlitSurface(text_surf, NULL, screen, &pos);
 
+out:
 	SDL_FreeSurface(text_surf);
 }
 
