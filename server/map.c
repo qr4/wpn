@@ -257,7 +257,7 @@ entity_id_t *get_entities(const vector_t pos, const double search_radius, const 
 
 			if (filter & CLUSTER) {
 				for (i = 0; i < quad->clusters; i++) {
-					if (vector_dist(&pos, &get_entity_by_id(quad->cluster[i])->pos) < search_radius) {
+					if (vector_dist(pos, get_entity_by_id(quad->cluster[i])->pos) < search_radius) {
 						found[(*n)++] = quad->cluster[i];
 
 						if (*n >= storage_size) {
@@ -271,7 +271,7 @@ entity_id_t *get_entities(const vector_t pos, const double search_radius, const 
 			if (filter & (ASTEROID | PLANET | BASE)) {
 				for (i = 0; i < quad->static_objects; i++) {
 					if (filter & quad->static_object[i].type 
-							&& vector_dist(&pos, &get_entity_by_id(quad->static_object[i])->pos) < search_radius) {
+							&& vector_dist(pos, get_entity_by_id(quad->static_object[i])->pos) < search_radius) {
 						found[(*n)++] = quad->static_object[i];
 
 						if (*n >= storage_size) {
@@ -284,7 +284,7 @@ entity_id_t *get_entities(const vector_t pos, const double search_radius, const 
 
 			if (filter & SHIP) {
 				for (i = 0; i < quad->moving_objects; i++) {
-					if (vector_dist(&pos, &get_entity_by_id(quad->moving_object[i])->pos) < search_radius) {
+					if (vector_dist(pos, get_entity_by_id(quad->moving_object[i])->pos) < search_radius) {
 						found[(*n)++] = quad->moving_object[i];
 
 						if (*n >= storage_size) {

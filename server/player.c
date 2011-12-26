@@ -209,9 +209,8 @@ static struct pipe_com user_code;
 void player_check_code_updates(long usec_wait) {
   fd_set rfds, rfds_tmp;
   struct timeval tv;
-	char* errortext, *returntext;
   int ret;
-	int n,i;
+  int n,i;
 
   // auf talk_get_user_change_code_fd() hoeren
   FD_ZERO(&rfds);
@@ -271,7 +270,7 @@ void player_check_code_updates(long usec_wait) {
 						/* Execute the code */
             if (luaL_dostring (ebase->lua, data)) {
               DEBUG("Execution failed.\n");
-              errortext = (char*) lua_tostring(ebase->lua, -1);
+              const char *errortext = lua_tostring(ebase->lua, -1);
               talk_set_user_code_reply_msg(user, errortext, strlen(errortext));
               lua_pop(ebase->lua, 1);
 
@@ -286,7 +285,7 @@ void player_check_code_updates(long usec_wait) {
 							/* Send return values to the client, as strings */
 							n = lua_gettop(ebase->lua);
 							for(i=0; i<n; i++) {
-								returntext = lua_tostring(ebase->lua,i+1);
+								const char *returntext = lua_tostring(ebase->lua,i+1);
 								if(returntext) {
 									talk_set_user_code_reply_msg(user, returntext, strlen(returntext));
                   talk_set_user_code_reply_msg(user, "\n", 1);
@@ -346,7 +345,7 @@ void player_check_code_updates(long usec_wait) {
 
               if(luaL_dofile(ebase->lua, lua_source_file)) {
                 DEBUG("Execution failed.\n");
-                errortext = (char*) lua_tostring(ebase->lua, -1);
+                const char *errortext = lua_tostring(ebase->lua, -1);
                 talk_log_lua_msg(user, errortext, strlen(errortext));
                 lua_pop(ebase->lua, 1);
 

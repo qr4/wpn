@@ -559,8 +559,8 @@ void splice_curves(entity_t* s) {
 	via = s->ship_data->flightplan->next;
 	while(prev && via) {
 		if(prev->type == WP_TURN_VIA && via->type == WP_TURN_VIA && !equals(prev->obs, via->obs)) {
-			double dist1 = vector_dist_to_line(&(prev->obs), &(via->obs), &(prev->point));
-			double dist2 = vector_dist_to_line(&(prev->obs), &(via->obs), &(via->point));
+			double dist1 = vector_dist_to_line(prev->obs, via->obs, prev->point);
+			double dist2 = vector_dist_to_line(prev->obs, via->obs, via->point);
 			double r1 = hypot(prev->point.x - prev->obs.x, prev->point.y - prev->obs.y);
 			double r2 = hypot(via->point.x - via->obs.x, via->point.y - via->obs.y);
 			if(dist1 * dist2 > 0) { // Aussentangente

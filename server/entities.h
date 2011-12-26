@@ -18,14 +18,14 @@
  * This is faster than dist().
  */
 static inline double quaddist(const entity_t* A, const entity_t* B) {
-	return vector_quaddist(&A->pos, &B->pos);
+	return vector_quaddist(A->pos, B->pos);
 }
 
 /*
  * Returns the distance between 2 points
  */
 static inline double dist(const entity_t* A, const entity_t* B) {
-	return vector_dist(&A->pos, &B->pos);
+	return vector_dist(A->pos, B->pos);
 }
 /*
  * Decide on which side the point C is realtive to the line A - B is.
@@ -35,7 +35,7 @@ static inline double dist(const entity_t* A, const entity_t* B) {
  * < 0 -> C right of line A - B
  */
 static inline double relative_position(const entity_t *A, const entity_t *B, const entity_t *C) {
-	return vector_relative_position(&A->pos, &B->pos, &C->pos);
+	return vector_relative_position(A->pos, B->pos, C->pos);
 }
 
 
@@ -43,14 +43,14 @@ static inline double relative_position(const entity_t *A, const entity_t *B, con
  * Dividing ratio of C on A - B
  */
 static inline double dividing_ratio(entity_t* A, entity_t* B, entity_t* C) {
-	return vector_dividing_ratio(&A->pos, &B->pos, &C->pos);
+	return vector_dividing_ratio(A->pos, B->pos, C->pos);
 }
 
 /*
  * Minimal distance of C to the line A - B
  */
 static inline double dist_to_line(entity_t* A, entity_t* B, entity_t* C) {
-	return vector_dividing_ratio(&A->pos, &B->pos, &C->pos);
+	return vector_dividing_ratio(A->pos, B->pos, C->pos);
 }
 
 static inline double collision_dist(entity_t *A, entity_t *B) {

@@ -28,9 +28,9 @@ typedef union {
  * Returns the distance between 2 points squared.
  * This is faster than dist().
  */
-static inline double vector_quaddist(const vector_t* A, const vector_t* B) {
+static inline double vector_quaddist(const vector_t A, const vector_t B) {
 	vector_t t;
-	t.v = B->v - A->v;
+	t.v = B.v - A.v;
 	t.v *= t.v;
 	return t.x + t.y;
 }
@@ -38,15 +38,15 @@ static inline double vector_quaddist(const vector_t* A, const vector_t* B) {
 /*
  * Returns the distance between 2 points
  */
-static inline double vector_dist(const vector_t* A, const vector_t* B) {
+static inline double vector_dist(const vector_t A, const vector_t B) {
 	return sqrt(vector_quaddist(A, B));
 }
 
 /*
  * Returns the length of a vector
  */
-static inline double vector_length(const vector_t* A) {
-	return hypot(A->x, A->y);
+static inline double vector_length(const vector_t A) {
+	return hypot(A.x, A.y);
 }
 
 /*
@@ -84,15 +84,15 @@ static inline vector_t rad_randv() {
  * > 0 -> C left of line A - B
  * < 0 -> C right of line A - B
  */
-double vector_relative_position(const vector_t *A, const vector_t *B, const vector_t *C);
+double vector_relative_position(const vector_t A, const vector_t B, const vector_t C);
 
 /*
  * Dividing ratio of C on A - B
  */
-double vector_dividing_ratio(vector_t* A, vector_t* B, vector_t* C);
+double vector_dividing_ratio(vector_t A, vector_t B, vector_t C);
 
 /*
  * Minimal distance of C to the line A - B
  */
-double vector_dist_to_line(vector_t* A, vector_t* B, vector_t* C);
+double vector_dist_to_line(vector_t A, vector_t B, vector_t C);
 #endif  /*VECTOR_H*/

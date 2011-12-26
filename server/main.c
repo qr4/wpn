@@ -182,12 +182,12 @@ int main(int argc, char *argv[]) {
 				oldpos_self.v = self->pos.v - self->v.v * (v2d){dt, dt};
 				vector_t oldpos_other;
 				oldpos_other.v = other->pos.v - other->v.v * (v2d){dt, dt};
-				if((vector_quaddist(&(self->pos), &(other->pos)) < scanner_range*scanner_range) &&
-				   (vector_quaddist(&oldpos_self, &oldpos_other) > scanner_range*scanner_range)) {
+				if((vector_quaddist(self->pos, other->pos) < scanner_range*scanner_range) &&
+				   (vector_quaddist(oldpos_self, oldpos_other) > scanner_range*scanner_range)) {
 					call_entity_callback(self, ENTITY_APPROACHING, other->unique_id);
 				}
-				if((vector_quaddist(&(self->pos), &(other->pos)) < weapon_range*weapon_range) &&
-				   (vector_quaddist(&oldpos_self, &oldpos_other) > weapon_range*weapon_range)) {
+				if((vector_quaddist(self->pos, other->pos) < weapon_range*weapon_range) &&
+				   (vector_quaddist(oldpos_self, oldpos_other) > weapon_range*weapon_range)) {
 					call_entity_callback(self, ENTITY_IN_RANGE, other->unique_id);
 				}
 			}
