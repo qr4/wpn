@@ -1,3 +1,4 @@
+#include <string.h>
 #include "sdl.h"
 #include <SDL_ttf.h>
 
@@ -61,7 +62,7 @@ char show_text_name = 1;
 char show_text_id = 0;
 char show_text_coords = 0;
 char show_influence = 0;
-double influence_threshhold = 0.00000005;
+double influence_threshhold = 0.00000015;
 
 void screen_init() {
 	screen = SDL_SetVideoMode(display_x, display_y, 0, SDL_RESIZABLE | SDL_SWSURFACE | SDL_DOUBLEBUF);
@@ -916,32 +917,28 @@ void draw_influence() {
 	double pos_x, pos_y;
 	double d;
 	int x, y;
+	int max_owner;
 	int min_owner;
 	int pos_max;
 	int owner;
-	static double *influence;
-	static size_t id_range;
+	size_t id_range;
 
 
 	if (n_bases < 1 || !show_influence) {
 		return;
-	} else {
-		int max_owner;
-		min_owner = max_owner = bases[0].owner;
+	}
 
-		for (int i = 1; i < n_bases; i++) {
-			if (bases[i].owner < min_owner) {
-				min_owner = bases[i].owner;
-			} else if (bases[i].owner > max_owner) {
-				max_owner = bases[i].owner;
-			}
-		}
+	min_owner = max_owner = bases[0].owner;
 
-		if(id_range != max_owner - min_owner + 1) {
-			id_range = max_owner - min_owner + 1;
-			influence = realloc (influence, sizeof(double) * (id_range));
+	for (int i = 1; i < n_bases; i++) {
+		if (bases[i].owner < min_owner) {
+			min_owner = bases[i].owner;
+		} else if (bases[i].owner > max_owner) {
+			max_owner = bases[i].owner;
 		}
 	}
+
+	id_range = max_owner - min_owner + 1;
 
 	d    = 1 / zoom;
 	left = -offset_x * d;
@@ -949,20 +946,14 @@ void draw_influence() {
 
 	for (y = 0, pos_y = up; y < display_y; y+=10, pos_y = up + y * d) {
 		for (x = 0, pos_x = left; x < display_x; x+=10, pos_x = left + x * d) {
-
-			for (int i = 0; i < id_range; i++) {
-				influence[i] = 0;
-			}
+			double influence[id_range];
+			memset(influence, 0, sizeof(double) * (id_range));
 
 			for (int i = 0; i < n_bases ; i++) {
 				influence[bases[i].owner - min_owner] += bases[i].size / dist(pos_x, pos_y, bases[i].x, bases[i].y);
 			}
 
-			//for (int i = 0; i < id_range; i++) {
-			//	influence[i]*=influence[i];
-			//}
-
-			pos_max = position_of_max(influence, n_bases);
+			pos_max = position_of_max(influence, id_range);
 			owner   = min_owner + pos_max;
 
 
