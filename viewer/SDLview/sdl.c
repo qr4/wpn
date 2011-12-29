@@ -873,12 +873,12 @@ void drawShot(shot_t* s) {
 	}
 	s->strength--;
 
-	uint8_t width = 0.25*mag*zoom;
-	if(width < 1) {
-		width = 1;
-	} else if(width > 16) {
-		width = 16;
-	}
+	//uint8_t width = 0.25*mag*zoom;
+	//if(width < 1) {
+	//	width = 1;
+	//} else if(width > 16) {
+	//	width = 16;
+	//}
 	// This hangs indefinitely once in a while....
 	//thickLineRGBA(screen, offset_x + s->src_x * zoom, offset_y + s->src_y * zoom, offset_x + s->trg_x * zoom, offset_y + s->trg_y * zoom, width, 0, 255, 0, 128);
 	aalineRGBA(screen, offset_x + s->src_x * zoom, offset_y + s->src_y * zoom, offset_x + s->trg_x * zoom, offset_y + s->trg_y * zoom, 0, 255, 0, 128);

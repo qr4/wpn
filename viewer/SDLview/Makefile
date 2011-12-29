@@ -1,17 +1,17 @@
-CXX = gcc
-FLAGS = -Wall -g3 -O2 -march=native -mtune=native -std=gnu99
+CC = gcc
+FLAGS = -Wall -g3 -O2 -march=native -mtune=native -std=c99
 CLIBS = `sdl-config --cflags` -I ~/include -I ../../net
 LDFLAGS = `sdl-config --libs` -L ~/lib -lSDL_gfx -lSDL_image -lSDL_ttf -lm -lpthread -ljansson
 OBJ = buffer.o json.o main.o sdl.o ../../net/pstr.o
 
 main: $(OBJ)
-	$(CXX) $(FLAGS) $(LDFLAGS) -o $@ $(OBJ)
+	$(CC) $(FLAGS) $(LDFLAGS) -o $@ $(OBJ)
 
 %.o: %.c %.h
-	$(CXX) $(FLAGS) $(CLIBS) -c $<
+	$(CC) $(FLAGS) $(CLIBS) -c $<
 
 %.o: %.c
-	$(CXX) $(FLAGS) $(CLIBS) -c $<
+	$(CC) $(FLAGS) $(CLIBS) -c $<
 
 .PHONY : clean
 clean:
