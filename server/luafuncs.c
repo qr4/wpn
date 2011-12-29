@@ -1250,7 +1250,6 @@ int lua_busy(lua_State* L) {
 	switch(n) {
 		case 0:
 			/* Get your own id */
-			id = self;
 			e = eself;
 			break;
 		case 1:
@@ -1311,7 +1310,6 @@ int lua_flying(lua_State* L) {
 	switch(n) {
 		case 0:
 			/* Get your own id */
-			id = self;
 			e = eself;
 			break;
 		case 1:
@@ -1375,7 +1373,6 @@ int lua_get_slots(lua_State* L) {
 	switch(n) {
 		case 0:
 			/* Get your own contents */
-			id = self;
 			e = eself;
 			break;
 		case 1:

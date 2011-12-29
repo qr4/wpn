@@ -226,7 +226,6 @@ void _straight_minimal_time(waypoint_t* wp0, waypoint_t* wp1, double a) {
 				waypoint_t* wpy = create_waypoint(wp0->point.x + wp0->speed.x * delta_t + 0.5 * a * distx * delta_t * delta_t / dist, wp0->point.y + wp0->speed.y * delta_t + 0.5 * a * disty * delta_t * delta_t / dist, wp0->speed.x + a * distx * delta_t / dist, wp0->speed.y + a * disty * delta_t / dist, t, WP_VIA);
 				wpx->next = wpy;
 				wpx = wpy;
-				wpx = wpy;
 			} else {
 				double delta_t = t - wp0->t - t_end;
 				waypoint_t* wpy = create_waypoint(wp1->point.x + wp1->speed.x * delta_t - 0.5 * a * delta_t * delta_t * distx / dist, wp1->point.y + wp1->speed.y * delta_t - 0.5 * a * delta_t * delta_t * disty / dist, wp1->speed.x - a * delta_t * distx / dist, wp1->speed.y - a * delta_t * disty / dist, t, WP_VIA);
@@ -334,7 +333,6 @@ void swing_by(waypoint_t* wp0, vector_t obstacle, waypoint_t* wp1, double a) {
 
 		waypoint_t* wpy = create_waypoint(newx, newy, newvx, newvy, t, WP_TURN_VIA);
 		wpx->next = wpy;
-		wpx = wpy;
 		wpx = wpy;
 	}
 	wpx->next = wp1;
