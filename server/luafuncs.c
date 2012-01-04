@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <lauxlib.h>
 #include "luafuncs.h"
 #include "luastate.h"
@@ -64,7 +65,7 @@ static const lua_function_entry lua_wrappers[] = {
 	{lua_get_world_size,          "get_world_size",          get_world_size_help},
 	{lua_get_type,                "get_type",                get_type_help},
 	{lua_get_timestep,            "get_timestep",            NULL},
-	{lua_get_ongoing,           "get_ongoing",           NULL},
+	{lua_get_ongoing,             "get_ongoing",             NULL},
 
 	/* More lowlevel stuff */
 	{lua_help,                    "help",                    help_help},
@@ -105,7 +106,7 @@ static entity_id_t get_self(lua_State *L) {
 	return e;
 }
 
-/* Comparison function fuer lua_help() to sort lua_wrappers[] copy.
+/* Comparison function for lua_help() to sort lua_wrappers[] copy.
  * Stringcompares the lua function name */
 int lua_function_entry_cmp(const void *left, const void *right) {
 	return strncmp(
@@ -119,7 +120,8 @@ int lua_function_entry_cmp(const void *left, const void *right) {
  * Output is printed to interactive console.
  */
 int lua_help(lua_State *L) {
-	static lua_function_entry *sorted_lua_wrappers; // holds the same data as lua_wrappers[], but sorted
+	static lua_function_entry sorted_lua_wrappers[sizeof(lua_wrappers)]; // holds the same data as lua_wrappers[], but sorted
+	static bool is_initialized = false;
 
 	entity_id_t self;
 	entity_t *eself;
@@ -130,8 +132,8 @@ int lua_help(lua_State *L) {
 	 * on first call of the function copy lua_wrappers[] and sort
 	 * by lua name, so we can search in it with bsearch()
 	 */
-	if (sorted_lua_wrappers == NULL) {
-		sorted_lua_wrappers = malloc(sizeof(lua_wrappers));
+	if (is_initialized == false) {
+		is_initialized = true;
 		memcpy(sorted_lua_wrappers, lua_wrappers, sizeof(lua_wrappers));
 		qsort(sorted_lua_wrappers, 
 				sizeof(lua_wrappers) / sizeof(lua_function_entry), 
