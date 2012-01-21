@@ -16,29 +16,9 @@
 
 #define PORT "8080"
 
-asteroid_t* asteroids;
-int n_asteroids, n_asteroids_max;
 
-base_t* bases;
-int n_bases, n_bases_max;
-
-explosion_t* explosions;
-int n_explosions, n_explosions_max;
-
-planet_t* planets;
-int n_planets, n_planets_max;
-
-ship_t* ships;
-int n_ships, n_ships_max;
-
-shot_t* shots;
-int n_shots, n_shots_max;
-
-player_t* players;
-int n_players, n_players_max;
-
-bbox_t boundingbox;
-int local_player = -1;
+options_t options;
+options_t options_old;
 
 // puffer-eumel fuer net-data
 struct dstr net_puffer;
@@ -117,62 +97,26 @@ int checkInput(int net, buffer_t* b, int usleep_time) {
 	return 0;
 }
 
+void init_storage(storage_t *storage, size_t nmemb, size_t size) {
+	size *= nmemb;
+	storage->data = realloc(storage->data, size);
+	if (storage->data == NULL) {
+		fprintf(stderr, "No space to allocate storage of size %lu\n", size);
+		exit(1);
+	}
+	storage->n = 0;
+	storage->n_max = nmemb;
+}
+
 void allocStuff() {
-	asteroids = malloc(1000 * sizeof(asteroid_t));
-	if(!asteroids) {
-		fprintf(stderr, "No space left for asteroids\n");
-		exit(1);
-	}
-	n_asteroids = 0;
-	n_asteroids_max = 1000;
-
-	bases = malloc(1000 * sizeof(base_t));
-	if(!bases) {
-		fprintf(stderr, "No space left for bases\n");
-		exit(1);
-	}
-	n_bases = 0;
-	n_bases_max = 1000;
-
-	explosions = malloc(1000 * sizeof(explosion_t));
-	if(!explosions) {
-		fprintf(stderr, "No space left for explosions\n");
-		exit(1);
-	}
-	n_explosions = 0;
-	n_explosions_max = 1000;
-
-	planets = malloc(1000 * sizeof(planet_t));
-	if(!planets) {
-		fprintf(stderr, "No space left for planets\n");
-		exit(1);
-	}
-	n_planets = 0;
-	n_planets_max = 1000;
-
-	ships = malloc(1000 * sizeof(ship_t));
-	if(!ships) {
-		fprintf(stderr, "No space left for ships\n");
-		exit(1);
-	}
-	n_ships = 0;
-	n_ships_max = 1000;
-
-	shots = malloc(1000 * sizeof(shot_t));
-	if(!shots) {
-		fprintf(stderr, "No space left for shots\n");
-		exit(1);
-	}
-	n_shots = 0;
-	n_shots_max = 1000;
-
-	players = malloc(100 * sizeof(player_t));
-	if(!players) {
-		fprintf(stderr, "No space left for player\n");
-		exit(1);
-	}
-	n_players = 0;
-	n_players_max = 100;
+	const size_t size = 1000;
+	init_storage(&options.asteroids,     size,   sizeof(asteroid_t));
+	init_storage(&options.bases,         size,   sizeof(base_t));
+	init_storage(&options.explosions,    size,   sizeof(explosion_t));
+	init_storage(&options.planets,       size,   sizeof(planet_t));
+	init_storage(&options.ships,         size,   sizeof(ship_t));
+	init_storage(&options.shots,         size,   sizeof(shot_t));
+	init_storage(&options.players,       size,   sizeof(player_t));
 }
 
 // get sockaddr, IPv4 or IPv6:
@@ -247,7 +191,9 @@ int main(int argc, const char* argv[] ) {
 	}
 
 	if(argc == 3) {
-		local_player = atoi(argv[2]);
+		options.local_player = atoi(argv[2]);
+	} else {
+		options.local_player = -1;
 	}
 
 	dstr_malloc(&net_puffer);
@@ -256,14 +202,15 @@ int main(int argc, const char* argv[] ) {
 
 	allocStuff();
 
-	boundingbox.xmin = 0;
-	boundingbox.xmax = 640;
-	boundingbox.ymin = 0;
-	boundingbox.ymax = 480;
+	options.boundingbox.xmin = 0;
+	options.boundingbox.xmax = 640;
+	options.boundingbox.ymin = 0;
+	options.boundingbox.ymax = 480;
 
 	SDLinit();
 
 	while(1) {
+		options_old = options;
 		checkSDLevent();
 
 		SDLplot();

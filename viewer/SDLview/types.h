@@ -72,4 +72,34 @@ typedef struct {
 	char* name;
 } player_t;
 
+typedef struct options_t options_t;
+typedef struct storage_t storage_t;
+
+struct storage_t {
+	union {
+		asteroid_t*   asteroids;
+		base_t*       bases;
+		explosion_t*  explosions;
+		planet_t*     planets;
+		ship_t*       ships;
+		shot_t*       shots;
+		player_t*     players;
+		void*         data;
+	};
+	unsigned int n;
+	unsigned int n_max;
+};
+
+struct options_t {
+	storage_t asteroids;
+	storage_t bases;
+	storage_t explosions;
+	storage_t planets;
+	storage_t ships;
+	storage_t shots;
+	storage_t players;
+
+	bbox_t boundingbox;
+	int local_player ;
+};
 #endif

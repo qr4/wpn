@@ -21,21 +21,7 @@ SDL_Surface* slot_L_image;
 SDL_Surface* slot_R_image;
 SDL_Surface* slot_T_image;
 
-extern asteroid_t* asteroids;
-extern base_t* bases;
-extern explosion_t* explosions;
-extern planet_t* planets;
-extern player_t* players;
-extern ship_t* ships;
-extern shot_t* shots;
-
-extern int n_asteroids;
-extern int n_bases;
-extern int n_explosions;
-extern int n_planets;
-extern int n_players;
-extern int n_ships;
-extern int n_shots;
+extern options_t options;
 
 unsigned int display_x = 640;
 unsigned int display_y = 480;
@@ -316,8 +302,8 @@ void checkSDLevent() {
 				}
 				break;
             case SDL_VIDEORESIZE:
-				boundingbox.xmax = display_x = event.resize.w;
-				boundingbox.ymax = display_y = event.resize.h;
+				options.boundingbox.xmax = display_x = event.resize.w;
+				options.boundingbox.ymax = display_y = event.resize.h;
 				screen_init();
 				break;
 			case SDL_QUIT:
@@ -331,7 +317,7 @@ void checkSDLevent() {
 static void draw_influence();
 
 void SDLplot() {
-	int i;
+	size_t i;
 
 	SDL_FillRect(SDL_GetVideoSurface(), NULL, 0);
 
@@ -339,29 +325,29 @@ void SDLplot() {
 	draw_influence();
 
 	//fprintf(stderr, "Plotting %d asteroids\n", n_asteroids);
-	for(i = 0; i < n_asteroids; i++) {
-		drawAsteroid(&(asteroids[i]));
+	for(i = 0; i < options.asteroids.n; i++) {
+		drawAsteroid(&(options.asteroids.asteroids[i]));
 	}
 
 	//fprintf(stderr, "Plotting %d planets\n", n_planets);
-	for(i = 0; i < n_planets; i++) {
-		drawPlanet(&(planets[i]));
+	for(i = 0; i < options.planets.n; i++) {
+		drawPlanet(&(options.planets.planets[i]));
 	}
 
-	for(i = 0; i < n_bases; i++) {
-		drawBase(&(bases[i]));
+	for(i = 0; i < options.bases.n; i++) {
+		drawBase(&(options.bases.bases[i]));
 	}
 
-	for(i = 0; i < n_ships; i++) {
-		drawShip(&(ships[i]));
+	for(i = 0; i < options.ships.n; i++) {
+		drawShip(&(options.ships.ships[i]));
 	}
 
-	for(i = 0; i < n_shots; i++) {
-		drawShot(&(shots[i]));
+	for(i = 0; i < options.shots.n; i++) {
+		drawShot(&(options.shots.shots[i]));
 	}
 
-	for(i = 0; i < n_explosions; i++) {
-		drawExplosion(&(explosions[i]));
+	for(i = 0; i < options.explosions.n; i++) {
+		drawExplosion(&(options.explosions.explosions[i]));
 	}
 
 	char* pos;
@@ -429,8 +415,8 @@ Uint8 blue_from_H(double h) {
 }
 
 double player_to_h(int playerid) {
-	if(local_player != -1) {
-		if(playerid == local_player) {
+	if(options.local_player != -1) {
+		if(playerid == options.local_player) {
 			return 120; // green
 		} else {
 			return 0; // red
@@ -741,6 +727,8 @@ void drawPlanet(planet_t* p) {
 	static SDL_Surface* planet_sprite = NULL;
 	char* text = NULL;
 
+	const size_t n_players = options.players.n;
+	const player_t *players = options.players.players;
 	if(!planet_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(planet_sprite);
 		planet_sprite = zoomSurface(planet_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
@@ -768,7 +756,7 @@ void drawPlanet(planet_t* p) {
 
 		if(show_text_name) {
 			if(p->owner > 0) {
-				for(int i = 0; i < n_players; i++) {
+				for(size_t i = 0; i < n_players; i++) {
 					if(players[i].id == p->owner) {
 						if(strlen(players[i].name) > 10) {
 							asprintf(&text, "%.6s...", players[i].name);
@@ -916,21 +904,23 @@ void draw_influence() {
 	double left, up;
 	double pos_x, pos_y;
 	double d;
-	int x, y;
+	size_t x, y;
 	int max_owner;
 	int min_owner;
 	int pos_max;
 	int owner;
 	size_t id_range;
 
+	const base_t *bases = options.bases.bases;
+	const size_t n_bases = options.bases.n;
 
-	if (n_bases < 1 || !show_influence) {
+	if (options.bases.n < 1 || !show_influence) {
 		return;
 	}
 
 	min_owner = max_owner = bases[0].owner;
 
-	for (int i = 1; i < n_bases; i++) {
+	for (size_t i = 1; i < n_bases; i++) {
 		if (bases[i].owner < min_owner) {
 			min_owner = bases[i].owner;
 		} else if (bases[i].owner > max_owner) {
@@ -949,7 +939,7 @@ void draw_influence() {
 			double influence[id_range];
 			memset(influence, 0, sizeof(double) * (id_range));
 
-			for (int i = 0; i < n_bases ; i++) {
+			for (size_t i = 0; i < n_bases ; i++) {
 				influence[bases[i].owner - min_owner] += bases[i].size / dist(pos_x, pos_y, bases[i].x, bases[i].y);
 			}
 
@@ -969,14 +959,14 @@ void draw_influence() {
 void find_object_at(int click_x, int click_y) {
 	double radius = 50;
 	follow_ship = 0;
-	for(int i = 0; i < n_ships; i++) {
-		if(ships[i].active == 0) {
+	for(size_t i = 0; i < options.ships.n; i++) {
+		if(options.ships.ships[i].active == 0) {
 			continue;
 		}
-		double d = dist(click_x, click_y, offset_x + ships[i].x * zoom, offset_y + ships[i].y * zoom);
+		double d = dist(click_x, click_y, offset_x + options.ships.ships[i].x * zoom, offset_y + options.ships.ships[i].y * zoom);
 		if(d < radius) {
 			radius = d;
-			follow_ship = ships[i].id;
+			follow_ship = options.ships.ships[i].id;
 		}
 	}
 }
