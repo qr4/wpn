@@ -1,6 +1,8 @@
 #ifndef _TYPES_H
 #define _TYPES_H
 #include <jansson.h>
+#include <SDL/SDL.h>
+#include <stdbool.h>
 
 typedef struct {
 	int size;
@@ -101,5 +103,31 @@ struct options_t {
 
 	bbox_t boundingbox;
 	int local_player ;
+
+	unsigned int display_x;
+	unsigned int display_y;
+
+	float mag;
+	float zoom;
+	float offset_x;
+	float offset_y;
+	float mouse_pos_x;
+	float mouse_pos_y;
+
+	double influence_threshhold;
+
+	bool show_text_name;
+	bool show_text_id;
+	bool show_text_coords;
+	bool show_influence;
+};
+
+typedef void (*LayerFunction)(SDL_Surface *buffer);
+typedef struct layer_t layer_t;
+
+struct layer_t {
+	LayerFunction f;
+	SDL_Surface *buffer;
+	bool active;
 };
 #endif

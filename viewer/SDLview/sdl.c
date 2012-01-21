@@ -1,6 +1,7 @@
 #include <string.h>
 #include "sdl.h"
 #include <SDL_ttf.h>
+#include "layerrenderers.h"
 
 SDL_Surface* screen;
 
@@ -22,21 +23,7 @@ SDL_Surface* slot_R_image;
 SDL_Surface* slot_T_image;
 
 extern options_t options;
-
-unsigned int display_x = 640;
-unsigned int display_y = 480;
-extern bbox_t boundingbox;
-
-float zoom;
-float offset_x;
-float offset_y;
-float mouse_pos_x;
-float mouse_pos_y;
-
-extern int local_player;
-
-#define default_mag 200
-float mag = default_mag;
+extern options_t options_old;
 
 json_int_t follow_ship = 0;
 
@@ -44,14 +31,9 @@ json_int_t follow_ship = 0;
 #define FONT_SIZE 9
 #define asprintf(...) if(asprintf(__VA_ARGS__))
 TTF_Font* font;
-char show_text_name = 1;
-char show_text_id = 0;
-char show_text_coords = 0;
-char show_influence = 0;
-double influence_threshhold = 0.00000015;
 
 void screen_init() {
-	screen = SDL_SetVideoMode(display_x, display_y, 0, SDL_RESIZABLE | SDL_SWSURFACE | SDL_DOUBLEBUF);
+	screen = SDL_SetVideoMode(options.display_x, options.display_y, 0, SDL_RESIZABLE | SDL_SWSURFACE | SDL_DOUBLEBUF);
 
 	if (screen == NULL) {
 		fprintf(stderr, "SDL_SetVideoMode() failed: %s\n", SDL_GetError());
@@ -177,10 +159,6 @@ void SDLinit() {
 		printf("IMG_LoadPNG_RW: Loading image of thruster slot failed: %s\n", IMG_GetError());
 		exit(1);
 	}
-
-	zoom = 1;
-	offset_x = 0;
-	offset_y = 0;
 }
 
 void checkSDLevent() {
@@ -195,63 +173,63 @@ void checkSDLevent() {
 					case SDLK_PLUS:
 					case SDLK_KP_PLUS:
 						if((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) {
-							influence_threshhold /= 1.2;
+							options.influence_threshhold /= 1.2;
 						} else {
-							zoom *= 1.2;
-							offset_x = display_x / 2 + (offset_x - display_x / 2) * 1.2;
-							offset_y = display_y / 2 + (offset_y - display_y / 2) * 1.2;
+							options.zoom *= 1.2;
+							options.offset_x = options.display_x / 2 + (options.offset_x - options.display_x / 2) * 1.2;
+							options.offset_y = options.display_y / 2 + (options.offset_y - options.display_y / 2) * 1.2;
 						}
 						break;
 					case SDLK_MINUS:
 					case SDLK_KP_MINUS:
 						if((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) {
-							influence_threshhold *= 1.2;
+							options.influence_threshhold *= 1.2;
 						} else {
-							zoom /= 1.2;
-							offset_x = display_x / 2 + (offset_x - display_x / 2) / 1.2;
-							offset_y = display_y / 2 + (offset_y - display_y / 2) / 1.2;
+							options.zoom /= 1.2;
+							options.offset_x = options.display_x / 2 + (options.offset_x - options.display_x / 2) / 1.2;
+							options.offset_y = options.display_y / 2 + (options.offset_y - options.display_y / 2) / 1.2;
 						}
 						break;
 					case SDLK_m:
 						if((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) {
 							// M
-							mag *= 1.5;
+							options.mag *= 1.5;
 						} else {
-							mag /= 1.5;
+							options.mag /= 1.5;
 						}
 						break;
 					case SDLK_c:
 						if((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) {
 							// C
-							show_text_coords = 0;
+							options.show_text_coords = 0;
 						} else {
-							show_text_coords = 1;
+							options.show_text_coords = 1;
 						}
 						break;
 					case SDLK_i:
 						if((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) {
 							// I
-							show_text_id = 0;
+							options.show_text_id = 0;
 						} else {
-							show_text_id = 1;
-							show_text_name = 0;
+							options.show_text_id = 1;
+							options.show_text_name = 0;
 						}
 						break;
 					case SDLK_n:
 						if((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) {
 							// N
-							show_text_name = 0;
+							options.show_text_name = 0;
 						} else {
-							show_text_name = 1;
-							show_text_id = 0;
+							options.show_text_name = 1;
+							options.show_text_id = 0;
 						}
 						break;
 					case SDLK_p:
 						if((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) {
 							// P
-							show_influence = 0;
+							options.show_influence = 0;
 						} else {
-							show_influence = 1;
+							options.show_influence = 1;
 						}
 						break;
 					case SDLK_q:
@@ -265,12 +243,12 @@ void checkSDLevent() {
 				if(event.button.button == SDL_BUTTON_LEFT) {
 					if(SDL_GetTicks() - lastclickat < 200) {
 						// center
-						offset_x = offset_x - event.button.x + display_x / 2;
-						offset_y = offset_y - event.button.y + display_y / 2;
+						options.offset_x = options.offset_x - event.button.x + options.display_x / 2;
+						options.offset_y = options.offset_y - event.button.y + options.display_y / 2;
 						// and zoom
-						zoom *= 1.2;
-						offset_x = display_x / 2 + (offset_x - display_x/2) * 1.2;
-						offset_y = display_y / 2 + (offset_y - display_y/2) * 1.2;
+						options.zoom *= 1.2;
+						options.offset_x = options.display_x / 2 + (options.offset_x - options.display_x/2) * 1.2;
+						options.offset_y = options.display_y / 2 + (options.offset_y - options.display_y/2) * 1.2;
 						// disarm
 						lastclickat = 0;
 					} else {
@@ -278,13 +256,13 @@ void checkSDLevent() {
 						lastclickat = SDL_GetTicks();
 					}
 				} else if (event.button.button == SDL_BUTTON_WHEELDOWN) {
-					zoom /= 1.2;
-					offset_x = display_x / 2 + (offset_x - display_x / 2) / 1.2;
-					offset_y = display_y / 2 + (offset_y - display_y / 2) / 1.2;
+					options.zoom /= 1.2;
+					options.offset_x = options.display_x / 2 + (options.offset_x - options.display_x / 2) / 1.2;
+					options.offset_y = options.display_y / 2 + (options.offset_y - options.display_y / 2) / 1.2;
 				} else if (event.button.button == SDL_BUTTON_WHEELUP) {
-					zoom *= 1.2;
-					offset_x = display_x / 2 + (offset_x - display_x / 2) * 1.2;
-					offset_y = display_y / 2 + (offset_y - display_y / 2) * 1.2;
+					options.zoom *= 1.2;
+					options.offset_x = options.display_x / 2 + (options.offset_x - options.display_x / 2) * 1.2;
+					options.offset_y = options.display_y / 2 + (options.offset_y - options.display_y / 2) * 1.2;
 				} else {
 					// disarm doubleclick detection
 					lastclickat = 0;
@@ -294,16 +272,16 @@ void checkSDLevent() {
 				}
 				break;
 			case SDL_MOUSEMOTION:
-				mouse_pos_x = event.motion.x;
-				mouse_pos_y = event.motion.y;
+				options.mouse_pos_x = event.motion.x;
+				options.mouse_pos_y = event.motion.y;
 				if(event.motion.state & 1) {
-					offset_x += event.motion.xrel;
-					offset_y += event.motion.yrel;
+					options.offset_x += event.motion.xrel;
+					options.offset_y += event.motion.yrel;
 				}
 				break;
             case SDL_VIDEORESIZE:
-				options.boundingbox.xmax = display_x = event.resize.w;
-				options.boundingbox.ymax = display_y = event.resize.h;
+				options.boundingbox.xmax = options.display_x = event.resize.w;
+				options.boundingbox.ymax = options.display_y = event.resize.h;
 				screen_init();
 				break;
 			case SDL_QUIT:
@@ -314,15 +292,15 @@ void checkSDLevent() {
 }
 
 
-static void draw_influence();
-
 void SDLplot() {
 	size_t i;
 
 	SDL_FillRect(SDL_GetVideoSurface(), NULL, 0);
 
 	// draw influence of each player in player color as background
-	draw_influence();
+	if (options.show_influence) {
+		draw_influence(screen);
+	}
 
 	//fprintf(stderr, "Plotting %d asteroids\n", n_asteroids);
 	for(i = 0; i < options.asteroids.n; i++) {
@@ -351,7 +329,7 @@ void SDLplot() {
 	}
 
 	char* pos;
-	asprintf(&pos, "% 6.0f % 6.0f", (mouse_pos_x-offset_x)/zoom, (mouse_pos_y-offset_y)/zoom);
+	asprintf(&pos, "% 6.0f % 6.0f", (options.mouse_pos_x-options.offset_x)/options.zoom, (options.mouse_pos_y-options.offset_y)/options.zoom);
 	drawText(16, 10, pos);
 	free(pos);
 
@@ -455,33 +433,34 @@ void drawText(int x,int y, char* text) {
 }
 
 void drawAsteroid(asteroid_t* a) {
-	static float last_zoom = 1;
-	static float last_mag = default_mag;
 	static SDL_Surface* asteroid_sprite = NULL;
+
+	const float last_zoom = options_old.zoom;
+	const float last_mag = options_old.mag;
+	const float mag = options.mag;
+	const float zoom = options.zoom;
 
 	if(!asteroid_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(asteroid_sprite);
 		asteroid_sprite = zoomSurface(asteroid_image, mag * zoom / 16.0, mag * zoom / 16.0, 0);
-		last_zoom = zoom;
-		last_mag = mag;
 	}
 
 	if(a->active > 0) {
 		SDL_Rect dst_rect;
 
-		dst_rect.x = offset_x + (a->x - 4 * mag) * zoom;
-		dst_rect.y = offset_y + (a->y - 4 * mag) * zoom;
+		dst_rect.x = options.offset_x + (a->x - 4 * mag) * zoom;
+		dst_rect.y = options.offset_y + (a->y - 4 * mag) * zoom;
 		dst_rect.w = 8 * mag * zoom;
 		dst_rect.h = 8 * mag * zoom;
 
 		SDL_BlitSurface(asteroid_sprite, NULL, screen, &dst_rect);
-		drawSlot(offset_x + (a->x - 1.9 * mag) * zoom, offset_y + (a->y - 1.1 * mag) * zoom, a->contents[0]);
-		drawSlot(offset_x + (a->x - 0.7 * mag) * zoom, offset_y + (a->y - 1.1 * mag) * zoom, a->contents[1]);
-		drawSlot(offset_x + (a->x + 0.6 * mag) * zoom, offset_y + (a->y - 1.1 * mag) * zoom, a->contents[2]);
-		drawSlot(offset_x + (a->x - 1.9 * mag) * zoom, offset_y + (a->y + 0.2 * mag) * zoom, a->contents[3]);
-		drawSlot(offset_x + (a->x - 0.7 * mag) * zoom, offset_y + (a->y + 0.2 * mag) * zoom, a->contents[4]);
-		drawSlot(offset_x + (a->x + 0.6 * mag) * zoom, offset_y + (a->y + 0.2 * mag) * zoom, a->contents[5]);
-		drawSlot(offset_x + (a->x + 2.05 * mag) * zoom, offset_y + (a->y + 0.95 * mag) * zoom, a->contents[6]);
+		drawSlot(options.offset_x + (a->x - 1.9 * mag) * zoom,  options.offset_y + (a->y - 1.1 * mag) * zoom, a->contents[0]);
+		drawSlot(options.offset_x + (a->x - 0.7 * mag) * zoom,  options.offset_y + (a->y - 1.1 * mag) * zoom, a->contents[1]);
+		drawSlot(options.offset_x + (a->x + 0.6 * mag) * zoom,  options.offset_y + (a->y - 1.1 * mag) * zoom, a->contents[2]);
+		drawSlot(options.offset_x + (a->x - 1.9 * mag) * zoom,  options.offset_y + (a->y + 0.2 * mag) * zoom, a->contents[3]);
+		drawSlot(options.offset_x + (a->x - 0.7 * mag) * zoom,  options.offset_y + (a->y + 0.2 * mag) * zoom, a->contents[4]);
+		drawSlot(options.offset_x + (a->x + 0.6 * mag) * zoom,  options.offset_y + (a->y + 0.2 * mag) * zoom, a->contents[5]);
+		drawSlot(options.offset_x + (a->x + 2.05 * mag) * zoom, options.offset_y + (a->y + 0.95 * mag) * zoom, a->contents[6]);
 	}
 }
 
@@ -498,12 +477,17 @@ void drawHalo(double x, double y, double r, double h) {
 }
 
 void drawBase(base_t * b) {
-	static float last_zoom = 1;
-	static float last_mag = default_mag;
 	static SDL_Surface* base_small_sprite = NULL;
 	static SDL_Surface* base_medium_sprite = NULL;
 	static SDL_Surface* base_large_sprite = NULL;
 	static SDL_Surface* base_huge_sprite = NULL;
+
+	const float last_zoom = options_old.zoom;
+	const float last_mag = options_old.mag;
+	const float mag = options.mag;
+	const float zoom = options.zoom;
+	const float offset_x = options.offset_x;
+	const float offset_y = options.offset_y;
 
 	if(!base_small_sprite || !base_medium_sprite || !base_large_sprite || !base_huge_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(base_small_sprite);
@@ -514,8 +498,6 @@ void drawBase(base_t * b) {
 		base_large_sprite = zoomSurface(base_large_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
 		SDL_FreeSurface(base_huge_sprite);
 		base_huge_sprite = zoomSurface(base_huge_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
-		last_zoom = zoom;
-		last_mag = mag;
 	}
 
 	if(b->active > 0) {
@@ -584,12 +566,17 @@ void drawBase(base_t * b) {
 }
 
 void drawShip(ship_t * s) {
-	static float last_zoom = 1;
-	static float last_mag = default_mag;
 	static SDL_Surface* ship_small_sprite = NULL;
 	static SDL_Surface* ship_medium_sprite = NULL;
 	static SDL_Surface* ship_large_sprite = NULL;
 	static SDL_Surface* ship_huge_sprite = NULL;
+
+	const float last_zoom = options_old.zoom;
+	const float last_mag = options_old.mag;
+	const float mag = options.mag;
+	const float zoom = options.zoom;
+	const float offset_x = options.offset_x;
+	const float offset_y = options.offset_y;
 
 	if(!ship_small_sprite || !ship_medium_sprite || !ship_large_sprite || !ship_huge_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(ship_small_sprite);
@@ -600,8 +587,6 @@ void drawShip(ship_t * s) {
 		ship_large_sprite = zoomSurface(ship_large_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
 		SDL_FreeSurface(ship_huge_sprite);
 		ship_huge_sprite = zoomSurface(ship_huge_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
-		last_zoom = zoom;
-		last_mag = mag;
 	}
 
 	if(s->active > 0) {
@@ -683,13 +668,15 @@ void drawShip(ship_t * s) {
 }
 
 void drawSlot(float x, float y, char type) {
-	static float last_zoom = 1;
-	static float last_mag = default_mag;
 	static SDL_Surface* slot_empty_sprite = NULL;
 	static SDL_Surface* slot_L_sprite = NULL;
 	static SDL_Surface* slot_R_sprite = NULL;
 	static SDL_Surface* slot_T_sprite = NULL;
 
+	const float last_zoom = options_old.zoom;
+	const float last_mag = options_old.mag;
+	const float mag = options.mag;
+	const float zoom = options.zoom;
 	if(!slot_empty_sprite || !slot_L_sprite || !slot_R_sprite || !slot_T_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(slot_empty_sprite);
 		slot_empty_sprite = zoomSurface(slot_empty_image, mag * zoom / 16.0, mag * zoom / 16.0, 0);
@@ -699,8 +686,6 @@ void drawSlot(float x, float y, char type) {
 		slot_R_sprite = zoomSurface(slot_R_image, mag * zoom / 16.0, mag * zoom / 16.0, 0);
 		SDL_FreeSurface(slot_T_sprite);
 		slot_T_sprite = zoomSurface(slot_T_image, mag * zoom / 16.0, mag * zoom / 16.0, 0);
-		last_zoom = zoom;
-		last_mag = mag;
 	}
 
 	SDL_Rect dst_rect;
@@ -722,18 +707,20 @@ void drawSlot(float x, float y, char type) {
 }
 
 void drawPlanet(planet_t* p) {
-	static float last_zoom = 1;
-	static float last_mag = default_mag;
 	static SDL_Surface* planet_sprite = NULL;
 	char* text = NULL;
 
+	const float last_zoom = options_old.zoom;
+	const float last_mag = options_old.mag;
+	const float mag = options.mag;
+	const float zoom = options.zoom;
+	const float offset_x = options.offset_x;
+	const float offset_y = options.offset_y;
 	const size_t n_players = options.players.n;
 	const player_t *players = options.players.players;
 	if(!planet_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(planet_sprite);
 		planet_sprite = zoomSurface(planet_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
-		last_zoom = zoom;
-		last_mag = mag;
 	}
 
 	if(p->active > 0) {
@@ -754,7 +741,7 @@ void drawPlanet(planet_t* p) {
 		dst_rect.x = offset_x + (p->x - 8 * mag) * zoom;
 		dst_rect.y = offset_y + (p->y - 8 * mag) * zoom;
 
-		if(show_text_name) {
+		if(options.show_text_name) {
 			if(p->owner > 0) {
 				for(size_t i = 0; i < n_players; i++) {
 					if(players[i].id == p->owner) {
@@ -772,14 +759,14 @@ void drawPlanet(planet_t* p) {
 				drawText(dst_rect.x+14, dst_rect.y-14, text);
 				free(text);
 			}
-		} else if(show_text_id) {
+		} else if(options.show_text_id) {
 			if(p->owner > 0) {
 				asprintf(&text, "%i", p->owner);
 				drawText(dst_rect.x+14, dst_rect.y-14, text);
 				free(text);
 			}
 		}
-		if(show_text_coords) {
+		if(options.show_text_coords) {
 			asprintf(&text, "% 6.0f", p->x);
 			drawText(dst_rect.x+14, dst_rect.y, text);
 			free(text);
@@ -791,9 +778,13 @@ void drawPlanet(planet_t* p) {
 }
 
 void drawExplosion(explosion_t* e) {
-	static float last_zoom = 1;
-	static float last_mag = default_mag;
 	static SDL_Surface* explosion_sprite = NULL;
+	const float last_zoom = options_old.zoom;
+	const float last_mag = options_old.mag;
+	const float mag = options.mag;
+	const float zoom = options.zoom;
+	const float offset_x = options.offset_x;
+	const float offset_y = options.offset_y;
 	int i;
 	//unsigned int x,y,u;
 	//char a;
@@ -801,8 +792,6 @@ void drawExplosion(explosion_t* e) {
 	if(!explosion_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(explosion_sprite);
 		explosion_sprite = zoomSurface(explosion_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
-		last_zoom = zoom;
-		last_mag = mag;
 	}
 
 	if(e->strength > 0) {
@@ -845,15 +834,17 @@ void drawExplosion(explosion_t* e) {
 }
 
 void drawShot(shot_t* s) {
-	static float last_zoom = 1;
-	static float last_mag = default_mag;
 	static SDL_Surface* shot_sprite = NULL;
+	const float last_zoom = options_old.zoom;
+	const float last_mag = options_old.mag;
+	const float mag = options.mag;
+	const float zoom = options.zoom;
+	const float offset_x = options.offset_x;
+	const float offset_y = options.offset_y;
 
 	if(!shot_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(shot_sprite);
 		shot_sprite = zoomSurface(shot_image, mag * zoom / 1.0, mag * zoom / 1.0, 0);
-		last_zoom = zoom;
-		last_mag = mag;
 	}
 
 	if(s->strength <= 0) {
@@ -882,81 +873,15 @@ void drawShot(shot_t* s) {
 }
 
 static inline double dist(double x1, double y1, double x2, double y2) {
-	//return hypot(x1 - x2, y1 - y2);
 	return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
 }
 
-static int position_of_max(double values[], int n) {
-	int pos_max = -1;
-	double max = -HUGE_VAL;
 
-	for (int i = 0; i < n; i++) {
-		if (values[i] > max) {
-			max = values[i];
-			pos_max = i;
-		}
-	}
-
-	return pos_max;
-}
-
-void draw_influence() {
-	double left, up;
-	double pos_x, pos_y;
-	double d;
-	size_t x, y;
-	int max_owner;
-	int min_owner;
-	int pos_max;
-	int owner;
-	size_t id_range;
-
-	const base_t *bases = options.bases.bases;
-	const size_t n_bases = options.bases.n;
-
-	if (options.bases.n < 1 || !show_influence) {
-		return;
-	}
-
-	min_owner = max_owner = bases[0].owner;
-
-	for (size_t i = 1; i < n_bases; i++) {
-		if (bases[i].owner < min_owner) {
-			min_owner = bases[i].owner;
-		} else if (bases[i].owner > max_owner) {
-			max_owner = bases[i].owner;
-		}
-	}
-
-	id_range = max_owner - min_owner + 1;
-
-	d    = 1 / zoom;
-	left = -offset_x * d;
-	up   = -offset_y * d;
-
-	for (y = 0, pos_y = up; y < display_y; y+=10, pos_y = up + y * d) {
-		for (x = 0, pos_x = left; x < display_x; x+=10, pos_x = left + x * d) {
-			double influence[id_range];
-			memset(influence, 0, sizeof(double) * (id_range));
-
-			for (size_t i = 0; i < n_bases ; i++) {
-				influence[bases[i].owner - min_owner] += bases[i].size / dist(pos_x, pos_y, bases[i].x, bases[i].y);
-			}
-
-			pos_max = position_of_max(influence, id_range);
-			owner   = min_owner + pos_max;
-
-
-			if (influence[pos_max] >= influence_threshhold) {
-				double h = player_to_h(owner);
-
-				((uint32_t *) screen->pixels)[screen->w * y + x] = SDL_MapRGB(screen->format, red_from_H(h), green_from_H(h), blue_from_H(h));
-			}
-		}
-	}
-}
 
 void find_object_at(int click_x, int click_y) {
+	const float zoom = options.zoom;
+	const float offset_x = options.offset_x;
+	const float offset_y = options.offset_y;
 	double radius = 50;
 	follow_ship = 0;
 	for(size_t i = 0; i < options.ships.n; i++) {

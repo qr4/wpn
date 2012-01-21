@@ -181,6 +181,25 @@ int reconnect2server(const char* server) {
 	}
 }
 
+void set_default_opts() {
+	allocStuff();
+	options.local_player = -1;
+	options.display_x = 640;
+	options.display_y = 480;
+	options.mag = 100;
+	options.zoom = 1;
+	options.offset_x = 0;
+	options.offset_y = 0;
+	options.influence_threshhold = 0.00000015;
+	options.boundingbox.xmin = 0;
+	options.boundingbox.xmax = 640;
+	options.boundingbox.ymin = 0;
+	options.boundingbox.ymax = 480;
+	options.show_text_name = true;
+	options.show_text_id = false;
+	options.show_text_coords = false;
+	options.show_influence = false;
+}
 int main(int argc, const char* argv[] ) {
 	buffer_t buffer; // wir verwenden nur die datenstruktur = getBuffer();
 	int ret;
@@ -190,22 +209,18 @@ int main(int argc, const char* argv[] ) {
 		exit(EXIT_FAILURE);
 	}
 
-	if(argc == 3) {
-		options.local_player = atoi(argv[2]);
-	} else {
-		options.local_player = -1;
-	}
 
 	dstr_malloc(&net_puffer);
 	dstr_malloc(&json_puffer);
 	int net = reconnect2server(argv[1]);
 
-	allocStuff();
+	set_default_opts();
 
-	options.boundingbox.xmin = 0;
-	options.boundingbox.xmax = 640;
-	options.boundingbox.ymin = 0;
-	options.boundingbox.ymax = 480;
+	if(argc == 3) {
+		options.local_player = atoi(argv[2]);
+	} else {
+		options.local_player = -1;
+	}
 
 	SDLinit();
 

@@ -279,8 +279,8 @@ void jsonShip(json_t* ship) {
 	}
 
 	if(follow_ship != 0 && follow_ship == id) {
-		offset_x = display_x/2 - x * zoom;
-		offset_y = display_y/2 - y * zoom;
+		options.offset_x = options.display_x/2 - x * options.zoom;
+		options.offset_y = options.display_y/2 - y * options.zoom;
 	}
 
 	updateShip(id, x, y, owner, size, contents, docked_to);
@@ -752,12 +752,12 @@ void jsonBbox(json_t* bbox) {
 			float zoomx = 640/(options.boundingbox.xmax - options.boundingbox.xmin);
 			float zoomy = 480/(options.boundingbox.ymax - options.boundingbox.ymin);
 			if(zoomx < zoomy) {
-				zoom = zoomx;
+				options.zoom = zoomx;
 			} else {
-				zoom = zoomy;
+				options.zoom = zoomy;
 			}
-			offset_x = 320 - zoom*(options.boundingbox.xmin + options.boundingbox.xmax)/2;
-			offset_y = 240 - zoom*(options.boundingbox.ymin + options.boundingbox.ymax)/2;
+			options.offset_x = 320 - options.zoom*(options.boundingbox.xmin + options.boundingbox.xmax)/2;
+			options.offset_y = 240 - options.zoom*(options.boundingbox.ymin + options.boundingbox.ymax)/2;
 			seenBbox = 1;
 		}
 	}

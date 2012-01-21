@@ -12,6 +12,10 @@
 
 void SDLinit();
 void SDLplot();
+double player_to_h(int playerid);
+Uint8 red_from_H(double h);
+Uint8 green_from_H(double h);
+Uint8 blue_from_H(double h);
 void checkSDLevent();
 void drawAsteroid(asteroid_t* a);
 void drawBase(base_t * b);
