@@ -134,4 +134,6 @@ struct layer_t {
 	SDL_Surface *buffer;
 	bool active;
 };
+
+static const layer_t LAYERS_END = {NULL, NULL, false};
 #endif

@@ -192,8 +192,8 @@ void set_default_opts() {
 	options.local_player = -1;
 	options.display_x = 640;
 	options.display_y = 480;
-	options.mag = 100;
-	options.zoom = 1;
+	options.mag = 200.0;
+	options.zoom = 1.0/options.mag;
 	options.offset_x = 0;
 	options.offset_y = 0;
 	options.influence_threshhold = 0.00000015;
@@ -221,17 +221,13 @@ int main(int argc, const char* argv[] ) {
 
 	if(argc == 3) {
 		options.local_player = atoi(argv[2]);
-	} else {
-		options.local_player = -1;
-	}
+	} 
 
 	SDLinit();
 
 	while(1) {
 		options_old = options;
 		checkSDLevent();
-
-		SDLplot();
 
 		ret = checkInput(net, &buffer, 100000);
 
@@ -243,6 +239,9 @@ int main(int argc, const char* argv[] ) {
 		if (ret == 1) {
 			parseJson(&buffer);
 		}
+
+		SDLplot();
+
 	}
 
 	close(net);

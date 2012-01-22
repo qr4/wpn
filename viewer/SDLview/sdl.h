@@ -9,6 +9,22 @@
 
 
 #include "types.h"
+extern SDL_Surface* asteroid_image;
+extern SDL_Surface* base_small_image;
+extern SDL_Surface* base_medium_image;
+extern SDL_Surface* base_large_image;
+extern SDL_Surface* base_huge_image;
+extern SDL_Surface* explosion_image;
+extern SDL_Surface* planet_image;
+extern SDL_Surface* ship_small_image;
+extern SDL_Surface* ship_medium_image;
+extern SDL_Surface* ship_large_image;
+extern SDL_Surface* ship_huge_image;
+extern SDL_Surface* shot_image;
+extern SDL_Surface* slot_empty_image;
+extern SDL_Surface* slot_L_image;
+extern SDL_Surface* slot_R_image;
+extern SDL_Surface* slot_T_image;
 
 void SDLinit();
 void SDLplot();
@@ -17,14 +33,7 @@ Uint8 red_from_H(double h);
 Uint8 green_from_H(double h);
 Uint8 blue_from_H(double h);
 void checkSDLevent();
-void drawAsteroid(asteroid_t* a);
-void drawBase(base_t * b);
-void drawExplosion(explosion_t* e);
-void drawPlanet(planet_t* p);
-void drawShip(ship_t * s);
-void drawShot(shot_t * s);
-void drawSlot(float x, float y, char type);
-void drawText(int x,int y, char* text);
+void drawText(SDL_Surface *buffer, int x,int y, char* text);
 void find_object_at(int click_x, int click_y);
 
 
