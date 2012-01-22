@@ -437,8 +437,6 @@ void draw_ships(SDL_Surface *buffer) {
 			}
 		}
 	}
-	
-	SDL_SetAlpha(buffer, SDL_SRCALPHA, 255);
 }
 
 void draw_shots(SDL_Surface *buffer) {

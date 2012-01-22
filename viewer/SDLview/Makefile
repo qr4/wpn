@@ -9,16 +9,16 @@ ifeq ($(CC),gcc)
 	FLAGS += -fms-extensions -std=c99
 endif
 ifeq ($(CC),clang)
-	FLAGS += -D__STDC__ -Wno-empty-body
+	FLAGS += -D__STDC__ -Wno-empty-body -Wno-unknown-pragmas
 endif
 
-main: $(OBJ)
+main: $(OBJ) Makefile
 	$(CC) $(FLAGS) $(LDFLAGS) -o $@ $(OBJ)
 
-%.o: %.c %.h
+%.o: %.c %.h 
 	$(CC) $(FLAGS) $(CLIBS) -c $<
 
-%.o: %.c
+%.o: %.c 
 	$(CC) $(FLAGS) $(CLIBS) -c $<
 
 .PHONY : clean

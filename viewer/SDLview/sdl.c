@@ -249,8 +249,11 @@ void checkSDLevent() {
 static SDL_Surface *create_buffer(uint32_t bg) {
 	SDL_Surface *scr;
 	SDL_Surface *ret;
-	scr = SDL_GetVideoSurface();
-	ret = SDL_DisplayFormatAlpha(scr);
+#pragma omp critical
+	{
+		scr = SDL_GetVideoSurface();
+		ret = SDL_DisplayFormatAlpha(scr);
+	}
 	SDL_SetAlpha(ret, SDL_SRCALPHA | SDL_RLEACCEL, SDL_ALPHA_TRANSPARENT);
 	SDL_FillRect(ret, NULL, bg);
 	return ret;
