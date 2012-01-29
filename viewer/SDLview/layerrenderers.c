@@ -2,6 +2,7 @@
 
 #include "layerrenderers.h"
 
+extern state_t state;
 extern options_t options;
 extern options_t options_old;
 
@@ -34,10 +35,10 @@ void draw_influence(SDL_Surface *buffer) {
 	int owner;
 	size_t id_range;
 
-	const base_t *bases = options.bases.bases;
-	const size_t n_bases = options.bases.n;
+	const base_t *bases = state.bases.bases;
+	const size_t n_bases = state.bases.n;
 
-	if (options.bases.n < 1) {
+	if (state.bases.n < 1) {
 		return;
 	}
 

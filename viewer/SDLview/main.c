@@ -17,6 +17,7 @@
 #define PORT "8080"
 
 
+state_t state;
 options_t options;
 options_t options_old;
 
@@ -110,13 +111,13 @@ void init_storage(storage_t *storage, size_t nmemb, size_t size) {
 
 void allocStuff() {
 	const size_t size = 1000;
-	init_storage(&options.asteroids,     size,   sizeof(asteroid_t));
-	init_storage(&options.bases,         size,   sizeof(base_t));
-	init_storage(&options.explosions,    size,   sizeof(explosion_t));
-	init_storage(&options.planets,       size,   sizeof(planet_t));
-	init_storage(&options.ships,         size,   sizeof(ship_t));
-	init_storage(&options.shots,         size,   sizeof(shot_t));
-	init_storage(&options.players,       size,   sizeof(player_t));
+	init_storage(&state.asteroids,     size,   sizeof(asteroid_t));
+	init_storage(&state.bases,         size,   sizeof(base_t));
+	init_storage(&state.explosions,    size,   sizeof(explosion_t));
+	init_storage(&state.planets,       size,   sizeof(planet_t));
+	init_storage(&state.ships,         size,   sizeof(ship_t));
+	init_storage(&state.shots,         size,   sizeof(shot_t));
+	init_storage(&state.players,       size,   sizeof(player_t));
 }
 
 // get sockaddr, IPv4 or IPv6:
@@ -183,6 +184,11 @@ int reconnect2server(const char* server) {
 
 void set_default_opts() {
 	allocStuff();
+	state.boundingbox.xmin = 0;
+	state.boundingbox.xmax = 640;
+	state.boundingbox.ymin = 0;
+	state.boundingbox.ymax = 480;
+
 	options.local_player = -1;
 	options.display_x = 640;
 	options.display_y = 480;
@@ -191,15 +197,12 @@ void set_default_opts() {
 	options.offset_x = 0;
 	options.offset_y = 0;
 	options.influence_threshhold = 0.00000015;
-	options.boundingbox.xmin = 0;
-	options.boundingbox.xmax = 640;
-	options.boundingbox.ymin = 0;
-	options.boundingbox.ymax = 480;
 	options.show_text_name = true;
 	options.show_text_id = false;
 	options.show_text_coords = false;
 	options.show_influence = false;
 }
+
 int main(int argc, const char* argv[] ) {
 	buffer_t buffer; // wir verwenden nur die datenstruktur = getBuffer();
 	int ret;

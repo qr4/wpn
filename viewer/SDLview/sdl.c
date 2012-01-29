@@ -22,6 +22,7 @@ SDL_Surface* slot_L_image;
 SDL_Surface* slot_R_image;
 SDL_Surface* slot_T_image;
 
+extern state_t state;
 extern options_t options;
 extern options_t options_old;
 
@@ -280,8 +281,8 @@ void checkSDLevent() {
 				}
 				break;
             case SDL_VIDEORESIZE:
-				options.boundingbox.xmax = options.display_x = event.resize.w;
-				options.boundingbox.ymax = options.display_y = event.resize.h;
+				state.boundingbox.xmax = options.display_x = event.resize.w;
+				state.boundingbox.ymax = options.display_y = event.resize.h;
 				screen_init();
 				break;
 			case SDL_QUIT:
@@ -303,29 +304,29 @@ void SDLplot() {
 	}
 
 	//fprintf(stderr, "Plotting %d asteroids\n", n_asteroids);
-	for(i = 0; i < options.asteroids.n; i++) {
-		drawAsteroid(&(options.asteroids.asteroids[i]));
+	for(i = 0; i < state.asteroids.n; i++) {
+		drawAsteroid(&(state.asteroids.asteroids[i]));
 	}
 
 	//fprintf(stderr, "Plotting %d planets\n", n_planets);
-	for(i = 0; i < options.planets.n; i++) {
-		drawPlanet(&(options.planets.planets[i]));
+	for(i = 0; i < state.planets.n; i++) {
+		drawPlanet(&(state.planets.planets[i]));
 	}
 
-	for(i = 0; i < options.bases.n; i++) {
-		drawBase(&(options.bases.bases[i]));
+	for(i = 0; i < state.bases.n; i++) {
+		drawBase(&(state.bases.bases[i]));
 	}
 
-	for(i = 0; i < options.ships.n; i++) {
-		drawShip(&(options.ships.ships[i]));
+	for(i = 0; i < state.ships.n; i++) {
+		drawShip(&(state.ships.ships[i]));
 	}
 
-	for(i = 0; i < options.shots.n; i++) {
-		drawShot(&(options.shots.shots[i]));
+	for(i = 0; i < state.shots.n; i++) {
+		drawShot(&(state.shots.shots[i]));
 	}
 
-	for(i = 0; i < options.explosions.n; i++) {
-		drawExplosion(&(options.explosions.explosions[i]));
+	for(i = 0; i < state.explosions.n; i++) {
+		drawExplosion(&(state.explosions.explosions[i]));
 	}
 
 	char* pos;
@@ -716,8 +717,8 @@ void drawPlanet(planet_t* p) {
 	const float zoom = options.zoom;
 	const float offset_x = options.offset_x;
 	const float offset_y = options.offset_y;
-	const size_t n_players = options.players.n;
-	const player_t *players = options.players.players;
+	const size_t n_players = state.players.n;
+	const player_t *players = state.players.players;
 	if(!planet_sprite || (zoom != last_zoom) || (mag != last_mag)) {
 		SDL_FreeSurface(planet_sprite);
 		planet_sprite = zoomSurface(planet_image, mag * zoom / 8.0, mag * zoom / 8.0, 0);
@@ -884,14 +885,14 @@ void find_object_at(int click_x, int click_y) {
 	const float offset_y = options.offset_y;
 	double radius = 50;
 	follow_ship = 0;
-	for(size_t i = 0; i < options.ships.n; i++) {
-		if(options.ships.ships[i].active == 0) {
+	for(size_t i = 0; i < state.ships.n; i++) {
+		if(state.ships.ships[i].active == 0) {
 			continue;
 		}
-		double d = dist(click_x, click_y, offset_x + options.ships.ships[i].x * zoom, offset_y + options.ships.ships[i].y * zoom);
+		double d = dist(click_x, click_y, offset_x + state.ships.ships[i].x * zoom, offset_y + state.ships.ships[i].y * zoom);
 		if(d < radius) {
 			radius = d;
-			follow_ship = options.ships.ships[i].id;
+			follow_ship = state.ships.ships[i].id;
 		}
 	}
 }

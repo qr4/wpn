@@ -2,6 +2,7 @@
 
 extern bbox_t boundingbox;
 
+extern state_t state;
 extern options_t options;
 
 extern float zoom;
@@ -117,8 +118,8 @@ void jsonShips(json_t* s, int updatemode) {
 	int i;
 
 	if(updatemode == OVERWRITE) {
-		for(i = 0; i < options.ships.n; i++) {
-			options.ships.ships[i].active = 0;
+		for(i = 0; i < state.ships.n; i++) {
+			state.ships.ships[i].active = 0;
 		}
 	}
 
@@ -137,8 +138,8 @@ void jsonBases(json_t* b, int updatemode) {
 	int i;
 
 	if(updatemode == OVERWRITE) {
-		for(i = 0; i < options.bases.n; i++) {
-			options.bases.bases[i].active = 0;
+		for(i = 0; i < state.bases.n; i++) {
+			state.bases.bases[i].active = 0;
 		}
 	}
 
@@ -171,8 +172,8 @@ void jsonPlanets(json_t* p, int updatemode) {
 	int i;
 
 	if(updatemode == OVERWRITE) {
-		for(i = 0; i < options.planets.n; i++) {
-			options.planets.planets[i].active = 0;
+		for(i = 0; i < state.planets.n; i++) {
+			state.planets.planets[i].active = 0;
 		}
 	}
 
@@ -198,17 +199,17 @@ void jsonExplosion(json_t* explosion) {
 	if(!j_id || !json_is_integer(j_id)) return;
 	id = json_integer_value(j_id);
 	// Invalidate the ship with this id
-	for(i = 0; i < options.ships.n; i++) {
-		if(options.ships.ships[i].id == id) {
+	for(i = 0; i < state.ships.n; i++) {
+		if(state.ships.ships[i].id == id) {
 			//fprintf(stderr, "Invalidated ship %d\n", i);
-			options.ships.ships[i].active = 0;
+			state.ships.ships[i].active = 0;
 		}
 	}
 	// Invalidate the base with this id
-	for(i = 0; i < options.bases.n; i++) {
-		if(options.bases.bases[i].id == id) {
+	for(i = 0; i < state.bases.n; i++) {
+		if(state.bases.bases[i].id == id) {
 			//fprintf(stderr, "Invalidated base %d\n", i);
-			options.bases.bases[i].active = 0;
+			state.bases.bases[i].active = 0;
 		}
 	}
 
@@ -382,8 +383,8 @@ void createShot(json_int_t id, int owner, float src_x, float src_y, float trg_x,
 	int i;
 	char foundEmpty = 0;
 	shot_t *shots;
-	shots = options.shots.shots;
-	for(i = 0; i < options.shots.n; i++) {
+	shots = state.shots.shots;
+	for(i = 0; i < state.shots.n; i++) {
 		if(shots[i].strength <= 0) {
 			shots[i].src_x = src_x;
 			shots[i].src_y = src_y;
@@ -395,16 +396,16 @@ void createShot(json_int_t id, int owner, float src_x, float src_y, float trg_x,
 		}
 	}
 	if(!foundEmpty) {
-		if(options.shots.n >= options.shots.n_max - 1) {
-			init_storage(&options.shots, options.shots.n_max + 10, sizeof(shot_t));
-			shots = options.shots.shots;
+		if(state.shots.n >= state.shots.n_max - 1) {
+			init_storage(&state.shots, state.shots.n_max + 10, sizeof(shot_t));
+			shots = state.shots.shots;
 		}
-		shots[options.shots.n].src_x = src_x;
-		shots[options.shots.n].src_y = src_y;
-		shots[options.shots.n].trg_x = trg_x;
-		shots[options.shots.n].trg_y = trg_y;
-		shots[options.shots.n].strength = 20;
-		options.shots.n++;
+		shots[state.shots.n].src_x = src_x;
+		shots[state.shots.n].src_y = src_y;
+		shots[state.shots.n].trg_x = trg_x;
+		shots[state.shots.n].trg_y = trg_y;
+		shots[state.shots.n].strength = 20;
+		state.shots.n++;
 	}
 }
 
@@ -447,9 +448,9 @@ void updatePlanet(json_int_t id, float x, float y, int owner) {
 	int i;
 	char found = 0;
 	planet_t *planets;
-	planets = options.planets.planets;
-	size_t n = options.planets.n;
-	size_t n_max = options.planets.n_max;
+	planets = state.planets.planets;
+	size_t n = state.planets.n;
+	size_t n_max = state.planets.n_max;
 	for(i = 0; i < n; i++) {
 		if(planets[i].id == id) {
 			planets[i].x = x;
@@ -463,8 +464,8 @@ void updatePlanet(json_int_t id, float x, float y, int owner) {
 	}
 	if(!found) {
 		if(n >= n_max -1) {
-			init_storage(&options.planets, n_max + 100, sizeof(planet_t));
-			planets = options.planets.planets;
+			init_storage(&state.planets, n_max + 100, sizeof(planet_t));
+			planets = state.planets.planets;
 		}
 		planets[n].id = id;
 		planets[n].x = x;
@@ -472,7 +473,7 @@ void updatePlanet(json_int_t id, float x, float y, int owner) {
 		planets[n].owner = owner;
 		planets[n].active = 1;
 		//fprintf(stderr, "Added planet to slot %d\n", n_planets);
-		options.planets.n++;
+		state.planets.n++;
 	}
 }
 
@@ -480,9 +481,9 @@ void updateShip(json_int_t id, float x, float y, int owner, int size, const char
 	int i;
 	char found = 0;
 	ship_t *ships;
-	ships = options.ships.ships;
-	size_t n = options.ships.n;
-	size_t n_max = options.ships.n_max;
+	ships = state.ships.ships;
+	size_t n = state.ships.n;
+	size_t n_max = state.ships.n_max;
 	for(i = 0; i < n; i++) {
 		if(ships[i].id == id) {
 			ships[i].x = x;
@@ -498,8 +499,8 @@ void updateShip(json_int_t id, float x, float y, int owner, int size, const char
 	}
 	if(!found) {
 		if(n >= n_max -1) {
-			init_storage(&options.ships, n_max + 100, sizeof(ship_t));
-			ships = options.ships.ships;
+			init_storage(&state.ships, n_max + 100, sizeof(ship_t));
+			ships = state.ships.ships;
 		}
 		ships[n].id = id;
 		ships[n].x = x;
@@ -509,7 +510,7 @@ void updateShip(json_int_t id, float x, float y, int owner, int size, const char
 		strncpy(ships[n].contents, contents, 25);
 		ships[n].docked_to = docked_to;
 		ships[n].active = 1;
-		options.ships.n++;
+		state.ships.n++;
 	}
 
 }
@@ -518,9 +519,9 @@ void updateBase(json_int_t id, float x, float y, int owner, int size, const char
 	int i;
 	char found = 0;
 	base_t *bases;
-	bases = options.bases.bases;
-	size_t n = options.bases.n;
-	size_t n_max = options.bases.n_max;
+	bases = state.bases.bases;
+	size_t n = state.bases.n;
+	size_t n_max = state.bases.n_max;
 	for(i = 0; i < n; i++) {
 		if(bases[i].id == id) {
 			bases[i].x = x;
@@ -536,8 +537,8 @@ void updateBase(json_int_t id, float x, float y, int owner, int size, const char
 	}
 	if(!found) {
 		if(n >= n_max -1) {
-			init_storage(&options.bases, n_max + 100, sizeof(base_t));
-			bases = options.bases.bases;
+			init_storage(&state.bases, n_max + 100, sizeof(base_t));
+			bases = state.bases.bases;
 		}
 		bases[n].id = id;
 		bases[n].x = x;
@@ -547,7 +548,7 @@ void updateBase(json_int_t id, float x, float y, int owner, int size, const char
 		strncpy(bases[n].contents, contents, 25);
 		bases[n].docked_to = docked_to;
 		bases[n].active = 1;
-		options.bases.n++;
+		state.bases.n++;
 	}
 
 }
@@ -556,9 +557,9 @@ void createExplosion(float x, float y) {
 	int i;
 	char foundEmpty = 0;
 	explosion_t *explosions;
-	explosions = options.explosions.explosions;
-	size_t n = options.explosions.n;
-	size_t n_max = options.explosions.n_max;
+	explosions = state.explosions.explosions;
+	size_t n = state.explosions.n;
+	size_t n_max = state.explosions.n_max;
 	for(i = 0; i < n; i++) {
 		if(explosions[i].strength <= 0) {
 			explosions[i].x = x;
@@ -570,13 +571,13 @@ void createExplosion(float x, float y) {
 	}
 	if(!foundEmpty) {
 		if(n >= n_max -1) {
-			init_storage(&options.explosions, n_max + 100, sizeof(explosion_t));
-			explosions = options.explosions.explosions;
+			init_storage(&state.explosions, n_max + 100, sizeof(explosion_t));
+			explosions = state.explosions.explosions;
 		}
 		explosions[n].x = x;
 		explosions[n].y = y;
 		explosions[n].strength = 256;
-		options.explosions.n++;
+		state.explosions.n++;
 	}
 }
 
@@ -609,9 +610,9 @@ void jsonPlayer(json_t* player) {
 	int i;
 	char found = 0;
 	player_t *players;
-	players = options.players.players;
-	size_t n = options.players.n;
-	size_t n_max = options.players.n_max;
+	players = state.players.players;
+	size_t n = state.players.n;
+	size_t n_max = state.players.n_max;
 	for(i = 0; i < n; i++) {
 		if(players[i].id == id) {
 			found = 1;
@@ -620,8 +621,8 @@ void jsonPlayer(json_t* player) {
 	}
 	if(!found) {
 		if(n >= n_max -1) {
-			init_storage(&options.players, n_max + 100, sizeof(player_t));
-			players = options.players.players;
+			init_storage(&state.players, n_max + 100, sizeof(player_t));
+			players = state.players.players;
 		}
 		players[n].id = id;
 		players[n].name = malloc(strlen(name)+1);
@@ -630,7 +631,7 @@ void jsonPlayer(json_t* player) {
 			exit(1);
 		}
 		strncpy(players[n].name, name, 10);
-		options.players.n++;
+		state.players.n++;
 	}
 }
 
@@ -638,8 +639,8 @@ void jsonAsteroids(json_t* a, int updatemode) {
 	int i;
 
 	asteroid_t *asteroids;
-	asteroids = options.asteroids.asteroids;
-	size_t n = options.asteroids.n;
+	asteroids = state.asteroids.asteroids;
+	size_t n = state.asteroids.n;
 	if(updatemode == OVERWRITE) {
 		for(i = 0; i < n; i++) {
 			asteroids[i].active = 0;
@@ -687,9 +688,9 @@ void updateAsteroid(json_int_t id, float x, float y, const char* contents) {
 	char found = 0;
 
 	asteroid_t *asteroids;
-	asteroids = options.asteroids.asteroids;
-	size_t n = options.asteroids.n;
-	size_t n_max = options.asteroids.n_max;
+	asteroids = state.asteroids.asteroids;
+	size_t n = state.asteroids.n;
+	size_t n_max = state.asteroids.n_max;
 	for(i = 0; i < n; i++) {
 		if(asteroids[i].id == id) {
 			asteroids[i].x = x;
@@ -702,15 +703,15 @@ void updateAsteroid(json_int_t id, float x, float y, const char* contents) {
 	}
 	if(!found) {
 		if(n >= n_max -1) {
-			init_storage(&options.asteroids, n_max + 100, sizeof(asteroid_t));
-			asteroids = options.asteroids.asteroids;
+			init_storage(&state.asteroids, n_max + 100, sizeof(asteroid_t));
+			asteroids = state.asteroids.asteroids;
 		}
 		asteroids[n].id = id;
 		asteroids[n].x = x;
 		asteroids[n].y = y;
 		strncpy(asteroids[n].contents, contents, 10);
 		asteroids[n].active = 1;
-		options.asteroids.n++;
+		state.asteroids.n++;
 	}
 }
 
@@ -738,26 +739,26 @@ void jsonBbox(json_t* bbox) {
 			ymax = json_number_value(j_ymax);
 		}
 
-		if((xmin != options.boundingbox.xmin) || (xmax != options.boundingbox.xmax) || (ymin != options.boundingbox.ymin) || (ymax != options.boundingbox.ymax)) {
-			options.boundingbox.xmin = xmin;
-			options.boundingbox.xmax = xmax;
-			options.boundingbox.ymin = ymin;
-			options.boundingbox.ymax = ymax;
+		if((xmin != state.boundingbox.xmin) || (xmax != state.boundingbox.xmax) || (ymin != state.boundingbox.ymin) || (ymax != state.boundingbox.ymax)) {
+			state.boundingbox.xmin = xmin;
+			state.boundingbox.xmax = xmax;
+			state.boundingbox.ymin = ymin;
+			state.boundingbox.ymax = ymax;
 			fprintf(stdout, "Updated bbox to (%f, %f) x (%f, %f)\n", xmin, xmax, ymin, ymax);
 		} else {
 			return;
 		}
 
 		if(!seenBbox) {
-			float zoomx = 640/(options.boundingbox.xmax - options.boundingbox.xmin);
-			float zoomy = 480/(options.boundingbox.ymax - options.boundingbox.ymin);
+			float zoomx = 640/(state.boundingbox.xmax - state.boundingbox.xmin);
+			float zoomy = 480/(state.boundingbox.ymax - state.boundingbox.ymin);
 			if(zoomx < zoomy) {
 				options.zoom = zoomx;
 			} else {
 				options.zoom = zoomy;
 			}
-			options.offset_x = 320 - options.zoom*(options.boundingbox.xmin + options.boundingbox.xmax)/2;
-			options.offset_y = 240 - options.zoom*(options.boundingbox.ymin + options.boundingbox.ymax)/2;
+			options.offset_x = 320 - options.zoom*(state.boundingbox.xmin + state.boundingbox.xmax)/2;
+			options.offset_y = 240 - options.zoom*(state.boundingbox.ymin + state.boundingbox.ymax)/2;
 			seenBbox = 1;
 		}
 	}

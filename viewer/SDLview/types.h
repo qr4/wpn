@@ -74,6 +74,7 @@ typedef struct {
 	char* name;
 } player_t;
 
+typedef struct state_t state_t;
 typedef struct options_t options_t;
 typedef struct storage_t storage_t;
 
@@ -92,7 +93,7 @@ struct storage_t {
 	unsigned int n_max;
 };
 
-struct options_t {
+struct state_t {
 	storage_t asteroids;
 	storage_t bases;
 	storage_t explosions;
@@ -102,6 +103,9 @@ struct options_t {
 	storage_t players;
 
 	bbox_t boundingbox;
+};
+
+struct options_t {
 	int local_player ;
 
 	unsigned int display_x;
