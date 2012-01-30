@@ -357,7 +357,6 @@ void draw_ships(SDL_Surface *buffer) {
 	const float offset_x = options.offset_x;
 	const float offset_y = options.offset_y;
 
-	SDL_SetAlpha(buffer, 0, 255);
 	for(size_t i = 0; i < state.ships.n; i++) {
 		const ship_t *s = &(state.ships.ships[i]);
 		if(s->active > 0) {
