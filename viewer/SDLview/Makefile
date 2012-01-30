@@ -1,6 +1,6 @@
 #CC = clang
 CC = gcc
-FLAGS = -Wall -g3 -O3 -march=native -mtune=native -fopenmp 
+FLAGS = -Wall -g3 -O3 -march=native -mtune=native -fopenmp
 CLIBS = `sdl-config --cflags` -I ~/include -I ../../net
 LDFLAGS = `sdl-config --libs` -L ~/lib -lSDL_gfx -lSDL_image -lSDL_ttf -lm -lpthread -ljansson
 OBJ = buffer.o json.o main.o sdl.o ../../net/pstr.o layerrenderers.o
@@ -15,10 +15,10 @@ endif
 main: $(OBJ) Makefile
 	$(CC) $(FLAGS) $(LDFLAGS) -o $@ $(OBJ)
 
-%.o: %.c %.h 
+%.o: %.c %.h
 	$(CC) $(FLAGS) $(CLIBS) -c $<
 
-%.o: %.c 
+%.o: %.c
 	$(CC) $(FLAGS) $(CLIBS) -c $<
 
 .PHONY : clean

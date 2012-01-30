@@ -125,10 +125,10 @@ void draw_influence(SDL_Surface *buffer) {
 				double h = player_to_h(owner);
 
 				((uint32_t *) influence_cache->pixels)[buffer->w * y + x] = SDL_MapRGBA(
-					influence_cache->format, 
-					red_from_H(h), 
-					green_from_H(h), 
-					blue_from_H(h), 
+					influence_cache->format,
+					red_from_H(h),
+					green_from_H(h),
+					blue_from_H(h),
 					32
 					);
 			}

@@ -221,7 +221,7 @@ int main(int argc, const char* argv[] ) {
 
 	if(argc == 3) {
 		options.local_player = atoi(argv[2]);
-	} 
+	}
 
 	SDLinit();
 
