@@ -186,6 +186,23 @@ void checkSDLevent() {
 					case SDLK_q:
 						fprintf(stderr, "Closing by user request\n");
 						exit(0);
+					case SDLK_1:
+					case SDLK_2:
+					case SDLK_3:
+					case SDLK_4:
+					case SDLK_5:
+					case SDLK_6:
+					case SDLK_7:
+					case SDLK_8:
+					case SDLK_9:
+						{
+							unsigned int layer = event.key.keysym.sym - SDLK_1; // dangerous, i know
+							if (layer < n_layers) {
+								layers[layer].active ^= true;
+								printf("%s layer %d\n", (layers[layer].active == true) ? "Enable" : "Disable", layer + 1);
+							}
+						}
+						break;
 					default:
 						break;
 				}
