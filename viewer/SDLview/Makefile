@@ -3,7 +3,7 @@ CC = gcc
 FLAGS = -Wall -g3 -O3 -march=native -mtune=native -fopenmp
 CLIBS = `sdl-config --cflags` -I ~/include -I ../../net
 LDFLAGS = `sdl-config --libs` -L ~/lib -lSDL_gfx -lSDL_image -lSDL_ttf -lm -lpthread -ljansson
-OBJ = buffer.o json.o main.o sdl.o ../../net/pstr.o layerrenderers.o
+OBJ = buffer.o json.o main.o sdl.o ../../net/pstr.o layerrenderers.o snapshot.o
 
 ifeq ($(CC),gcc)
 	FLAGS += -fms-extensions -std=c99

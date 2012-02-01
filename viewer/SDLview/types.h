@@ -1,5 +1,6 @@
 #ifndef _TYPES_H
 #define _TYPES_H
+#include <pthread.h>
 #include <jansson.h>
 #include <SDL/SDL.h>
 #include <stdbool.h>
@@ -77,6 +78,7 @@ typedef struct {
 typedef struct state_t state_t;
 typedef struct options_t options_t;
 typedef struct storage_t storage_t;
+typedef struct snapshot_t snapshot_t;
 
 struct storage_t {
 	union {
@@ -124,6 +126,14 @@ struct options_t {
 	bool show_text_id;
 	bool show_text_coords;
 	bool show_influence;
+};
+
+struct snapshot_t {
+	options_t options;
+	state_t   state;
+	size_t    timestamp;
+	size_t    _refcount;     // private
+	pthread_mutex_t _mutex;  // private
 };
 
 typedef void (*LayerFunction)(SDL_Surface *buffer);
