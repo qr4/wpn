@@ -4,13 +4,14 @@
 #include "snapshot.h"
 
 snapshot_t *current_snapshot = NULL;
+size_t timestamp = 0;
 pthread_mutex_t current_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static inline void copy_storage(storage_t *dst, storage_t *src, size_t size) {
-	dst->data = malloc(dst->n_max * size);
-	memcpy(dst->data, src->data, dst->n_max * size);
 	dst->n = src->n;
 	dst->n_max = src->n_max;
+	dst->data = malloc(dst->n_max * size);
+	memcpy(dst->data, src->data, dst->n_max * size);
 }
 
 static void copy_state(state_t *dst, state_t *src) {
@@ -41,11 +42,25 @@ static void incref(snapshot_t *snapshot) {
 
 void snapshot_update(snapshot_t *snapshot) {
 	pthread_mutex_lock(&current_mutex);
+	snapshot_release(current_snapshot);
+	snapshot_t *t = malloc(sizeof(snapshot_t));
+	copy_snapshot(t, snapshot);
+	t->timestamp = timestamp++;
+	current_snapshot = t;
+	fprintf(stderr, "register new snapshot\n");
 	pthread_mutex_unlock(&current_mutex);
+}
+
+void snapshot_update_from_members(state_t *state, options_t *options) {
+	snapshot_t t;
+	copy_state(&t.state, state);
+	t.options = *options;
+	snapshot_update(&t);
 }
 
 snapshot_t *snapshot_getcurrent() {
 	incref(current_snapshot);
+	fprintf(stderr, "coping\n");
 	return current_snapshot;
 }
 
@@ -56,17 +71,10 @@ void snapshot_getcurrentcopy(snapshot_t *snapshot) {
 }
 
 void snapshot_release(snapshot_t *snapshot) {
-	if (snapshot == current_snapshot) {
-			pthread_mutex_lock(&current_mutex);
-	}
-
-	pthread_mutex_lock(&current_mutex);
+	if (snapshot == NULL) return;
 	pthread_mutex_lock(&snapshot->_mutex);
-	pthread_mutex_t t = snapshot->_mutex;
-	snapshot->_refcount--;
-	pthread_mutex_unlock(&t);
 
-	if (snapshot->_refcount == 0) {
+	if (snapshot->_refcount <= 1) {
 		free(snapshot->state.asteroids.data);
 		free(snapshot->state.bases.data);
 		free(snapshot->state.explosions.data);
@@ -75,11 +83,13 @@ void snapshot_release(snapshot_t *snapshot) {
 		free(snapshot->state.shots.data);
 		free(snapshot->state.players.data);
 
-		free(snapshot);
+		pthread_mutex_unlock(&snapshot->_mutex);
 
-		if (snapshot == current_snapshot) {
-			current_snapshot = NULL;
-			pthread_mutex_unlock(&current_mutex);
-		}
+		free(snapshot);
+		fprintf(stderr, "actually getting rid of a snapshot\n");
+	} else {
+		snapshot->_refcount--;
+		pthread_mutex_unlock(&snapshot->_mutex);
 	}
+
 }
