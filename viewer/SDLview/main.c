@@ -13,6 +13,7 @@
 #include "json.h"
 #include "sdl.h"
 #include "types.h"
+#include "snapshot.h"
 
 #define PORT "8080"
 
@@ -201,6 +202,7 @@ void set_default_opts() {
 	options.show_text_id = false;
 	options.show_text_coords = false;
 	options.show_influence = false;
+
 }
 
 int main(int argc, const char* argv[] ) {
@@ -223,6 +225,7 @@ int main(int argc, const char* argv[] ) {
 		options.local_player = atoi(argv[2]);
 	}
 
+
 	SDLinit();
 
 	while(1) {
@@ -240,6 +243,7 @@ int main(int argc, const char* argv[] ) {
 			parseJson(&buffer);
 		}
 
+		snapshot_update_from_members(&state, &options);
 		SDLplot();
 
 	}

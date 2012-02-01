@@ -47,7 +47,7 @@ void snapshot_update(snapshot_t *snapshot) {
 	copy_snapshot(t, snapshot);
 	t->timestamp = timestamp++;
 	current_snapshot = t;
-	fprintf(stderr, "register new snapshot\n");
+	//fprintf(stderr, "register new snapshot\n");
 	pthread_mutex_unlock(&current_mutex);
 }
 
@@ -60,7 +60,7 @@ void snapshot_update_from_members(state_t *state, options_t *options) {
 
 snapshot_t *snapshot_getcurrent() {
 	incref(current_snapshot);
-	fprintf(stderr, "coping\n");
+	//fprintf(stderr, "coping\n");
 	return current_snapshot;
 }
 
@@ -86,10 +86,9 @@ void snapshot_release(snapshot_t *snapshot) {
 		pthread_mutex_unlock(&snapshot->_mutex);
 
 		free(snapshot);
-		fprintf(stderr, "actually getting rid of a snapshot\n");
+		//fprintf(stderr, "actually getting rid of a snapshot\n");
 	} else {
 		snapshot->_refcount--;
 		pthread_mutex_unlock(&snapshot->_mutex);
 	}
-
 }

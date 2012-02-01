@@ -2,6 +2,7 @@
 #include <SDL/SDL_gfxBlitFunc.h>
 
 #include "layerrenderers.h"
+#include "snapshot.h"
 
 extern state_t state;
 #define asprintf(...) if(asprintf(__VA_ARGS__))
@@ -49,10 +50,16 @@ static int position_of_max(double values[], int n) {
 	return pos_max;
 }
 
-void draw_influence(SDL_Surface *buffer) {
-	static bool rerender = true;
-	static options_t local_options_old;
-	static state_t local_state_old;
+static bool same_storage(const storage_t *s1, const storage_t *s2, size_t size) {
+	if (s1 == NULL || s2 == NULL) return false;
+	if (s1->n != s2->n) return false;
+	if (size != 0) {
+		if (memcmp(s1->data, s2->data, size * s1->n) != 0) return false;
+	}
+	return true;
+}
+
+static void render_influence(SDL_Surface *buffer) {
 	double left, up;
 	double pos_x, pos_y;
 	double d;
@@ -62,36 +69,9 @@ void draw_influence(SDL_Surface *buffer) {
 	int pos_max;
 	int owner;
 	size_t id_range;
-
-	const base_t *bases = state.bases.bases;
-	const size_t n_bases = state.bases.n;
-
-	if (state.bases.n < 1 || options.show_influence == false) {
-		rerender = true;
-		return;
-	}
-
-	if (state.bases.n               == local_state_old.bases.n && !rerender
-	&& options.show_influence       == local_options_old.show_influence
-	&& options.offset_x             == local_options_old.offset_x
-	&& options.offset_y             == local_options_old.offset_y
-	&& options.influence_threshhold == local_options_old.influence_threshhold
-	&& buffer->w                    == influence_cache->w
-	&& buffer->h                    == influence_cache->h
-		) {
-		goto blit_cache;
-	}
-	if (memcmp(&options, &local_options_old, sizeof(options_t)) == 0) {
-		goto blit_cache;
-	}
-	memcpy(&local_options_old, &options, sizeof(options_t));
-	memcpy(&local_state_old, &state, sizeof(state_t));
-	rerender = false;
-
-	SDL_FreeSurface(influence_cache);
-	influence_cache = SDL_ConvertSurface(buffer, buffer->format, buffer->flags);
-	printf("new cache\n");
-
+	snapshot_t *snapshot = snapshot_getcurrent();
+	const base_t *bases = snapshot->state.bases.bases;
+	const size_t n_bases = snapshot->state.bases.n;
 	min_owner = max_owner = bases[0].owner;
 
 	for (size_t i = 1; i < n_bases; i++) {
@@ -104,9 +84,9 @@ void draw_influence(SDL_Surface *buffer) {
 
 	id_range = max_owner - min_owner + 1;
 
-	d    = 1 / options.zoom;
-	left = -options.offset_x * d;
-	up   = -options.offset_y * d;
+	d    = 1 / snapshot->options.zoom;
+	left = -snapshot->options.offset_x * d;
+	up   = -snapshot->options.offset_y * d;
 
 	for (y = 0, pos_y = up; y < buffer->h; y+=1, pos_y = up + y * d) {
 		for (x = 0, pos_x = left; x < buffer->w; x+=1, pos_x = left + x * d) {
@@ -121,11 +101,11 @@ void draw_influence(SDL_Surface *buffer) {
 			owner   = min_owner + pos_max;
 
 
-			if (influence[pos_max] >= options.influence_threshhold) {
+			if (influence[pos_max] >= snapshot->options.influence_threshhold) {
 				double h = player_to_h(owner);
 
-				((uint32_t *) influence_cache->pixels)[buffer->w * y + x] = SDL_MapRGBA(
-					influence_cache->format,
+				((uint32_t *) buffer->pixels)[buffer->w * y + x] = SDL_MapRGBA(
+					buffer->format,
 					red_from_H(h),
 					green_from_H(h),
 					blue_from_H(h),
@@ -134,10 +114,46 @@ void draw_influence(SDL_Surface *buffer) {
 			}
 		}
 	}
+	snapshot_release(snapshot);
+}
+
+void draw_influence(SDL_Surface *buffer) {
+	static snapshot_t *snapshot = NULL;
+	static snapshot_t *snapshot_old = NULL;
+
+	snapshot = snapshot_getcurrent();
+
+	if (snapshot->state.bases.n < 1 || snapshot->options.show_influence == false) {
+		goto cleanup;
+	}
+
+	if (
+			   snapshot_old                           != NULL
+			&& same_storage(&snapshot->state.bases, &snapshot_old->state.bases, sizeof(base_t))
+			&& snapshot->options.show_influence       == snapshot_old->options.show_influence
+			&& snapshot->options.offset_x             == snapshot_old->options.offset_x
+			&& snapshot->options.offset_y             == snapshot_old->options.offset_y
+			&& snapshot->options.influence_threshhold == snapshot_old->options.influence_threshhold
+			&& buffer->w                              == influence_cache->w
+			&& buffer->h                              == influence_cache->h
+		) {
+		goto blit_cache;
+	}
+
+	snapshot_release(snapshot_old);
+	snapshot_old = snapshot_getcurrent();
+
+	SDL_FreeSurface(influence_cache);
+	influence_cache = SDL_ConvertSurface(buffer, buffer->format, buffer->flags);
+	printf("new cache\n");
+
+	render_influence(influence_cache);
 
 blit_cache:
 	fprintf(stderr, "copying cache\n");
 	SDL_gfxBlitRGBA(influence_cache, NULL, buffer, NULL);
+cleanup:
+	snapshot_release(snapshot);
 }
 
 static void draw_slot(SDL_Surface *buffer, float x, float y, char type) {
