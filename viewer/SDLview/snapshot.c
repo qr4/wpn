@@ -53,7 +53,7 @@ void snapshot_update(snapshot_t *snapshot) {
 
 void snapshot_update_from_members(state_t *state, options_t *options) {
 	snapshot_t t;
-	copy_state(&t.state, state);
+	t.state = *state;
 	t.options = *options;
 	snapshot_update(&t);
 }
