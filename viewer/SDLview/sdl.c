@@ -240,13 +240,11 @@ void checkSDLevent() {
 				}
 				break;
 			case SDL_MOUSEBUTTONUP:
-				layers[0].active = true;
 				break;
 			case SDL_MOUSEMOTION:
 				options.mouse_pos_x = event.motion.x;
 				options.mouse_pos_y = event.motion.y;
 				if(event.motion.state & 1) {
-					layers[0].active = false;
 					options.offset_x += event.motion.xrel;
 					options.offset_y += event.motion.yrel;
 				}
@@ -266,7 +264,6 @@ void checkSDLevent() {
 static SDL_Surface *create_buffer(uint32_t bg) {
 	SDL_Surface *scr;
 	SDL_Surface *ret;
-#pragma omp critical
 	{
 		scr = SDL_GetVideoSurface();
 		ret = SDL_DisplayFormatAlpha(scr);
@@ -284,7 +281,6 @@ void SDLplot() {
 
 	zoom_textures();
 
-#pragma omp parallel for
 	for (i = 0; i < n_layers; i++) {
 		if (layers[i].active == true) {
 			layers[i].buffer = create_buffer(bgcolor);

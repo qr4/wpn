@@ -1,5 +1,6 @@
 #include <math.h>
 #include <SDL/SDL_gfxBlitFunc.h>
+#include <pthread.h>
 
 #include "layerrenderers.h"
 #include "snapshot.h"
@@ -59,7 +60,8 @@ static bool same_storage(const storage_t *s1, const storage_t *s2, size_t size) 
 	return true;
 }
 
-static void render_influence(SDL_Surface *buffer) {
+static void *render_influence(void *arg) {
+	SDL_Surface *buffer = (SDL_Surface *) arg;
 	double left, up;
 	double pos_x, pos_y;
 	double d;
@@ -115,11 +117,23 @@ static void render_influence(SDL_Surface *buffer) {
 		}
 	}
 	snapshot_release(snapshot);
+
+	return buffer;
 }
+
+typedef enum {
+	UNINITIALIZED,
+	RUNNING,
+	COMPLETE,
+} thread_stat_t;
+
 
 void draw_influence(SDL_Surface *buffer) {
 	static snapshot_t *snapshot = NULL;
 	static snapshot_t *snapshot_old = NULL;
+	static pthread_t influence_render_thread;
+	static thread_stat_t thread_status = UNINITIALIZED;
+	SDL_Surface *thread_ret;
 
 	snapshot = snapshot_getcurrent();
 
@@ -127,8 +141,15 @@ void draw_influence(SDL_Surface *buffer) {
 		goto cleanup;
 	}
 
+	if (thread_status == RUNNING && pthread_tryjoin_np(influence_render_thread, (void **) &thread_ret) == 0) {
+		SDL_FreeSurface(influence_cache);
+		influence_cache = thread_ret;
+		thread_status = COMPLETE;
+	}
+
 	if (
 			   snapshot_old                           != NULL
+			&& influence_cache                        != NULL
 			&& same_storage(&snapshot->state.bases, &snapshot_old->state.bases, sizeof(base_t))
 			&& snapshot->options.show_influence       == snapshot_old->options.show_influence
 			&& snapshot->options.offset_x             == snapshot_old->options.offset_x
@@ -140,17 +161,18 @@ void draw_influence(SDL_Surface *buffer) {
 		goto blit_cache;
 	}
 
-	snapshot_release(snapshot_old);
-	snapshot_old = snapshot_getcurrent();
+	if (thread_status != RUNNING) {
+		SDL_Surface *t;
+		snapshot_release(snapshot_old);
+		snapshot_old = snapshot_getcurrent();
 
-	SDL_FreeSurface(influence_cache);
-	influence_cache = SDL_ConvertSurface(buffer, buffer->format, buffer->flags);
-	printf("new cache\n");
+		t = SDL_ConvertSurface(buffer, buffer->format, buffer->flags);
 
-	render_influence(influence_cache);
+		pthread_create(&influence_render_thread, NULL, render_influence, t);
+		thread_status = RUNNING;
+	}
 
 blit_cache:
-	fprintf(stderr, "copying cache\n");
 	SDL_gfxBlitRGBA(influence_cache, NULL, buffer, NULL);
 cleanup:
 	snapshot_release(snapshot);
