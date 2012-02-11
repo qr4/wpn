@@ -60,6 +60,11 @@ static bool same_storage(const storage_t *s1, const storage_t *s2, size_t size) 
 	return true;
 }
 
+static uint32_t color_from_owner(const SDL_Surface *buffer, int owner) {
+	double h = player_to_h(owner);
+	return SDL_MapRGBA(buffer->format, red_from_H(h), green_from_H(h), blue_from_H(h), 32);
+}
+
 static void *render_influence(void *arg) {
 	SDL_Surface *buffer = (SDL_Surface *) arg;
 	double left, up;
@@ -69,7 +74,6 @@ static void *render_influence(void *arg) {
 	int max_owner;
 	int min_owner;
 	int pos_max;
-	int owner;
 	size_t id_range;
 	snapshot_t *snapshot = snapshot_getcurrent();
 	const base_t *bases = snapshot->state.bases.bases;
@@ -86,6 +90,11 @@ static void *render_influence(void *arg) {
 
 	id_range = max_owner - min_owner + 1;
 
+	uint32_t colormap[id_range];
+	for (size_t i = 0; i < id_range; i++) {
+		colormap[i] = color_from_owner(arg, i + min_owner);
+	}
+
 	d    = 1 / snapshot->options.zoom;
 	left = -snapshot->options.offset_x * d;
 	up   = -snapshot->options.offset_y * d;
@@ -100,19 +109,9 @@ static void *render_influence(void *arg) {
 			}
 
 			pos_max = position_of_max(influence, id_range);
-			owner   = min_owner + pos_max;
-
 
 			if (influence[pos_max] >= snapshot->options.influence_threshhold) {
-				double h = player_to_h(owner);
-
-				((uint32_t *) buffer->pixels)[buffer->w * y + x] = SDL_MapRGBA(
-					buffer->format,
-					red_from_H(h),
-					green_from_H(h),
-					blue_from_H(h),
-					32
-					);
+				((uint32_t *) buffer->pixels)[buffer->w * y + x] = colormap[pos_max];
 			}
 		}
 	}
