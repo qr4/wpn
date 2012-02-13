@@ -78,11 +78,6 @@ def print_usage():
 	print "USAGE: %s bindip:port foreignip:port" % (sys.argv[0])
 
 def main():
-	bindaddr = ''
-	bindport = 0
-	foreignaddr = ''
-	foreignaddr = 0
-
 	try:
 		bindaddr,    bindport    = sys.argv[1].split(":")
 		foreignaddr, foreignport = sys.argv[2].split(":")
