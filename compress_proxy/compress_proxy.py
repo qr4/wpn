@@ -5,22 +5,74 @@ from time import sleep
 import asyncore
 import socket
 
-class ClientHandler(asyncore.dispatcher_with_send):
+class BufferFull(Exception):
+	def __init__(self, value):
+		self.value = value
+	def __str__(self):
+		return repr(self.value)
+
+class ClientOutput(asyncore.dispatcher):
+	def __init__(self, sock):
+		asyncore.dispatcher.__init__(self, sock = sock)
+		self.queue = []
+		self.buffered = 0
+		self.max_buffered = 1 * 1024 * 1024
+		self.write = False
+
+	def enqueue(self, data):
+		#print "enqueing %d bytes, buffered %d" % (len(data), self.buffered)
+		new_size = self.buffered + len(data)
+		if new_size > self.max_buffered:
+			raise BufferFull(new_size)
+
+		self.queue.append(data)
+		self.buffered = new_size
+		self.write = True
+
+	def handle_close(self):
+		# this is dirty, come up with a better idea
+		self.queue = []
+		self.buffered = 0
+		self.max_buffered = -1
+
+	def handle_write(self):
+		if self.buffered == 0:
+			self.write = False
+			return
+		packet = self.queue.pop(0)
+		sent = self.send(packet)
+		packet = packet[sent:]
+		self.buffered -= sent
+
+		if len(packet) > 0:
+			self.queue = [packet] + self.queue
+
+	def readable(self):
+		return False
+
+	def writable(self):
+		#print "writeable", self.write
+		return self.write
+
+
+class ClientHandler(asyncore.dispatcher):
 	def __init__(self, host, port):
-		asyncore.dispatcher_with_send.__init__(self)
+		asyncore.dispatcher.__init__(self)
 		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.connect( (host, port) )
 		self.clients = []
 
 	def handle_read(self):
 		"""new data from the server, broadcast to all clients"""
+
 		data = self.recv(8192)
 		if data:
 			to_remove = []
 			for client in self.clients:
 				try:
-					client.sendall(data)
-				except:
+					client.enqueue(data)
+				except BufferFull as e:
+					print 'Removing slow client: %s bytes in Buffer' % (e)
 					to_remove.append(client)
 
 			for broken in to_remove:
@@ -30,7 +82,6 @@ class ClientHandler(asyncore.dispatcher_with_send):
 	def handle_close(self):
 		self.close_all()
 		self.close()
-		raise
 		
 	def handle_error(self):
 		self.handle_close()
@@ -38,7 +89,7 @@ class ClientHandler(asyncore.dispatcher_with_send):
 
 	def add_client(self, sock):
 		sock.setblocking(0)
-		self.clients.append(sock)
+		self.clients.append(ClientOutput(sock))
 
 	def close_all(self):
 		for client in self.clients:
@@ -46,7 +97,7 @@ class ClientHandler(asyncore.dispatcher_with_send):
 			client.close()
 		self.clients = []
 
-	def writeable():
+	def writable(self):
 		return False
 
 class CompressServer(asyncore.dispatcher):
@@ -71,7 +122,7 @@ class CompressServer(asyncore.dispatcher):
 		self.close()
 		raise
 
-	def writeable():
+	def writable(self):
 		return False
 
 def print_usage():
