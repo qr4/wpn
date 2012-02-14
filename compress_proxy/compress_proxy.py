@@ -34,24 +34,26 @@ class ClientOutput(asyncore.dispatcher):
 		self.queue = []
 		self.buffered = 0
 		self.max_buffered = -1
+		self.write = False
 
 	def handle_write(self):
-		if self.buffered == 0:
-			self.write = False
-			return
-		packet = self.queue.pop(0)
-		sent = self.send(packet)
-		packet = packet[sent:]
-		self.buffered -= sent
+		while True:
+			if self.buffered == 0:
+				self.write = False
+				return
+			packet = self.queue.pop(0)
+			sent = self.send(packet)
+			packet = packet[sent:]
+			self.buffered -= sent
 
-		if len(packet) > 0:
-			self.queue = [packet] + self.queue
+			if len(packet) > 0:
+				self.queue = [packet] + self.queue
+				break
 
 	def readable(self):
 		return False
 
 	def writable(self):
-		#print "writeable", self.write
 		return self.write
 
 
@@ -68,6 +70,7 @@ class ClientHandler(asyncore.dispatcher):
 		data = self.recv(8192)
 		if data:
 			to_remove = []
+			print "\rbroadcasting %d * %d = %d bytes " % (len(data), len(self.clients), len(data) * len(self.clients)),
 			for client in self.clients:
 				try:
 					client.enqueue(data)
@@ -130,8 +133,8 @@ def print_usage():
 
 def main():
 	try:
-		bindaddr,    bindport    = sys.argv[1].split(":")
-		foreignaddr, foreignport = sys.argv[2].split(":")
+		bindaddr,    bindport    = sys.argv[1].rsplit(":", 1)
+		foreignaddr, foreignport = sys.argv[2].rsplit(":", 1)
 		bindport    = int(bindport)
 		foreignport = int(foreignport)
 	except:
