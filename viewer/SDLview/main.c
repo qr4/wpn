@@ -130,7 +130,7 @@ void *get_in_addr(struct sockaddr *sa) {
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int connect2server(const char* server) {
+int connect2server(const char* server, const char* port) {
 	int sockfd;
 	struct addrinfo hints, *servinfo, *p;
 	int rv;
@@ -139,8 +139,8 @@ int connect2server(const char* server) {
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	printf("connect to server %s\n", server);
-	rv = getaddrinfo(server, PORT, &hints, &servinfo);
+	printf("connect to server %s:%s\n", server, port);
+	rv = getaddrinfo(server, port, &hints, &servinfo);
 
 	if (rv != 0) {
 		printf("getaddrinfo: %s\n", gai_strerror(rv));
@@ -173,9 +173,9 @@ int connect2server(const char* server) {
 	return sockfd;
 }
 
-int reconnect2server(const char* server) {
+int reconnect2server(const char* server, const char* port) {
 	for (;;) {
-		int fd = connect2server(server);
+		int fd = connect2server(server, port);
 		if (fd != -1) {
 			return fd;
 		}
@@ -207,6 +207,8 @@ void set_default_opts() {
 
 int main(int argc, const char* argv[] ) {
 	buffer_t buffer; // wir verwenden nur die datenstruktur = getBuffer();
+	char *hostname;
+	char *port;
 	int ret;
 
 	if (argc != 2 && argc != 3) {
@@ -214,10 +216,18 @@ int main(int argc, const char* argv[] ) {
 		exit(EXIT_FAILURE);
 	}
 
+	hostname = strdup(argv[1]);
+	port = rindex(hostname, ':');
+	if (port != NULL) {
+		*port = '\0';
+		port++;
+	} else {
+		port = PORT;
+	}
 
 	dstr_malloc(&net_puffer);
 	dstr_malloc(&json_puffer);
-	int net = reconnect2server(argv[1]);
+	int net = reconnect2server(hostname, port);
 
 	set_default_opts();
 
@@ -236,7 +246,7 @@ int main(int argc, const char* argv[] ) {
 
 		if (ret == -1) {
 			close(net);
-			net = reconnect2server(argv[1]);
+			net = reconnect2server(hostname, port);
 		}
 
 		if (ret == 1) {
@@ -248,6 +258,7 @@ int main(int argc, const char* argv[] ) {
 
 	}
 
+	free(hostname);
 	close(net);
 
 	return 0;
