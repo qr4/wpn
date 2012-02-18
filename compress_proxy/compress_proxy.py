@@ -4,6 +4,7 @@ import sys
 from time import sleep
 import asyncore
 import socket
+from subprocess import PIPE, Popen
 
 class BufferFull(Exception):
 	def __init__(self, value):
@@ -62,6 +63,8 @@ class WorldSplitter(list):
 	def __init__(self):
 		self.json_depth = 0
 		self.temp_buff = []
+		self.compressed = 0.0
+		self.uncompressed = 0.0
 
 	def parse(self, data):
 		for c in data:
@@ -69,7 +72,12 @@ class WorldSplitter(list):
 				if self.temp_buff:
 					t = "".join(self.temp_buff)
 					if not t.isspace():
-						self.append(t)
+						xz = Popen(['xz', '-z', '-1e', '-c'], stdin = PIPE, stdout = PIPE)
+						compressed, stderrout = xz.communicate(t)
+						self.append(compressed)
+						self.compressed += len(compressed)
+						self.uncompressed += len(t)
+						#self.append(t)
 						self.temp_buff = []
 			if c == '{':
 				self.json_depth += 1
@@ -96,7 +104,8 @@ class ClientHandler(asyncore.dispatcher):
 			data = self.worldsplitter.pop(0)
 			self.worldcounter += 1
 			to_remove = []
-			print "broadcasting world %8d: %8d * %4d = %8d bytes\n" % (self.worldcounter, len(data), len(self.clients), len(data) * len(self.clients)),
+			print "broadcasting world %8d: %8d * %4d = %8d bytes (ratio: %.4f)\n" % \
+					(self.worldcounter, len(data), len(self.clients), len(data) * len(self.clients), self.worldsplitter.compressed / self.worldsplitter.uncompressed),
 			for client in self.clients:
 				try:
 					client.enqueue(data)
