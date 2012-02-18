@@ -58,13 +58,10 @@ class ClientOutput(asyncore.dispatcher):
 	def writable(self):
 		return self.write
 
-
 class WorldSplitter(list):
 	def __init__(self):
 		self.json_depth = 0
 		self.temp_buff = []
-		self.compressed = 0.0
-		self.uncompressed = 0.0
 
 	def parse(self, data):
 		for c in data:
@@ -72,18 +69,18 @@ class WorldSplitter(list):
 				if self.temp_buff:
 					t = "".join(self.temp_buff)
 					if not t.isspace():
-						xz = Popen(['xz', '-z', '-1e', '-c'], stdin = PIPE, stdout = PIPE)
-						compressed, stderrout = xz.communicate(t)
-						self.append(compressed)
-						self.compressed += len(compressed)
-						self.uncompressed += len(t)
-						#self.append(t)
+						self.append(t)
 						self.temp_buff = []
 			if c == '{':
 				self.json_depth += 1
 			elif c == '}':
 				self.json_depth -= 1 if self.json_depth != 0 else 0
 			self.temp_buff.append(str(c))
+
+def compress(data):
+	xz = Popen(['xz', '-z', '-0e', '-c'], stdin = PIPE, stdout = PIPE)
+	compressed, stderrout = xz.communicate(data)
+	return compressed
 
 class ClientHandler(asyncore.dispatcher):
 	def __init__(self, host, port):
@@ -93,6 +90,8 @@ class ClientHandler(asyncore.dispatcher):
 		self.clients = []
 		self.worldsplitter = WorldSplitter()
 		self.worldcounter = 0
+		self.compressed = 0.0
+		self.uncompressed = 0.0
 
 	def handle_read(self):
 		"""new data from the server, broadcast to all clients"""
@@ -100,12 +99,17 @@ class ClientHandler(asyncore.dispatcher):
 		data = self.recv(8192)
 		if data:
 			self.worldsplitter.parse(data)
-		while self.worldsplitter:
-			data = self.worldsplitter.pop(0)
+
+		if self.worldsplitter:
+			t = "".join(self.worldsplitter)
+			while self.worldsplitter: self.worldsplitter.pop()
+			data = compress(t)
+			self.compressed += len(data)
+			self.uncompressed += len(t)
 			self.worldcounter += 1
 			to_remove = []
-			print "broadcasting world %8d: %8d * %4d = %8d bytes (ratio: %.4f)\n" % \
-					(self.worldcounter, len(data), len(self.clients), len(data) * len(self.clients), self.worldsplitter.compressed / self.worldsplitter.uncompressed),
+			print "broadcast %8d: %8d * %4d = %8d bytes (ratio: %.4f)\n" % \
+					(self.worldcounter, len(data), len(self.clients), len(data) * len(self.clients), self.compressed / self.uncompressed)
 			for client in self.clients:
 				try:
 					client.enqueue(data)
