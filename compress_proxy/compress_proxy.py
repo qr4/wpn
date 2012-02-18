@@ -23,6 +23,7 @@ class ClientOutput(asyncore.dispatcher):
 		#print "enqueing %d bytes, buffered %d" % (len(data), self.buffered)
 		new_size = self.buffered + len(data)
 		if new_size > self.max_buffered:
+			self.close()
 			raise BufferFull(new_size)
 
 		self.queue.append(data)
@@ -57,20 +58,45 @@ class ClientOutput(asyncore.dispatcher):
 		return self.write
 
 
+class WorldSplitter(list):
+	def __init__(self):
+		self.json_depth = 0
+		self.temp_buff = []
+
+	def parse(self, data):
+		for c in data:
+			if self.json_depth == 0:
+				if self.temp_buff:
+					t = "".join(self.temp_buff)
+					if not t.isspace():
+						self.append(t)
+						self.temp_buff = []
+			if c == '{':
+				self.json_depth += 1
+			elif c == '}':
+				self.json_depth -= 1 if self.json_depth != 0 else 0
+			self.temp_buff.append(str(c))
+
 class ClientHandler(asyncore.dispatcher):
 	def __init__(self, host, port):
 		asyncore.dispatcher.__init__(self)
 		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.connect( (host, port) )
 		self.clients = []
+		self.worldsplitter = WorldSplitter()
+		self.worldcounter = 0
 
 	def handle_read(self):
 		"""new data from the server, broadcast to all clients"""
 
 		data = self.recv(8192)
 		if data:
+			self.worldsplitter.parse(data)
+		while self.worldsplitter:
+			data = self.worldsplitter.pop(0)
+			self.worldcounter += 1
 			to_remove = []
-			print "\rbroadcasting %d * %d = %d bytes " % (len(data), len(self.clients), len(data) * len(self.clients)),
+			print "broadcasting world %8d: %8d * %4d = %8d bytes\n" % (self.worldcounter, len(data), len(self.clients), len(data) * len(self.clients)),
 			for client in self.clients:
 				try:
 					client.enqueue(data)
@@ -122,6 +148,7 @@ class CompressServer(asyncore.dispatcher):
 			self.client_handler.add_client(sock)
 
 	def handle_error(self):
+		self.client_handler.close()
 		self.close()
 		raise
 
