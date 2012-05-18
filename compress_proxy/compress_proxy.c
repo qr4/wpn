@@ -25,38 +25,54 @@ typedef struct client_data_list client_data_list;
 typedef struct com_data com_data;
 typedef struct com_data_queue com_data_queue;
 
+/*
+ * output buffer that is shared using com_data
+ * use REF() when sharing a buffer or UNREF() when the buffer is not used by one
+ * owner anymore.
+ */
 struct buffer {
 	char *data;
-	size_t n;
-	size_t refcount;
+	size_t n;        // size of the buffer
+	size_t refcount; // do not modify manually, use REF / UNREF macros
 };
 
 #define REF(x)   (((x)->refcount)++)
 #define UNREF(x) do { if (--((x)->refcount) == 0) { free((x)->data); free((x)); }} while (0)
 
+/*
+ * a single entry for an output queue of one client.
+ * keeps track of the bytes already sent to the client.
+ */
 struct com_data {
-	buffer *buffer;
-	size_t start;
+	buffer *buffer; // the shared buffer
+	size_t start;   // position from where to start next
 	STAILQ_ENTRY(com_data) list_ctl;
 };
 
-TAILQ_HEAD(client_data_list, client_data);
-struct client_data_list clients_all          = TAILQ_HEAD_INITIALIZER(clients_all);
+TAILQ_HEAD(client_data_list, client_data); // type definition
+struct client_data_list clients_all          = TAILQ_HEAD_INITIALIZER(clients_all); // list containing all active clients
 //struct client_data_list clients_waiting      = TAILQ_HEAD_INITIALIZER(clients_waiting);
 //struct client_data_list clients_small_blocks = TAILQ_HEAD_INITIALIZER(clients_small_blocks);
 //struct client_data_list clients_large_blocks = TAILQ_HEAD_INITIALIZER(clients_large_blocks);
 
+/*
+ * structure containing all necessary information.
+ * also part of the clients_all or clients_waiting lists.
+ */
 struct client_data {
-	ev_io *w;
-	size_t queued;
-	STAILQ_HEAD(com_data_queue, com_data) queue;
-	struct client_data_list *list;
-	TAILQ_ENTRY(client_data) list_ctl;
+	ev_io *w;                                    // associated watcher
+	size_t queued;                               // queue size to detect slow connections
+	STAILQ_HEAD(com_data_queue, com_data) queue; // output queue
+	struct client_data_list *list;               // pointer to the head of the list currently holding the client
+	TAILQ_ENTRY(client_data) list_ctl;           // the "next" pointer for the list (see sys/queue.h)
 };
 
 static struct sockaddr_in sin;
 static socklen_t slen;
 
+/*
+ * helper function
+ */
 int set_nonblocking(int fd) {
 	int flags = fcntl(fd, F_GETFD);
 	if (flags == -1) goto error;
@@ -69,14 +85,19 @@ error:
 	return -1;
 }
 
+/*
+ * close a connection and remove all associated data to it.
+ */
 static void close_connection(EV_P_ ev_io *w) {
 	client_data *cd = (client_data *) w->data;
 	com_data_queue *queue = &cd->queue;
 
-	fprintf(stderr, "closing connection\n");
-	ev_io_stop(EV_DEFAULT_ w);
-	close(w->fd);
+	fprintf(stderr, "closing connection\n"); // debug
 
+	ev_io_stop(EV_DEFAULT_ w); // remove from event loop
+	close(w->fd);              // close connection
+
+	// free the output queue
 	while (!STAILQ_EMPTY(queue)) {
 		com_data *t = STAILQ_FIRST(queue);
 		STAILQ_REMOVE_HEAD(queue, list_ctl);
@@ -84,11 +105,17 @@ static void close_connection(EV_P_ ev_io *w) {
 		free(t);
 	}
 
-	TAILQ_REMOVE(cd->list, cd, list_ctl);
+	TAILQ_REMOVE(cd->list, cd, list_ctl); // remove client from its broadcast list
 	free(w);
 	free(cd);
 }
 
+/*
+ * called when there is data in the output buffer and
+ * the socket is writeable.
+ * will attempt to send from one buffer as much as possible, but will not try to 
+ * send the complete output queue to avoid starvation of other clients
+ */
 static void client_write_cb(EV_P_ ev_io *w, int revents) {
 	ssize_t written;
 	client_data *cd = (client_data *) w->data;
@@ -96,21 +123,28 @@ static void client_write_cb(EV_P_ ev_io *w, int revents) {
 	com_data *c_data = STAILQ_FIRST(queue);
 	buffer *buf = c_data->buffer;
 
+	// try to write the first buffer in the queue
 	written = write(w->fd, &buf->data[c_data->start], buf->n - c_data->start);
 	if (written == -1) {
 		close_connection(EV_DEFAULT_ w);
 		return;
 	}
 
+	// keep track of how much was written
 	c_data->start += written;
 	cd->queued -= written;
 
+
+	// buffer fully sent?
 	if (buf->n == c_data->start) {
+		// then remove it
 		STAILQ_REMOVE_HEAD(queue, list_ctl);
 		UNREF(buf);
 		free(c_data);
 
+		// output queue is empty?
 		if (STAILQ_EMPTY(queue)) {
+			// stop the watcher, as there is nothing to send
 			ev_io_stop(EV_DEFAULT_ w);
 		}
 	}
@@ -118,45 +152,81 @@ static void client_write_cb(EV_P_ ev_io *w, int revents) {
 	return;
 }
 
+/*
+ * enqueue a buffer to all clients in the active list.
+ */
 static void broadcast(EV_P_ client_data_list *clients, buffer *buf) {
 	client_data    *cd, *cd_tmp;
 	com_data       *c_data;
+
+	// loop over every client in the active list
 	TAILQ_FOREACH_SAFE(cd, clients, list_ctl, cd_tmp) {
 		if (cd->queued + buf->n > MAX_BUF) {
+			// slow connection detected
 			printf("buffer threshhold\n");
 			close_connection(EV_DEFAULT_ cd->w);
 			continue;
 		}
 
+		// new queue element
 		c_data = malloc(sizeof(com_data));
 		c_data->start = 0;
 		c_data->buffer = buf;
 		REF(buf);
 
 		if (STAILQ_EMPTY(&cd->queue)) {
+			// queue was empty, so the watcher was not started, as there
+			// was nothing, that could be written. now start it
 			ev_io_stop(EV_DEFAULT_ cd->w);
+			// maybe EV_WRITE is enough, or add a read_cb that reads
+			// incoming data
 			ev_io_set(cd->w, cd->w->fd, EV_READ | EV_WRITE);
 			ev_io_start(EV_DEFAULT_ cd->w);
 		}
 
+		// now add new element to the queue
 		STAILQ_INSERT_TAIL(&cd->queue, c_data, list_ctl);
+		// keep track of the enqueued data
 		cd->queued += buf->n;
 	}
 }
 
+/*
+ * return a new buffer initialized with the data in initial_content.
+ * the data will be copied, so the returned buffer can be used without
+ * restrictions.
+ * Note: the returned buffer will have a reference count of 1, so the calling 
+ * funtions will own the buffer already.
+ */
+static buffer *new_buffer(size_t s, char *initial_content) {
+	buffer *buf = calloc(1, sizeof(buffer));
+	if (s != 0 && initial_content != NULL) {
+		buf->data = malloc(sizeof(char) * s);
+		memcpy(buf->data, initial_content, s);
+		buf->n = s;
+	}
+	REF(buf);
+	return buf;
+}
+
+/*
+ * called when the gameserver sends new data
+ */
 static void server_read_cb(EV_P_ ev_io *w, int revents) {
-	static size_t depth = 0;
+	static size_t depth = 0; // used to decide when a world is fully sent
 	buffer *buf;
 	ssize_t r;
 	char t_buf[BUFFSIZE];
 
-	r = read(w->fd, t_buf, BUFFSIZE);
+	r = read(w->fd, t_buf, BUFFSIZE); // try to fill t_buf
 	if (r == 0 || r == -1) {
 		// TODO
 		depth = 0;
 		return;
 	}
 
+	// detect where in the stream a world is complete. if there are
+	// multiple complete worlds, only mark the last end
 	size_t latest_world_end = 0;
 	for (size_t i = 0; i < r; i++) {
 		switch (t_buf[i]) {
@@ -177,20 +247,53 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 				break;
 		}
 	}
+	printf("(%ld)\n", r);
 
+	/*
+	 * the plan:
+	 *
+	 * if clients_waiting is empty:
+	 * take the new input and compress with it with xz and broadcast all
+	 * available encoded data.
+	 *
+	 * if clients_waiting is _not_ empty:
+	 * behave as clients_waiting was empty, if there is not a complete world end.
+	 * otherwise encode only to end of the last complete world, flush the
+	 * encoder and broadcast to active clients the rest of the encoded stream.
+	 * then add all clients from clients_waiting to the active list and begin a
+	 * new stream, encode what's left after the last complete world and broadcast
+	 * the new stream to the new active list
+	 *
+	 * possible addition:
+	 * wait a few turns to add new clients, to increase compression performance.
+	 * you also lost the game.
+	 */
 
-	buf = calloc(1, sizeof(buffer));
-	buf->data = malloc(sizeof(char) * r);
-	memcpy(buf->data, t_buf, r);
-	buf->n = r;
-	REF(buf);
+	/**********
+	 * <TODO> *
+	 **********/
 
+	buf = new_buffer(latest_world_end, t_buf);
 	broadcast(EV_DEFAULT_ &clients_all, buf);
 	UNREF(buf);
 
+	if (r <= latest_world_end) return;
+
+	buf = new_buffer(r - latest_world_end, t_buf + latest_world_end);
+	broadcast(EV_DEFAULT_ &clients_all, buf);
+	UNREF(buf);
+
+	/***********
+	 * </TODO> *
+	 ***********/
 	return;
 }
 
+/*
+ * called when a new client connects to the proxy.
+ * initializes all necessary data for the client (watcher, output queue, etc..)
+ * and adds it to clients_waiting.
+ */
 static void accept_cb(EV_P_ ev_io *w, int revents) {
 	client_data *c_data;
 	int fd;
@@ -202,7 +305,7 @@ static void accept_cb(EV_P_ ev_io *w, int revents) {
 
 	c_data = malloc(sizeof(client_data));
 	c_data->w = malloc(sizeof(ev_io));
-	c_data->list = &clients_all;
+	c_data->list = &clients_all; // TODO: change to clients_waiting
 	c_data->queued = 0;
 	ev_io_init(c_data->w, client_write_cb, fd, EV_WRITE);
 	STAILQ_INIT(&(c_data->queue));
@@ -211,6 +314,9 @@ static void accept_cb(EV_P_ ev_io *w, int revents) {
 	c_data->w->data = c_data;
 }
 
+/*
+ * nothing special, return a functioning server socket
+ */
 static int do_bind() {
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	int t = 1;
@@ -230,6 +336,10 @@ static int do_bind() {
 	return sockfd;
 }
 
+/*
+ * to be able to shutdown the proxy, wait until stdin is closed. if so, close
+ * all connections and stop the event_loop
+ */
 static void stdin_cb(EV_P_ ev_io *w, int revents) {
 	const size_t buffsize = 1024;
 	char buffer[buffsize];
@@ -244,7 +354,10 @@ static void stdin_cb(EV_P_ ev_io *w, int revents) {
 	}
 }
 
-// from viewer
+/*
+ * from viewer, some network magic, it didn't write it, i didn't make effords
+ * to understand it.
+ */
 static int connect2server(const char* server, const char* port) {
 	int sockfd;
 	struct addrinfo hints, *servinfo, *p;
@@ -289,16 +402,17 @@ static int connect2server(const char* server, const char* port) {
 }
 
 int main (void) {
-	int sockfd = do_bind();
-	int server_fd = connect2server("localhost", "8080");
+	int sockfd = do_bind(); // open the server socket
+	int server_fd = connect2server("localhost", "8080"); // connect to the server
 
 	if (server_fd == -1) {
 		perror("connect");
 		exit(1);
 	}
 
-	signal(SIGPIPE, sigpipe_ignore);
+	signal(SIGPIPE, sigpipe_ignore); // ignore SIGPIPE
 
+	// setup all initial watchers
 	ev_io server_watcher;
 	ev_io_init(&server_watcher, server_read_cb, server_fd, EV_READ);
 	ev_io_start(EV_DEFAULT_ &server_watcher);
@@ -311,8 +425,10 @@ int main (void) {
 	ev_io_init(&bind_watcher, accept_cb, sockfd, EV_READ);
 	ev_io_start(EV_DEFAULT_ &bind_watcher);
 
+	// run the event loop
 	ev_run (EV_DEFAULT_ 0);
 
+	// close down everything
 	ev_io_stop(EV_DEFAULT_ &server_watcher);
 	ev_io_stop(EV_DEFAULT_ &stdin_watcher);
 	ev_io_stop(EV_DEFAULT_ &bind_watcher);
@@ -321,5 +437,6 @@ int main (void) {
 	close(server_fd);
 	close(sockfd);
 
+	// cya
 	return 0;
 }
