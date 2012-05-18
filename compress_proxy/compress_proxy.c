@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <lzma.h>
 
 #define BUFFSIZE 4096
 #define MAX_BUF 1024*1024

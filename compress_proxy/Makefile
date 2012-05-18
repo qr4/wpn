@@ -1,7 +1,7 @@
 CC = clang
 FLAGS = -Wall -g3 -O2 -march=native -mtune=native
 CLIBS = 
-LDFLAGS = -lev
+LDFLAGS = -lev -llzma
 CFILES = $(wildcard *.c)
 OBJ = $(CFILES:.c=.o)
 
