@@ -144,6 +144,7 @@ static void broadcast(EV_P_ client_data_list *clients, buffer *buf) {
 }
 
 static void server_read_cb(EV_P_ ev_io *w, int revents) {
+	static size_t depth = 0;
 	buffer *buf;
 	ssize_t r;
 	char t_buf[BUFFSIZE];
@@ -151,8 +152,31 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 	r = read(w->fd, t_buf, BUFFSIZE);
 	if (r == 0 || r == -1) {
 		// TODO
+		depth = 0;
 		return;
 	}
+
+	size_t latest_world_end = 0;
+	for (size_t i = 0; i < r; i++) {
+		switch (t_buf[i]) {
+			case '{':
+				depth++;
+				break;
+			case '}':
+				depth--;
+				if (depth == 0) {
+					printf("End of the world detected!\n");
+					latest_world_end = i;
+				}
+				break;
+			default:
+				if (depth == 0) {
+					latest_world_end++;
+				}
+				break;
+		}
+	}
+
 
 	buf = calloc(1, sizeof(buffer));
 	buf->data = malloc(sizeof(char) * r);
@@ -197,7 +221,7 @@ static int do_bind() {
 	memset(&sin, 0, slen);
 	sin.sin_family = AF_INET;
 	sin.sin_addr.s_addr = htonl(0);
-	sin.sin_port = htons(8090);
+	sin.sin_port = htons(8081);
 
     if(bind(sockfd, (struct sockaddr *) &sin, slen) != 0) perror("bind");
 	if(listen(sockfd, 128) != 0) perror("listen");
@@ -265,7 +289,7 @@ static int connect2server(const char* server, const char* port) {
 
 int main (void) {
 	int sockfd = do_bind();
-	int server_fd = connect2server("dave.gempai.de", "8080");
+	int server_fd = connect2server("localhost", "8080");
 
 	if (server_fd == -1) {
 		perror("connect");
