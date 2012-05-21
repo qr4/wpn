@@ -315,7 +315,7 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
  * and adds it to clients_waiting.
  */
 static void accept_cb(EV_P_ ev_io *w, int revents) {
-	client_data *c_data;
+	client_data *cd;
 	int fd;
 
 	printf("incoming connection\n");
@@ -323,18 +323,18 @@ static void accept_cb(EV_P_ ev_io *w, int revents) {
 	if ((fd = accept(w->fd, (struct sockaddr *) &sin, &slen)) == -1) perror("accept");
 	set_nonblocking(fd);
 
-	c_data = malloc(sizeof(client_data));
-	c_data->w = malloc(sizeof(ev_io));
-	c_data->list = &clients_all; // TODO: change to clients_waiting
-	c_data->queued = 0;
-	ev_io_init(c_data->w, client_cb, fd, EV_WRITE);
-	STAILQ_INIT(&(c_data->queue));
-	TAILQ_INSERT_TAIL(c_data->list, c_data, list_ctl);
+	cd = malloc(sizeof(client_data));
+	cd->w = malloc(sizeof(ev_io));
+	cd->list = &clients_all; // TODO: change to clients_waiting
+	cd->queued = 0;
+	ev_io_init(cd->w, client_cb, fd, EV_WRITE);
+	STAILQ_INIT(&(cd->queue));
+	TAILQ_INSERT_TAIL(cd->list, cd, list_ctl);
 
-	c_data->w->data = c_data;
+	cd->w->data = cd;
 
 	// listen on incoming data
-	ev_io_set(c_data->w, c_data->w->fd, EV_READ);
+	ev_io_set(cd->w, cd->w->fd, EV_READ);
 	ev_io_start(EV_DEFAULT_ w);
 }
 
