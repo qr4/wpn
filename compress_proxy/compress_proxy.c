@@ -112,44 +112,64 @@ static void close_connection(EV_P_ ev_io *w) {
 
 /*
  * called when there is data in the output buffer and
- * the socket is writeable.
+ * the socket is writeable or if the socket is marked readable
  * will attempt to send from one buffer as much as possible, but will not try to 
  * send the complete output queue to avoid starvation of other clients
  */
-static void client_write_cb(EV_P_ ev_io *w, int revents) {
-	ssize_t written;
-	client_data *cd = (client_data *) w->data;
-	com_data_queue *queue = &cd->queue;
-	com_data *c_data = STAILQ_FIRST(queue);
-	buffer *buf = c_data->buffer;
-
-	// try to write the first buffer in the queue
-	written = write(w->fd, &buf->data[c_data->start], buf->n - c_data->start);
-	if (written == -1) {
-		close_connection(EV_DEFAULT_ w);
-		return;
-	}
-
-	// keep track of how much was written
-	c_data->start += written;
-	cd->queued -= written;
-
-
-	// buffer fully sent?
-	if (buf->n == c_data->start) {
-		// then remove it
-		STAILQ_REMOVE_HEAD(queue, list_ctl);
-		UNREF(buf);
-		free(c_data);
-
-		// output queue is empty?
-		if (STAILQ_EMPTY(queue)) {
-			// stop the watcher, as there is nothing to send
-			ev_io_stop(EV_DEFAULT_ w);
+static void client_cb(EV_P_ ev_io *w, int revents) {
+	/*
+	 * if there's something to read, just read it and close connection
+	 * on error. This should be the case, when the clients closes
+	 * the connection.
+	 *
+	 * TODO:
+	 * better spam detection
+	 */
+	if (revents & EV_READ) {
+		char t_buf[BUFFSIZE];
+		ssize_t r = read(w->fd, t_buf, BUFFSIZE);
+		printf("read something (%ld)\n", r);
+		if (r == -1 || r == 0 || r == BUFFSIZE) {
+			close_connection(EV_DEFAULT_ w);
+			return;
 		}
 	}
 
-	return;
+	if (revents & EV_WRITE) {
+		ssize_t written;
+		client_data *cd = (client_data *) w->data;
+		com_data_queue *queue = &cd->queue;
+		com_data *c_data = STAILQ_FIRST(queue);
+		buffer *buf = c_data->buffer;
+
+		// try to write the first buffer in the queue
+		written = write(w->fd, &buf->data[c_data->start], buf->n - c_data->start);
+		if (written == -1) {
+			close_connection(EV_DEFAULT_ w);
+			return;
+		}
+
+		// keep track of how much was written
+		c_data->start += written;
+		cd->queued -= written;
+
+
+		// buffer fully sent?
+		if (buf->n == c_data->start) {
+			// then remove it
+			STAILQ_REMOVE_HEAD(queue, list_ctl);
+			UNREF(buf);
+			free(c_data);
+
+			// output queue is empty?
+			if (STAILQ_EMPTY(queue)) {
+				// stop the watcher and watch reads only, as there is nothing to send
+				ev_io_stop(EV_DEFAULT_ w);
+				ev_io_set(cd->w, cd->w->fd, EV_READ);
+				ev_io_start(EV_DEFAULT_ w);
+			}
+		}
+	}
 }
 
 /*
@@ -236,7 +256,7 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 			case '}':
 				depth--;
 				if (depth == 0) {
-					printf("End of the world detected!\n");
+					//printf("End of the world detected!\n");
 					latest_world_end = i;
 				}
 				break;
@@ -247,7 +267,7 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 				break;
 		}
 	}
-	printf("(%ld)\n", r);
+	//printf("(%ld)\n", r);
 
 	/*
 	 * the plan:
@@ -307,11 +327,15 @@ static void accept_cb(EV_P_ ev_io *w, int revents) {
 	c_data->w = malloc(sizeof(ev_io));
 	c_data->list = &clients_all; // TODO: change to clients_waiting
 	c_data->queued = 0;
-	ev_io_init(c_data->w, client_write_cb, fd, EV_WRITE);
+	ev_io_init(c_data->w, client_cb, fd, EV_WRITE);
 	STAILQ_INIT(&(c_data->queue));
 	TAILQ_INSERT_TAIL(c_data->list, c_data, list_ctl);
 
 	c_data->w->data = c_data;
+
+	// listen on incoming data
+	ev_io_set(c_data->w, c_data->w->fd, EV_READ);
+	ev_io_start(EV_DEFAULT_ w);
 }
 
 /*
