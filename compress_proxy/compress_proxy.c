@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include <lzma.h>
 
 #define BUFFSIZE 4096
@@ -51,7 +52,7 @@ struct com_data {
 
 TAILQ_HEAD(client_data_list, client_data); // type definition
 struct client_data_list clients_all          = TAILQ_HEAD_INITIALIZER(clients_all); // list containing all active clients
-//struct client_data_list clients_waiting      = TAILQ_HEAD_INITIALIZER(clients_waiting);
+struct client_data_list clients_waiting      = TAILQ_HEAD_INITIALIZER(clients_waiting);
 //struct client_data_list clients_small_blocks = TAILQ_HEAD_INITIALIZER(clients_small_blocks);
 //struct client_data_list clients_large_blocks = TAILQ_HEAD_INITIALIZER(clients_large_blocks);
 
@@ -242,7 +243,7 @@ static buffer *buffer_append(buffer *buf, size_t s, const char *new_content) {
 	return buf;
 }
 
-#define COMPRESSION_LEVEL 9
+#define COMPRESSION_LEVEL 1
 #define COMPRESSION_EXTREME 0
 //#define COMPRESSION_EXTREME LZMA_PRESET_EXTREME
 #define COMPRESSION_PRESET ((uint32_t) (COMPRESSION_LEVEL | COMPRESSION_EXTREME))
@@ -271,8 +272,9 @@ static buffer *compress_xz(buffer *input, xz_action action) {
 		case XZ_COMPRESS :
 			if (need_init) {
 				ret_xz = lzma_easy_encoder(&stream, COMPRESSION_PRESET, LZMA_CHECK_CRC64);
+				fprintf(stderr, "XZ: new stream\n");
 				if (ret_xz != LZMA_OK) {
-					fprintf(stderr, "%s: init failed", __func__);
+					fprintf(stderr, "%s: init failed\n", __func__);
 				} else {
 					need_init = false;
 				}
@@ -284,6 +286,7 @@ static buffer *compress_xz(buffer *input, xz_action action) {
 			break;
 		case XZ_FINISH :
 			xz_action = LZMA_FINISH;
+			fprintf(stderr, "XZ: finish stream\n");
 			need_init = true;
 			break;
 		default :
@@ -291,22 +294,29 @@ static buffer *compress_xz(buffer *input, xz_action action) {
 			break;
 	}
 
-	if (input == NULL || input->n == 0) return ret;
-
-	stream.next_in = (const uint8_t *) input->data;
-	stream.avail_in = input->n;
+	if (input == NULL || input->n == 0) {
+		stream.next_in = NULL;
+		stream.avail_in = 0;
+	} else {
+		stream.next_in = (const uint8_t *) input->data;
+		stream.avail_in = input->n;
+	}
 
 	do {
 		stream.next_out = out_buf;
 		stream.avail_out = out_len;
 
 		ret_xz = lzma_code(&stream, xz_action);
-		if ((ret_xz != LZMA_OK) && (ret_xz != LZMA_STREAM_END)) {
-			fprintf(stderr, "%s: compression failed", __func__);
+		if ((ret_xz != LZMA_OK) && (ret_xz != LZMA_STREAM_END) && (ret_xz != LZMA_BUF_ERROR)) {
+			fprintf(stderr, "%s: compression failed, code %d", __func__, ret_xz);
 		}
 
 		ret = buffer_append(ret, out_len - stream.avail_out, (char *) out_buf);
 	} while (stream.avail_out == 0);
+
+	if (action == XZ_FINISH) {
+		lzma_end(&stream);
+	}
 
 	return ret;
 }
@@ -317,8 +327,10 @@ static buffer *compress_xz(buffer *input, xz_action action) {
 static void server_read_cb(EV_P_ ev_io *w, int revents) {
 	static size_t depth = 0; // used to decide when a world is fully sent
 	buffer *buf;
+	buffer *out = NULL;
 	ssize_t r;
 	char t_buf[BUFFSIZE];
+	xz_action action = XZ_COMPRESS;
 
 	r = read(w->fd, t_buf, BUFFSIZE); // try to fill t_buf
 	if (r == 0 || r == -1) {
@@ -340,6 +352,7 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 				if (depth == 0) {
 					//printf("End of the world detected!\n");
 					latest_world_end = i;
+					action = XZ_FLUSH;
 				}
 				break;
 			default:
@@ -371,18 +384,43 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 	 * you also lost the game.
 	 */
 
-	/**********
-	 * <TODO> *
-	 **********/
+	/******************************************************
+	 * <TODO>                                             *
+	 * cleanup                                            *
+	 * bind to second port to transport uncompressed dat a*
+	 * be able to broadcast compressed data directly      *
+	 ******************************************************/
+	if (!TAILQ_EMPTY(&clients_waiting)) {
+		action = XZ_FINISH;
+	}
 
-	buf = new_buffer(latest_world_end, t_buf);
-	broadcast(EV_DEFAULT_ &clients_all, buf);
+	buf = buffer_new(latest_world_end, t_buf);
+	out = compress_xz(buf, action);
+	if (out != NULL) {
+		broadcast(EV_DEFAULT_ &clients_all, out);
+		UNREF(out);
+		out = NULL;
+	}
 	UNREF(buf);
+
+	if (!TAILQ_EMPTY(&clients_waiting)) {
+		client_data *cd;
+		TAILQ_FOREACH(cd, &clients_waiting, list_ctl) {
+			cd->list = &clients_all;
+		}
+		TAILQ_CONCAT(&clients_all, &clients_waiting, list_ctl);
+		printf("adding clients\n");
+	}
 
 	if (r <= latest_world_end) return;
 
-	buf = new_buffer(r - latest_world_end, t_buf + latest_world_end);
-	broadcast(EV_DEFAULT_ &clients_all, buf);
+	buf = buffer_new(r - latest_world_end, t_buf + latest_world_end);
+	out = compress_xz(buf, XZ_COMPRESS);
+	if (out != NULL) {
+		broadcast(EV_DEFAULT_ &clients_all, out);
+		UNREF(out);
+		out = NULL;
+	}
 	UNREF(buf);
 
 	/***********
@@ -407,7 +445,7 @@ static void accept_cb(EV_P_ ev_io *w, int revents) {
 
 	cd = malloc(sizeof(client_data));
 	cd->w = malloc(sizeof(ev_io));
-	cd->list = &clients_all; // TODO: change to clients_waiting
+	cd->list = &clients_waiting;
 	cd->queued = 0;
 	ev_io_init(cd->w, client_cb, fd, EV_WRITE);
 	STAILQ_INIT(&(cd->queue));
@@ -448,14 +486,10 @@ static int do_bind() {
  */
 static void stdin_cb(EV_P_ ev_io *w, int revents) {
 	const size_t buffsize = 1024;
-	char buffer[buffsize];
+	char stdin_buffer[buffsize];
 
-	ssize_t r = read(w->fd, buffer, buffsize);
+	ssize_t r = read(w->fd, stdin_buffer, buffsize);
 	if (r == 0) {
-		client_data    *cd, *cd_tmp;
-		TAILQ_FOREACH_SAFE(cd, &clients_all, list_ctl, cd_tmp) {
-			close_connection(EV_DEFAULT_ cd->w);
-		}
 		ev_break(EV_DEFAULT_ EVBREAK_ALL);
 	}
 }
@@ -533,6 +567,19 @@ int main (void) {
 
 	// run the event loop
 	ev_run (EV_DEFAULT_ 0);
+
+	// close all connections and flush the encoder
+	{
+		buffer *buf = compress_xz(NULL, XZ_FINISH);
+		if (buf != NULL) UNREF(buf);
+		client_data    *cd, *cd_tmp;
+		TAILQ_FOREACH_SAFE(cd, &clients_all, list_ctl, cd_tmp) {
+			close_connection(EV_DEFAULT_ cd->w);
+		}
+		TAILQ_FOREACH_SAFE(cd, &clients_waiting, list_ctl, cd_tmp) {
+			close_connection(EV_DEFAULT_ cd->w);
+		}
+	}
 
 	// close down everything
 	ev_io_stop(EV_DEFAULT_ &server_watcher);
