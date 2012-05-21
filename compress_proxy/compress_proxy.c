@@ -218,7 +218,7 @@ static void broadcast(EV_P_ client_data_list *clients, buffer *buf) {
  * Note: the returned buffer will have a reference count of 1, so the calling 
  * funtions will own the buffer already.
  */
-static buffer *new_buffer(size_t s, char *initial_content) {
+static buffer *buffer_new(size_t s, const char *initial_content) {
 	buffer *buf = calloc(1, sizeof(buffer));
 	if (s != 0 && initial_content != NULL) {
 		buf->data = malloc(sizeof(char) * s);
@@ -227,6 +227,88 @@ static buffer *new_buffer(size_t s, char *initial_content) {
 	}
 	REF(buf);
 	return buf;
+}
+
+static buffer *buffer_append(buffer *buf, size_t s, const char *new_content) {
+	if (buf == NULL) {
+		buf = buffer_new(s, new_content);
+	} else {
+		size_t new_size = buf->n + s;
+		buf->data = realloc(buf->data, new_size * sizeof(char));
+		memcpy(&buf->data[buf->n], new_content, s);
+		buf->n = new_size;
+	}
+
+	return buf;
+}
+
+#define COMPRESSION_LEVEL 9
+#define COMPRESSION_EXTREME 0
+//#define COMPRESSION_EXTREME LZMA_PRESET_EXTREME
+#define COMPRESSION_PRESET ((uint32_t) (COMPRESSION_LEVEL | COMPRESSION_EXTREME))
+typedef enum {
+	XZ_COMPRESS,
+	XZ_FLUSH,
+	XZ_FINISH,
+} xz_action;
+
+
+/*
+ * easy access to compression with xz.
+ * currently only one stream is possible, as the state is maintained
+ * throuth static variables.
+ */
+static buffer *compress_xz(buffer *input, xz_action action) {
+	buffer *ret = NULL;
+	static lzma_stream stream = LZMA_STREAM_INIT;
+	static bool need_init = true;
+	lzma_ret ret_xz;
+	lzma_action xz_action = LZMA_RUN;
+	size_t out_len = BUFFSIZE;
+	uint8_t out_buf[out_len];
+
+	switch (action) {
+		case XZ_COMPRESS :
+			if (need_init) {
+				ret_xz = lzma_easy_encoder(&stream, COMPRESSION_PRESET, LZMA_CHECK_CRC64);
+				if (ret_xz != LZMA_OK) {
+					fprintf(stderr, "%s: init failed", __func__);
+				} else {
+					need_init = false;
+				}
+			}
+			xz_action = LZMA_RUN;
+			break;
+		case XZ_FLUSH :
+			xz_action = LZMA_SYNC_FLUSH;
+			break;
+		case XZ_FINISH :
+			xz_action = LZMA_FINISH;
+			need_init = true;
+			break;
+		default :
+			fprintf(stderr, "%s: wrong action", __func__);
+			break;
+	}
+
+	if (input == NULL || input->n == 0) return ret;
+
+	stream.next_in = (const uint8_t *) input->data;
+	stream.avail_in = input->n;
+
+	do {
+		stream.next_out = out_buf;
+		stream.avail_out = out_len;
+
+		ret_xz = lzma_code(&stream, xz_action);
+		if ((ret_xz != LZMA_OK) && (ret_xz != LZMA_STREAM_END)) {
+			fprintf(stderr, "%s: compression failed", __func__);
+		}
+
+		ret = buffer_append(ret, out_len - stream.avail_out, (char *) out_buf);
+	} while (stream.avail_out == 0);
+
+	return ret;
 }
 
 /*
