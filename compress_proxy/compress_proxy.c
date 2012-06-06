@@ -37,8 +37,8 @@ struct buffer {
 	size_t refcount; // do not modify manually, use REF / UNREF macros
 };
 
-#define REF(x)   (((x)->refcount)++)
-#define UNREF(x) do { if (--((x)->refcount) == 0) { free((x)->data); free((x)); }} while (0)
+#define REF(x)   do { if ((x) != NULL) { (((x)->refcount)++); } } while (0)
+#define UNREF(x) do { if ((x) != NULL) {if (--((x)->refcount) == 0) { free((x)->data); free((x)); }}} while (0)
 
 /*
  * a single entry for an output queue of one client.
@@ -53,8 +53,6 @@ struct com_data {
 TAILQ_HEAD(client_data_list, client_data); // type definition
 struct client_data_list clients_all          = TAILQ_HEAD_INITIALIZER(clients_all); // list containing all active clients
 struct client_data_list clients_waiting      = TAILQ_HEAD_INITIALIZER(clients_waiting);
-//struct client_data_list clients_small_blocks = TAILQ_HEAD_INITIALIZER(clients_small_blocks);
-//struct client_data_list clients_large_blocks = TAILQ_HEAD_INITIALIZER(clients_large_blocks);
 
 /*
  * structure containing all necessary information.
@@ -177,6 +175,7 @@ static void client_cb(EV_P_ ev_io *w, int revents) {
  * enqueue a buffer to all clients in the active list.
  */
 static void broadcast(EV_P_ client_data_list *clients, buffer *buf) {
+	if (buf == NULL || buf->n == 0) return;
 	client_data    *cd, *cd_tmp;
 	com_data       *c_data;
 
@@ -243,8 +242,8 @@ static buffer *buffer_append(buffer *buf, size_t s, const char *new_content) {
 	return buf;
 }
 
-#define COMPRESSION_LEVEL 1
-#define COMPRESSION_EXTREME 0
+#define COMPRESSION_LEVEL 1U
+#define COMPRESSION_EXTREME 0U
 //#define COMPRESSION_EXTREME LZMA_PRESET_EXTREME
 #define COMPRESSION_PRESET ((uint32_t) (COMPRESSION_LEVEL | COMPRESSION_EXTREME))
 typedef enum {
@@ -321,13 +320,49 @@ static buffer *compress_xz(buffer *input, xz_action action) {
 	return ret;
 }
 
+static void compress_and_broadcast(buffer *buf, xz_action action) {
+	REF(buf);
+	buffer *out = compress_xz(buf, action);
+	broadcast(EV_DEFAULT_ &clients_all, out);
+	UNREF(out);
+	UNREF(buf);
+}
+
+static void concat_queues(struct client_data_list *dest, struct client_data_list *src) {
+	if (dest == src || TAILQ_EMPTY(src)) return;
+
+	client_data *cd;
+	TAILQ_FOREACH(cd, src, list_ctl) {
+		cd->list = dest;
+	}
+	TAILQ_CONCAT(dest, src, list_ctl);
+	printf("adding clients\n");
+}
+
 /*
  * called when the gameserver sends new data
+ *
+ * the plan:
+ *
+ * if clients_waiting is empty:
+ * take the new input and compress with it with xz and broadcast all
+ * available encoded data.
+ *
+ * if clients_waiting is _not_ empty:
+ * behave as clients_waiting was empty, if there is not a complete world end.
+ * otherwise encode only to end of the last complete world, flush the
+ * encoder and broadcast to active clients the rest of the encoded stream.
+ * then add all clients from clients_waiting to the active list and begin a
+ * new stream, encode what's left after the last complete world and broadcast
+ * the new stream to the new active list
+ *
+ * possible addition:
+ * wait a few turns to add new clients, to increase compression performance.
+ * you also lost the game.
  */
 static void server_read_cb(EV_P_ ev_io *w, int revents) {
 	static size_t depth = 0; // used to decide when a world is fully sent
 	buffer *buf;
-	buffer *out = NULL;
 	ssize_t r;
 	char t_buf[BUFFSIZE];
 	xz_action action = XZ_COMPRESS;
@@ -341,7 +376,7 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 
 	// detect where in the stream a world is complete. if there are
 	// multiple complete worlds, only mark the last end
-	size_t latest_world_end = 0;
+	ssize_t latest_world_end = -1;
 	for (size_t i = 0; i < r; i++) {
 		switch (t_buf[i]) {
 			case '{':
@@ -362,71 +397,24 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 				break;
 		}
 	}
-	//printf("(%ld)\n", r);
 
-	/*
-	 * the plan:
-	 *
-	 * if clients_waiting is empty:
-	 * take the new input and compress with it with xz and broadcast all
-	 * available encoded data.
-	 *
-	 * if clients_waiting is _not_ empty:
-	 * behave as clients_waiting was empty, if there is not a complete world end.
-	 * otherwise encode only to end of the last complete world, flush the
-	 * encoder and broadcast to active clients the rest of the encoded stream.
-	 * then add all clients from clients_waiting to the active list and begin a
-	 * new stream, encode what's left after the last complete world and broadcast
-	 * the new stream to the new active list
-	 *
-	 * possible addition:
-	 * wait a few turns to add new clients, to increase compression performance.
-	 * you also lost the game.
-	 */
-
-	/******************************************************
-	 * <TODO>                                             *
-	 * cleanup                                            *
-	 * bind to second port to transport uncompressed dat a*
-	 * be able to broadcast compressed data directly      *
-	 ******************************************************/
-	if (!TAILQ_EMPTY(&clients_waiting)) {
+	ssize_t written = 0;
+	if (!TAILQ_EMPTY(&clients_waiting) && latest_world_end != -1) {
 		action = XZ_FINISH;
+
+		buf = buffer_new(latest_world_end, t_buf);
+		compress_and_broadcast(buf, action);
+		UNREF(buf);
+
+		concat_queues(&clients_all, &clients_waiting);
+		written = latest_world_end;
 	}
 
-	buf = buffer_new(latest_world_end, t_buf);
-	out = compress_xz(buf, action);
-	if (out != NULL) {
-		broadcast(EV_DEFAULT_ &clients_all, out);
-		UNREF(out);
-		out = NULL;
+	if (r > written) {
+		buf = buffer_new(r - written, &t_buf[written]);
+		compress_and_broadcast(buf, action);
+		UNREF(buf);
 	}
-	UNREF(buf);
-
-	if (!TAILQ_EMPTY(&clients_waiting)) {
-		client_data *cd;
-		TAILQ_FOREACH(cd, &clients_waiting, list_ctl) {
-			cd->list = &clients_all;
-		}
-		TAILQ_CONCAT(&clients_all, &clients_waiting, list_ctl);
-		printf("adding clients\n");
-	}
-
-	if (r <= latest_world_end) return;
-
-	buf = buffer_new(r - latest_world_end, t_buf + latest_world_end);
-	out = compress_xz(buf, XZ_COMPRESS);
-	if (out != NULL) {
-		broadcast(EV_DEFAULT_ &clients_all, out);
-		UNREF(out);
-		out = NULL;
-	}
-	UNREF(buf);
-
-	/***********
-	 * </TODO> *
-	 ***********/
-	return;
 }
 
 /*
@@ -461,7 +449,7 @@ static void accept_cb(EV_P_ ev_io *w, int revents) {
 /*
  * nothing special, return a functioning server socket
  */
-static int do_bind() {
+static int do_bind(int port) {
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	int t = 1;
 
@@ -472,7 +460,7 @@ static int do_bind() {
 	memset(&sin, 0, slen);
 	sin.sin_family = AF_INET;
 	sin.sin_addr.s_addr = htonl(0);
-	sin.sin_port = htons(8081);
+	sin.sin_port = htons(port);
 
     if(bind(sockfd, (struct sockaddr *) &sin, slen) != 0) perror("bind");
 	if(listen(sockfd, 128) != 0) perror("listen");
@@ -495,7 +483,7 @@ static void stdin_cb(EV_P_ ev_io *w, int revents) {
 }
 
 /*
- * from viewer, some network magic, it didn't write it, i didn't make effords
+ * from viewer, some network magic, i didn't write it, i didn't make efforts
  * to understand it.
  */
 static int connect2server(const char* server, const char* port) {
@@ -542,7 +530,7 @@ static int connect2server(const char* server, const char* port) {
 }
 
 int main (void) {
-	int sockfd = do_bind(); // open the server socket
+	int sockfd = do_bind(8081); // open the server socket
 	int server_fd = connect2server("localhost", "8080"); // connect to the server
 
 	if (server_fd == -1) {
@@ -571,7 +559,7 @@ int main (void) {
 	// close all connections and flush the encoder
 	{
 		buffer *buf = compress_xz(NULL, XZ_FINISH);
-		if (buf != NULL) UNREF(buf);
+		UNREF(buf);
 		client_data    *cd, *cd_tmp;
 		TAILQ_FOREACH_SAFE(cd, &clients_all, list_ctl, cd_tmp) {
 			close_connection(EV_DEFAULT_ cd->w);
