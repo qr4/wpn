@@ -52,12 +52,14 @@ struct com_data {
 };
 
 TAILQ_HEAD(client_data_list, client_data); // type definition
-struct client_data_list clients_all          = TAILQ_HEAD_INITIALIZER(clients_all); // list containing all active clients
-struct client_data_list clients_waiting      = TAILQ_HEAD_INITIALIZER(clients_waiting);
+struct client_data_list clients_compressed          = TAILQ_HEAD_INITIALIZER(clients_compressed); // list containing all active clients
+struct client_data_list clients_compressed_waiting  = TAILQ_HEAD_INITIALIZER(clients_compressed_waiting);
+struct client_data_list clients_raw          = TAILQ_HEAD_INITIALIZER(clients_raw); // list containing all active clients
+struct client_data_list clients_raw_waiting  = TAILQ_HEAD_INITIALIZER(clients_raw_waiting);
 
 /*
  * structure containing all necessary information.
- * also part of the clients_all or clients_waiting lists.
+ * also part of the clients_compressed or clients_compressed_waiting lists.
  */
 struct client_data {
 	ev_io *w;                                    // associated watcher
@@ -336,10 +338,10 @@ static buffer *compress_xz(buffer *input, xz_action action) {
 
 static void compress_and_broadcast(buffer *buf, xz_action action) {
 	// only broadcast if there are clients in the queue
-	if (TAILQ_EMPTY(&clients_all) && action != XZ_FINISH) return;
+	if (TAILQ_EMPTY(&clients_compressed) && action != XZ_FINISH) return;
 	REF(buf);
 	buffer *out = compress_xz(buf, action);
-	broadcast(EV_DEFAULT_ &clients_all, out);
+	broadcast(EV_DEFAULT_ &clients_compressed, out);
 	UNREF(out);
 	UNREF(buf);
 }
@@ -360,15 +362,15 @@ static void concat_queues(struct client_data_list *dest, struct client_data_list
  *
  * the plan:
  *
- * if clients_waiting is empty:
+ * if clients_compressed_waiting is empty:
  * take the new input and compress with it with xz and broadcast all
  * available encoded data.
  *
- * if clients_waiting is _not_ empty:
- * behave as clients_waiting was empty, if there is not a complete world end.
+ * if clients_compressed_waiting is _not_ empty:
+ * behave as clients_compressed_waiting was empty, if there is not a complete world end.
  * otherwise encode only to end of the last complete world, flush the
  * encoder and broadcast to active clients the rest of the encoded stream.
- * then add all clients from clients_waiting to the active list and begin a
+ * then add all clients from clients_compressed_waiting to the active list and begin a
  * new stream, encode what's left after the last complete world and broadcast
  * the new stream to the new active list
  *
@@ -415,14 +417,14 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 	}
 
 	ssize_t written = 0;
-	if (!TAILQ_EMPTY(&clients_waiting) && latest_world_end != -1) {
+	if (!TAILQ_EMPTY(&clients_compressed_waiting) && latest_world_end != -1) {
 		action = XZ_FINISH;
 
 		buf = buffer_new(latest_world_end, t_buf);
 		compress_and_broadcast(buf, action);
 		UNREF(buf);
 
-		concat_queues(&clients_all, &clients_waiting);
+		concat_queues(&clients_compressed, &clients_compressed_waiting);
 		written = latest_world_end;
 
 		action = XZ_COMPRESS; // we flushed already
@@ -438,7 +440,7 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 /*
  * called when a new client connects to the proxy.
  * initializes all necessary data for the client (watcher, output queue, etc..)
- * and adds it to clients_waiting.
+ * and adds it to clients_compressed_waiting.
  */
 static void accept_cb(EV_P_ ev_io *w, int revents) {
 	client_data *cd;
@@ -451,7 +453,7 @@ static void accept_cb(EV_P_ ev_io *w, int revents) {
 
 	cd = malloc(sizeof(client_data));
 	cd->w = malloc(sizeof(ev_io));
-	cd->list = &clients_waiting;
+	cd->list = &clients_compressed_waiting;
 	cd->queued = 0;
 	ev_io_init(cd->w, client_cb, fd, EV_WRITE);
 	STAILQ_INIT(&(cd->queue));
@@ -579,10 +581,10 @@ int main (void) {
 		buffer *buf = compress_xz(NULL, XZ_FINISH);
 		UNREF(buf);
 		client_data    *cd, *cd_tmp;
-		TAILQ_FOREACH_SAFE(cd, &clients_all, list_ctl, cd_tmp) {
+		TAILQ_FOREACH_SAFE(cd, &clients_compressed, list_ctl, cd_tmp) {
 			close_connection(EV_DEFAULT_ cd->w);
 		}
-		TAILQ_FOREACH_SAFE(cd, &clients_waiting, list_ctl, cd_tmp) {
+		TAILQ_FOREACH_SAFE(cd, &clients_compressed_waiting, list_ctl, cd_tmp) {
 			close_connection(EV_DEFAULT_ cd->w);
 		}
 	}
