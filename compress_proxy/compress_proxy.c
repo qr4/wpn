@@ -416,6 +416,9 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 		}
 	}
 
+	/*
+	 * process the compressed queue
+	 */
 	ssize_t written = 0;
 	if (!TAILQ_EMPTY(&clients_compressed_waiting) && latest_world_end != -1) {
 		action = XZ_FINISH;
@@ -435,6 +438,20 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 		compress_and_broadcast(buf, action);
 		UNREF(buf);
 	}
+
+	/*
+	 * process the raw queue
+	 */
+	if (!TAILQ_EMPTY(&clients_raw_waiting)) {
+		concat_queues(&clients_raw, &clients_raw_waiting);
+	}
+
+	if (!TAILQ_EMPTY(&clients_raw)) {
+		buf = buffer_new(r, t_buf);
+		broadcast(EV_DEFAULT_ &clients_raw, buf);
+		UNREF(buf);
+	}
+
 }
 
 /*
@@ -585,6 +602,12 @@ int main (void) {
 			close_connection(EV_DEFAULT_ cd->w);
 		}
 		TAILQ_FOREACH_SAFE(cd, &clients_compressed_waiting, list_ctl, cd_tmp) {
+			close_connection(EV_DEFAULT_ cd->w);
+		}
+		TAILQ_FOREACH_SAFE(cd, &clients_raw, list_ctl, cd_tmp) {
+			close_connection(EV_DEFAULT_ cd->w);
+		}
+		TAILQ_FOREACH_SAFE(cd, &clients_raw_waiting, list_ctl, cd_tmp) {
 			close_connection(EV_DEFAULT_ cd->w);
 		}
 	}
