@@ -289,6 +289,7 @@ static buffer *compress_xz(buffer *input, xz_action action) {
 			need_init = false;
 		}
 	}
+
 	switch (action) {
 		case XZ_COMPRESS :
 			xz_action = LZMA_RUN;
@@ -334,6 +335,8 @@ static buffer *compress_xz(buffer *input, xz_action action) {
 }
 
 static void compress_and_broadcast(buffer *buf, xz_action action) {
+	// only broadcast if there are clients in the queue
+	if (TAILQ_EMPTY(&clients_all) && action != XZ_FINISH) return;
 	REF(buf);
 	buffer *out = compress_xz(buf, action);
 	broadcast(EV_DEFAULT_ &clients_all, out);
@@ -421,6 +424,8 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 
 		concat_queues(&clients_all, &clients_waiting);
 		written = latest_world_end;
+
+		action = XZ_COMPRESS; // we flushed already
 	}
 
 	if (r > written) {
