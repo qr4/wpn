@@ -9,10 +9,10 @@ all: talk net
 dbg: all
 
 talk: $(OBJ_TALK)
-		$(CC) $(LDFLAGS) -o $@ $(OBJ_TALK)
+		$(CC) -o $@ $(OBJ_TALK)  $(LDFLAGS)
 
 net: $(OBJ_NET)
-		$(CC) $(LDFLAGS) -o $@ $(OBJ_NET)
+		$(CC) -o $@ $(OBJ_NET) $(LDFLAGS)
 
 %.o: %.c %.h
 		$(CC) $(CFLAGS) -c $<

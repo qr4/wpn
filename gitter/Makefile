@@ -5,7 +5,7 @@ LDFLAGS = `sdl-config --libs` -lSDL_gfx  -lm -lpthread
 OBJ = main.o screen.o route.o json_output.o
 
 main: $(OBJ)
-	$(CXX) $(FLAGS) $(LDFLAGS) -o $@ $(OBJ) 
+	$(CXX) $(FLAGS) -o $@ $(OBJ) $(LDFLAGS)
 
 %.o: %.c %.h
 	$(CXX) $(FLAGS) $(CLIBS) -c $< 

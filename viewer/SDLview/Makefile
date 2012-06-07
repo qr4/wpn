@@ -13,7 +13,7 @@ ifeq ($(CC),clang)
 endif
 
 main: $(OBJ) Makefile
-	$(CC) $(FLAGS) $(LDFLAGS) -o $@ $(OBJ)
+	$(CC) $(FLAGS) -o $@ $(OBJ) $(LDFLAGS)
 
 %.o: %.c %.h
 	$(CC) $(FLAGS) $(CLIBS) -c $<
