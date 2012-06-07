@@ -1,6 +1,7 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <unistd.h>
 #include <netdb.h>
 #include <sys/queue.h>
 #include <signal.h>
@@ -261,6 +262,8 @@ static buffer *buffer_append(buffer *buf, size_t s, const char *new_content) {
 #define COMPRESSION_EXTREME 0U
 //#define COMPRESSION_EXTREME LZMA_PRESET_EXTREME
 #define COMPRESSION_PRESET ((uint32_t) (COMPRESSION_LEVEL | COMPRESSION_EXTREME))
+#define DECOMPRESSION_FLAGS ((uint32_t) (LZMA_CONCATENATED))
+
 typedef enum {
 	XZ_COMPRESS,
 	XZ_FLUSH,
@@ -268,19 +271,40 @@ typedef enum {
 } xz_action;
 
 
+static buffer *xz_run(lzma_stream *stream, lzma_action action) {
+	buffer *ret = NULL;
+	lzma_ret ret_xz;
+	size_t out_len = BUFFSIZE;
+	uint8_t out_buf[out_len];
+
+	do {
+		stream->next_out = out_buf;
+		stream->avail_out = out_len;
+
+		ret_xz = lzma_code(stream, action);
+		if ((ret_xz != LZMA_OK) && (ret_xz != LZMA_STREAM_END) && (ret_xz != LZMA_BUF_ERROR)) {
+			fprintf(stderr, "%s failed, code %d\n", __func__, ret_xz);
+		}
+		ret = buffer_append(ret, out_len - stream->avail_out, (char *) out_buf);
+	} while (stream->avail_out == 0);
+
+	if (action == XZ_FINISH) {
+		lzma_end(stream);
+	}
+
+	return ret;
+}
+
 /*
  * easy access to compression with xz.
  * currently only one stream is possible, as the state is maintained
  * throuth static variables.
  */
 static buffer *compress_xz(buffer *input, xz_action action) {
-	buffer *ret = NULL;
 	static lzma_stream stream = LZMA_STREAM_INIT;
 	static bool need_init = true;
 	lzma_ret ret_xz;
 	lzma_action xz_action = LZMA_RUN;
-	size_t out_len = BUFFSIZE;
-	uint8_t out_buf[out_len];
 
 	if (need_init) {
 		ret_xz = lzma_easy_encoder(&stream, COMPRESSION_PRESET, LZMA_CHECK_CRC64);
@@ -317,23 +341,35 @@ static buffer *compress_xz(buffer *input, xz_action action) {
 		stream.avail_in = input->n;
 	}
 
-	do {
-		stream.next_out = out_buf;
-		stream.avail_out = out_len;
+	return xz_run(&stream, xz_action);
+}
 
-		ret_xz = lzma_code(&stream, xz_action);
-		if ((ret_xz != LZMA_OK) && (ret_xz != LZMA_STREAM_END) && (ret_xz != LZMA_BUF_ERROR)) {
-			fprintf(stderr, "%s: compression failed, code %d\n", __func__, ret_xz);
+
+static buffer *decompress_xz(buffer *input) {
+	static lzma_stream stream = LZMA_STREAM_INIT;
+	static bool need_init = true;
+	lzma_ret ret_xz;
+	const size_t mem_limit = UINT64_MAX;
+
+	if (need_init) {
+		need_init = false;
+		ret_xz = lzma_stream_decoder(&stream, mem_limit, DECOMPRESSION_FLAGS);
+		if (ret_xz != LZMA_OK) {
+			fprintf(stderr, "lzme_stream_decoder error: %d\n", (int) ret_xz);
+			need_init = true;
+			return buffer_new(0, NULL);
 		}
-
-		ret = buffer_append(ret, out_len - stream.avail_out, (char *) out_buf);
-	} while (stream.avail_out == 0);
-
-	if (action == XZ_FINISH) {
-		lzma_end(&stream);
 	}
 
-	return ret;
+	if (input == NULL || input->n == 0) {
+		stream.next_in = NULL;
+		stream.avail_in = 0;
+	} else {
+		stream.next_in = (const uint8_t *) input->data;
+		stream.avail_in = input->n;
+	}
+
+	return xz_run(&stream, LZMA_RUN);
 }
 
 static void compress_and_broadcast(buffer *buf, xz_action action) {
@@ -378,32 +414,60 @@ static void concat_queues(struct client_data_list *dest, struct client_data_list
  * wait a few turns to add new clients, to increase compression performance.
  * you also lost the game.
  */
+static const uint8_t XZ_HEADER_MAGIC[6] = { 0xFD, '7', 'z', 'X', 'Z', 0x00 };
+
 static void server_read_cb(EV_P_ ev_io *w, int revents) {
 	static size_t depth = 0; // used to decide when a world is fully sent
+	static bool first_read = true;
+	static bool is_compressed_input = false;
 	buffer *buf;
 	ssize_t r;
 	char t_buf[BUFFSIZE];
 	xz_action action = XZ_COMPRESS;
+	buffer *input = NULL;
 
-	r = read(w->fd, t_buf, BUFFSIZE); // try to fill t_buf
-	if (r == 0 || r == -1) {
-		// TODO
-		depth = 0;
-		return;
+	if (first_read) {
+		// detect if incoming data is raw or compressed
+		first_read = false;
+
+		for (size_t i = 0; i < sizeof(XZ_HEADER_MAGIC); i++) {
+			r = read(w->fd, &t_buf[i], 1);
+			if (r == 0 || r == -1) { goto error; }
+		}
+
+		r = sizeof(XZ_HEADER_MAGIC);
+
+		if (memcmp(t_buf, XZ_HEADER_MAGIC, sizeof(XZ_HEADER_MAGIC)) == 0) {
+			is_compressed_input = true;
+			printf("Detected xz stream\n");
+		} else {
+			printf("Detected raw stream\n");
+		}
+	} else {
+		r = read(w->fd, t_buf, BUFFSIZE); // try to fill t_buf
+		if (r == 0 || r == -1) { goto error; }
+	}
+
+	input = buffer_new(r, t_buf);
+
+	if (is_compressed_input) {
+		buffer *t = input;
+		input = decompress_xz(t);
+		UNREF(t);
 	}
 
 	// detect where in the stream a world is complete. if there are
 	// multiple complete worlds, only mark the last end
 	ssize_t latest_world_end = -1;
-	for (size_t i = 0; i < r; i++) {
-		switch (t_buf[i]) {
+	for (size_t i = 0; i < input->n; i++) {
+		switch (input->data[i]) {
 			case '{':
 				depth++;
 				break;
 			case '}':
 				depth--;
 				if (depth == 0) {
-					//printf("End of the world detected!\n");
+					printf("End of the world detected!\n");
 					latest_world_end = i;
 					action = XZ_FLUSH;
 				}
@@ -423,7 +487,7 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 	if (!TAILQ_EMPTY(&clients_compressed_waiting) && latest_world_end != -1) {
 		action = XZ_FINISH;
 
-		buf = buffer_new(latest_world_end, t_buf);
+		buf = buffer_new(latest_world_end, input->data);
 		compress_and_broadcast(buf, action);
 		UNREF(buf);
 
@@ -434,7 +498,7 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 	}
 
 	if (r > written) {
-		buf = buffer_new(r - written, &t_buf[written]);
+		buf = buffer_new(input->n - written, &input->data[written]);
 		compress_and_broadcast(buf, action);
 		UNREF(buf);
 	}
@@ -447,11 +511,21 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 	}
 
 	if (!TAILQ_EMPTY(&clients_raw)) {
-		buf = buffer_new(r, t_buf);
+		buf = buffer_new(input->n, input->data);
 		broadcast(EV_DEFAULT_ &clients_raw, buf);
 		UNREF(buf);
 	}
 
+	UNREF(input);
+
+	return;
+
+error:
+	fprintf(stderr, "Error in %s\n", __func__);
+	fprintf(stderr, "Connection closed\n");
+	ev_break(EV_DEFAULT_ EVBREAK_ALL);
+	depth = 0;
+	first_read = true;
 }
 
 /*
@@ -470,7 +544,8 @@ static void accept_cb(EV_P_ ev_io *w, int revents) {
 
 	cd = malloc(sizeof(client_data));
 	cd->w = malloc(sizeof(ev_io));
-	cd->list = &clients_compressed_waiting;
+	cd->list = &clients_raw_waiting;
+	//cd->list = &clients_compressed_waiting;
 	cd->queued = 0;
 	ev_io_init(cd->w, client_cb, fd, EV_WRITE);
 	STAILQ_INIT(&(cd->queue));
@@ -532,7 +607,7 @@ static int connect2server(const char* server, const char* port) {
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	printf("connect to server %s:%s\n", server, port);
+	fprintf(stderr, "connect to server %s:%s\n", server, port);
 	rv = getaddrinfo(server, port, &hints, &servinfo);
 
 	if (rv != 0) {
@@ -567,8 +642,10 @@ static int connect2server(const char* server, const char* port) {
 }
 
 int main (void) {
-	int sockfd = do_bind(8081); // open the server socket
-	int server_fd = connect2server("localhost", "8080"); // connect to the server
+	//int sockfd = do_bind(8081); // open the server socket
+	//int server_fd = connect2server("localhost", "8080"); // connect to the server
+	int sockfd = do_bind(8082); // open the server socket
+	int server_fd = connect2server("localhost", "8081"); // connect to the server
 
 	if (server_fd == -1) {
 		perror("connect");
