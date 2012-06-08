@@ -45,33 +45,9 @@ json_int_t follow_ship = 0;
 #define asprintf(...) if(asprintf(__VA_ARGS__))
 TTF_Font* font;
 
-void screen_init() {
-	screen = SDL_SetVideoMode(options.display_x, options.display_y, 32, SDL_RESIZABLE | SDL_SWSURFACE | SDL_DOUBLEBUF);
 
-	if (screen == NULL) {
-		fprintf(stderr, "SDL_SetVideoMode() failed: %s\n", SDL_GetError());
-		exit(1);
-	}
-}
-
-SDL_Surface *load_img(const char *filename) {
-	SDL_RWops *file  = SDL_RWFromFile(filename, "rb");
-	SDL_Surface *t   = IMG_LoadTyped_RW(file, 1, "PNG");
-	SDL_Surface *ret;
-
-	if (t == NULL) {
-		fprintf(stderr, "Failed to load %s: %s\n", filename, IMG_GetError());
-		exit(1);
-	}
-
-	ret = SDL_DisplayFormatAlpha(t);
-	SDL_FreeSurface(t);
-	SDL_SetAlpha(ret, SDL_SRCALPHA | SDL_RLEACCEL, SDL_ALPHA_OPAQUE);
-
-	return ret;
-}
-
-void SDLinit() {
+// WIRD EINMAL BEIM STARTEN AUFGERUFEN
+void ConsumerInit() {
 	if (SDL_Init(SDL_INIT_VIDEO) == -1) {
 		fprintf(stderr, "SDL_Init() failed: %s\n", SDL_GetError());
 		exit(1);
@@ -111,6 +87,41 @@ void SDLinit() {
 	slot_R_image      = load_img("slot_R.png");
 	slot_T_image      = load_img("slot_T.png");
 }
+
+// WIRD BEI JEDEM FRAME AUFGERUFEN
+void ConsumerFrame() {
+	checkSDLevent();
+	SDLplot();
+}
+
+// AB HIER DIE FIESEN INNEREIEN
+void screen_init() {
+	screen = SDL_SetVideoMode(options.display_x, options.display_y, 32, SDL_RESIZABLE | SDL_SWSURFACE | SDL_DOUBLEBUF);
+
+	if (screen == NULL) {
+		fprintf(stderr, "SDL_SetVideoMode() failed: %s\n", SDL_GetError());
+		exit(1);
+	}
+}
+
+SDL_Surface *load_img(const char *filename) {
+	SDL_RWops *file  = SDL_RWFromFile(filename, "rb");
+	SDL_Surface *t   = IMG_LoadTyped_RW(file, 1, "PNG");
+	SDL_Surface *ret;
+
+	if (t == NULL) {
+		fprintf(stderr, "Failed to load %s: %s\n", filename, IMG_GetError());
+		exit(1);
+	}
+
+	ret = SDL_DisplayFormatAlpha(t);
+	SDL_FreeSurface(t);
+	SDL_SetAlpha(ret, SDL_SRCALPHA | SDL_RLEACCEL, SDL_ALPHA_OPAQUE);
+
+	return ret;
+}
+
+
 
 void checkSDLevent() {
 	SDL_Event event;

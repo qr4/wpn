@@ -28,6 +28,7 @@ typedef struct {
 } planet_t;
 
 typedef struct {
+	json_int_t source;
 	float x;
 	float y;
 	float strength;

@@ -3,9 +3,11 @@
 #include <pthread.h>
 
 #include "layerrenderers.h"
-#include "snapshot.h"
+#include "../ClientLib/snapshot.h"
 
 extern state_t state;
+
+// Suppress warnings about unchecked results
 #define asprintf(...) if(asprintf(__VA_ARGS__))
 
 extern options_t options;
@@ -551,7 +553,7 @@ void draw_explosions(SDL_Surface *buffer) {
 			   SDL_BlitSurface(tmp, NULL, screen, &dst_rect);
 			   */
 
-			// Terrible, terrbible cheating
+			// Terrible, terrible cheating
 			for(i = 0; i < (e->strength * e->strength) / 4096; i++) {
 				SDL_gfxBlitRGBA(explosion_sprite, NULL, buffer, &dst_rect);
 			}
