@@ -1437,8 +1437,8 @@ int lua_build_ship(lua_State* L) {
 
 	if (n == 1) {
 		/* Are we building a ship using an index table?
-		 * Then push all indexes on the stack, set n properly and
-		 * continue as if the function was called with explicit indexes
+		 * Then push all indices on the stack, set n properly and
+		 * continue as if the function was called with explicit indices
 		 */
 
 		int table_position = n;

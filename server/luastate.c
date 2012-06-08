@@ -76,6 +76,7 @@ void init_ship_computer(entity_t* s) {
 
 	const luaL_Reg* lib = lualibs;
 	char* random_seed_command;
+	entity_id_t prev_active_entity;
 
 	/* If the ship already has a running program, delete it. */
 	if(s->lua) {
@@ -119,6 +120,7 @@ void init_ship_computer(entity_t* s) {
 	}
 
 	/* Load the (player-independent) init code into it */
+	prev_active_entity = lua_active_entity;
 	lua_active_entity = s->unique_id;
 	if(luaL_dofile(s->lua, config_get_string("ship_init_code_file"))) {
 		ERROR("Running init-code for entity %lx failed:\n", (unsigned long) s);
@@ -126,7 +128,8 @@ void init_ship_computer(entity_t* s) {
 		kill_computer(s);
 	}
 
-	/* It is now ready to go. */
+	/* It is now ready to go. Return to the old context. */
+	lua_active_entity = prev_active_entity;
 }
 
 /* Kill a ship computer (probably due to an error) */
