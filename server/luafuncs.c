@@ -1193,7 +1193,12 @@ int lua_send_data(lua_State* L) {
 
 		/* Possibility b: send a source code string */
 		temp = lua_tostring(L,1);
-		lua_pushstring(epartner->lua, temp);
+		if(temp[0] != 27) {
+			lua_pushstring(epartner->lua, temp);
+		} else {
+			lua_pushstring(epartner->lua, "print(\"You tried to upload raw lua"
+				" bytecode. This is forbidden\")");
+		}
 
 		lua_pop(L,1);
 	}
