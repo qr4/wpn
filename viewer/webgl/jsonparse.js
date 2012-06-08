@@ -33,6 +33,15 @@ function init_json_listener() {
 /* Handler fuer neu-reinkommende json-daten */
 function new_json_data(event) {
 	old_pos += parse_json(ajaxobject.responseText.substr(old_pos));
+
+	if(old_pos > 1024*1024*16) {
+		var cachebuster = Math.floor(Math.random()*10000001);
+		ajaxobject.abort();
+		ajaxobject.responseText = "";
+		ajaxobject.open("GET", "/cgi/test.cgi?x=" + cachebuster);
+		ajaxobject.send(null);
+		old_pos=0;
+	}
 }
 
 /* Versuche den übergebenen text als (potentiell mehrere, leerzeilen-
