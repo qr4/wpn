@@ -13,10 +13,35 @@ void ConsumerInit() {
 	init_storage(&state.players,       size,   sizeof(player_t));
 }
 
-void print_html(int n, score_t* scorecard) {
-	int max_score = -1;
-	int n_printed = 0;
+int score_cmp(const void* a, const void* b) {
+	const score_t * sa = (const score_t *) a;
+	const score_t * sb = (const score_t *) b;
 
+	return  (sa->score < sb->score) - (sa->score > sb->score);
+}
+
+int ship_cmp(const void* a, const void* b) {
+	const score_t * sa = (const score_t *) a;
+	const score_t * sb = (const score_t *) b;
+
+	return  (sa->ships < sb->ships) - (sa->ships > sb->ships);
+}
+
+int planet_cmp(const void* a, const void* b) {
+	const score_t * sa = (const score_t *) a;
+	const score_t * sb = (const score_t *) b;
+
+	return  (sa->planets < sb->planets) - (sa->planets > sb->planets);
+}
+
+int base_cmp(const void* a, const void* b) {
+	const score_t * sa = (const score_t *) a;
+	const score_t * sb = (const score_t *) b;
+
+	return  (sa->bases < sb->bases) - (sa->bases > sb->bases);
+}
+
+void print_html(const int n, score_t* scorecard) {
 	FILE* file = fopen("/srv/www/htdocs/wpn/.score", "w");
 	fprintf(file, "<HTML>\n<HEAD>\n");
 	fprintf(file, "<LINK rel=\"stylesheet\" href=\"style.css\">\n");
@@ -24,24 +49,59 @@ void print_html(int n, score_t* scorecard) {
 	fprintf(file, "<TITLE>WPN Scoreboard</TITLE>\n");
 	fprintf(file, "</HEAD>\n<BODY>\n");
 	fprintf(file, "<H1>WPN Scoreboard</H1>\n");
+	fprintf(file, "<DIV style=\"float: left; width: 50%%;\">\n");
+
+	fprintf(file, "<H3>Overall</H3>\n");
 	fprintf(file, "<TABLE>\n");
 	fprintf(file, "<TR><TH>Name</TH><TH>Score</TH><TH>Bases</TH><TH>Planets</TH><TH>Ships</TH></TR>\n");
-	while(n_printed < n) {
-		max_score = -1;
-		for(int i = 0; i < n; i++) {
-			if(scorecard[i].score > max_score) {
-				max_score = scorecard[i].score;
-			}
-		}
-		for(int i = 0; i < n; i++) {
-			if(scorecard[i].score == max_score) {
-				fprintf(file, "<TR><TD>%s</TD><TD>%d</TD><TD>%d</TD><TD>%d</TD><TD>%d</TD></TR>\n", scorecard[i].player.name, scorecard[i].score, scorecard[i].bases, scorecard[i].planets, scorecard[i].ships);
-				scorecard[i].score = -1;
-				n_printed++;
-			}
-		}
+	int i = 0;
+	qsort(scorecard, n, sizeof(score_t), score_cmp);
+	while(i < n) {
+		fprintf(file, "<TR><TD>%s</TD><TD>%d</TD><TD>%d</TD><TD>%d</TD><TD>%d</TD></TR>\n", scorecard[i].player.name, scorecard[i].score, scorecard[i].bases, scorecard[i].planets, scorecard[i].ships);
+		i++;
 	}
 	fprintf(file, "</TABLE>\n");
+
+	fprintf(file, "</DIV>\n");
+	fprintf(file, "<DIV style=\"float: right; width: 50%%;\">\n");
+
+	fprintf(file, "<H3>Ships (by slots)</H3>\n");
+	fprintf(file, "<TABLE>\n");
+	fprintf(file, "<TR><TH>Name</TH><TH>Ships</TH></TR>\n");
+	i = 0;
+	qsort(scorecard, n, sizeof(score_t), ship_cmp);
+	while((i < 3) && (i < n)) {
+		fprintf(file, "<TR><TD>%s</TD><TD>%d</TD></TR>\n", scorecard[i].player.name, scorecard[i].ships);
+		i++;
+	}
+	fprintf(file, "</TABLE>\n");
+	fprintf(file, "<BR>\n");
+
+	fprintf(file, "<H3>Planets (by size)</H3>\n");
+	fprintf(file, "<TABLE>\n");
+	fprintf(file, "<TR><TH>Name</TH><TH>Planets</TH></TR>\n");
+	i = 0;
+	qsort(scorecard, n, sizeof(score_t), planet_cmp);
+	while((i < 3) && (i < n)) {
+		fprintf(file, "<TR><TD>%s</TD><TD>%d</TD></TR>\n", scorecard[i].player.name, scorecard[i].planets);
+		i++;
+	}
+	fprintf(file, "</TABLE>\n");
+	fprintf(file, "<BR>\n");
+
+	fprintf(file, "<H3>Bases (by slots)</H3>\n");
+	fprintf(file, "<TABLE>\n");
+	fprintf(file, "<TR><TH>Name</TH><TH>Bases</TH></TR>\n");
+	i = 0;
+	qsort(scorecard, n, sizeof(score_t), base_cmp);
+	while((i < 3) && (i < n)) {
+		fprintf(file, "<TR><TD>%s</TD><TD>%d</TD></TR>\n", scorecard[i].player.name, scorecard[i].bases);
+		i++;
+	}
+	fprintf(file, "</TABLE>\n");
+	fprintf(file, "<BR>\n");
+
+	fprintf(file, "</DIV>\n");
 	fprintf(file, "</BODY>\n</HTML>\n");
 	fclose(file);
 	rename("/srv/www/htdocs/wpn/.score", "/srv/www/htdocs/wpn/score.htm");
