@@ -105,7 +105,6 @@ int _new_account_name(char*, int, struct userstate* us, int write_fd);
 int _new_account_pw1(char*, int, struct userstate* us, int write_fd);
 int _new_account_pw2(char*, int, struct userstate* us, int write_fd);
 int _set_user_info(char*, int, struct userstate* us, int write_fd);
-int _set_noob(char*, int, struct userstate* us, int write_fd);
 
 int _check_password(char*, int, struct userstate* us, int write_fd);
 int _menu_main(char*, int, struct userstate* us, int write_fd);
@@ -119,12 +118,11 @@ int _change_password_old(char*, int, struct userstate* us, int write_fd);
 int _change_password_new1(char*, int, struct userstate* us, int write_fd);
 int _change_password_new2(char*, int, struct userstate* us, int write_fd);
 int _change_user_info(char*, int, struct userstate* us, int write_fd);
-int _change_noob(char*, int, struct userstate* us, int write_fd);
 int _change_ssh_key(char*, int, struct userstate* us, int write_fd);
 
 enum state { 
   LOGIN, 
-    NEW_ACCOUNT_NAME, NEW_ACCOUNT_PW1, NEW_ACCOUNT_PW2, SET_USER_INFO, SET_NOOB,
+    NEW_ACCOUNT_NAME, NEW_ACCOUNT_PW1, NEW_ACCOUNT_PW2, SET_USER_INFO,
     CHECK_PASSWORD, 
       MENU_MAIN, 
         LUA_CONSOLE, 
@@ -133,7 +131,6 @@ enum state {
         MENU_CONFIG, 
           CHANGE_PASSWORD_OLD, CHANGE_PASSWORD_NEW1, CHANGE_PASSWORD_NEW2, 
           CHANGE_USER_INFO, 
-          CHANGE_NOOB, 
           CHANGE_SSH_KEY };
 
 struct automaton {
@@ -205,19 +202,6 @@ struct automaton {
     .state = SET_USER_INFO
   },
   {
-    .msg = "\n"
-      " So, eine letzte Frage noch. Der noob, (auch Wuerzburger Nerd) moechte gerne\n"
-      " Deinen LUA-Code verwenden, um seine Plagiats-Erkennungs-Software zu\n"
-      " verbessern. Deinen Code (inklusive der verschiedenen Versionen wie er sich\n"
-      " entwicklet) bekommt er aber natuerlich nur, wenn Du ihm das erlaubst und hier\n"
-      " \"JA\" eintippst. Sonst nicht. Da du aber einem Mitnerd bestimmt helfen willst\n"
-      " gibst Du hier \"JA\" (ohne die Gaensefuesschen) ein, oder?\n"
-      "\n",
-    .prompt = "130 noob: ",
-    .fkt = _set_noob,
-    .state = SET_NOOB
-  },
-  {
     .msg = "\n",
     .prompt = "150 passwort: ",
     .fkt = _check_password,
@@ -272,8 +256,6 @@ struct automaton {
       "\n"
       " 1 Login-Passwort aendern\n"
       " 2 User-Info aendern\n"
-      " 3 Noob-Mode aendern (-> Dein Code fuer Plagiatserkennungssoftware)\n"
-//      " 4 ssh-key aendern\n"
       "\n"
       " 0 Main-Menu\n"
       "\n",
@@ -314,17 +296,6 @@ struct automaton {
     .prompt = "120 info: ",
     .fkt = _change_user_info,
     .state = CHANGE_USER_INFO
-  },
-  {
-    .msg = "\n"
-      " Darf der noob Deinen LUA-Code fuer seine Dr.-Arbyte verwenden?\n"
-      " <RETURN> = keine Aenderung vornehmen\n"
-      " JA = okay, wenns denn sein muss (kleines \"ja\" geht auch)\n"
-      " * = nee, kommt nicht in die Tuete. Du spinnst wohl!\n"
-      "\n",
-    .prompt = "120 noob: ",
-    .fkt = _change_noob,
-    .state = CHANGE_NOOB
   },
   {
     .msg = "\n"
@@ -519,7 +490,7 @@ int _set_user_info(char* data, int len, struct userstate* us, int write_fd) {
       return -1;
     }
 
-    return set_state(SET_NOOB, us, write_fd);
+    return set_state(MENU_MAIN, us, write_fd);
   }
 
   if (us->count > 3) {
@@ -538,30 +509,6 @@ int _set_user_info(char* data, int len, struct userstate* us, int write_fd) {
   dstr_append(&us->tmp, "\n", 1);
 
   return print_msg_and_prompt(write_fd, NULL, 0, us);
-}
-
-//
-//
-//
-int _set_noob(char* data, int len, struct userstate* us, int write_fd) {
-  if ((len == 2) && (strncasecmp(data, "ja", 2) == 0)) {
-    struct pstr noob = { .used = sizeof(USER_HOME_BY_NAME), .str = USER_HOME_BY_NAME "/" };
-    pstr_append(&noob, &us->user);
-    pstr_append_cstr(&noob, "/noob", 5);
-
-    int fd = open(pstr_as_cstr(&noob), O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    if (fd == -1) {
-      log_msg("user %s möchte, dass der noob darf, schreiben geht aber nicht", pstr_as_cstr(&us->user));
-    }
-
-    if (write(fd, "JA\n", 3) == -1) {
-      log_perror("write ja");
-    }
-
-    close(fd);
-  }
-
-  return set_state(MENU_MAIN, us, write_fd);
 }
 
 //
@@ -774,25 +721,6 @@ int _menu_config(char* data, int len, struct userstate* us, int write_fd) {
                 us->count = 0;
                 return set_state(CHANGE_USER_INFO, us, write_fd);
               }
-    case '3': {
-                // header
-                const char msg_ja[] = "\n"
-                  " Aktueller noob-Status: JA\n";
-                const char msg_nein[] = "\n"
-                  " Aktueller noob-Status: NEIN\n";
-
-                // aktuellen status anzeigen
-                struct pstr file = { .used = 0 };
-                pstr_append_printf(&file, USER_HOME_BY_ID"/%d/noob", us->id);
-                if (dstr_read_file(&file, &us->tmp) == -1) {
-                  // datei gibts wohl nicht -> nein
-                  if (print_msg_and_prompt(write_fd, msg_nein, sizeof(msg_nein), NULL) == -1) { return -1; }
-                } else {
-                  if (print_msg_and_prompt(write_fd, msg_ja, sizeof(msg_ja), NULL) == -1) { return -1; }
-                }
-
-                return set_state(CHANGE_NOOB, us, write_fd);
-              }
 //    case '4': return set_state(CHANGE_SSH_KEY, us, write_fd);
     case '0': return set_state(MENU_MAIN, us, write_fd);
     default: return print_msg_and_prompt(write_fd, msg, sizeof(msg), us);
@@ -912,32 +840,6 @@ int _change_user_info(char* data, int len, struct userstate* us, int write_fd) {
   dstr_append(&us->tmp, "\n", 1);
 
   return print_msg_and_prompt(write_fd, NULL, 0, us);
-}
-
-//
-//
-//
-int _change_noob(char* data, int len, struct userstate* us, int write_fd) {
-
-  struct pstr file = { .used = 0 };
-  pstr_append_printf(&file, USER_HOME_BY_ID"/%d/noob", us->id);
-
-  if ((len == 2) && (strncasecmp(data, "ja", 2) == 0)) {
-    // noob darf
-    struct pstr ja = { .used = 3, .str = "JA\n" };
-    if (pstr_write_file(&file, &ja, O_WRONLY | O_TRUNC | O_CREAT) == -1) {
-      log_msg("user %s möchte, dass der noob darf, schreiben geht aber nicht", pstr_as_cstr(&us->user));
-      log_perror("change_noob");
-    }
-  } else if (len != 0) {
-    // remove noob
-    if (unlink(pstr_as_cstr(&file)) == -1) {
-      log_msg("noob-unlink von %s geht nicht!", pstr_as_cstr(&file));
-      log_perror("noob-unlink");
-    }
-  }
-
-  return set_state(MENU_CONFIG, us, write_fd);
 }
 
 //
