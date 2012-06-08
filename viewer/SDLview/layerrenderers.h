@@ -2,7 +2,7 @@
 #define LAYERRENDERERS_H
 
 #include <SDL/SDL.h>
-#include "types.h"
+#include "../ClientLib/types.h"
 #include "sdl.h"
 
 void draw_influence(SDL_Surface *buffer);

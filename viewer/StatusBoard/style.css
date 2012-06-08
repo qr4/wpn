@@ -1,0 +1,24 @@
+body {
+	background-color: #000000;
+	background-image:url(background.png);
+}
+
+h1 {
+	color: #000099;
+}
+
+table {
+	background-color: #000000;
+	filter: alpha(opacity=90)-moz-opacity:0.90;
+	opacity: 0.90;
+}
+
+th {
+	color: #cccccc;
+	font-weight: bold;
+}
+
+td {
+	color: #cccccc;
+	padding: 2px 4px 2px 4px;
+}

@@ -7,26 +7,23 @@
 #include "types.h"
 #include "buffer.h"
 
-#define UPDATE 0
-#define OVERWRITE 1
-
 int parseJson(buffer_t* b);
 
-void createExplosion(float x, float y);
+void createExplosion(float x, float y, json_int_t source);
 void createShot(json_int_t id, int owner, float x, float y, float length, float angle);
 void jsonAsteroid(json_t* asteroid);
-void jsonAsteroids(json_t* a, int updatemode);
+void jsonAsteroids(json_t* a);
 void jsonBbox(json_t* bbox);
 void jsonBase(json_t* base);
-void jsonBases(json_t* b, int updatemode);
+void jsonBases(json_t* b);
 void jsonExplosion(json_t* e);
 void jsonExplosions(json_t* e);
 void jsonPlanet(json_t* planet);
-void jsonPlanets(json_t* p, int updatemode);
+void jsonPlanets(json_t* p);
 void jsonPlayer(json_t* p);
 void jsonPlayers(json_t* p);
 void jsonShip(json_t* ship);
-void jsonShips(json_t* s, int updatemode);
+void jsonShips(json_t* s);
 void jsonShot(json_t* shot);
 void jsonShots(json_t* s);
 void jsonUpdate(json_t* update);

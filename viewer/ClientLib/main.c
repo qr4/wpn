@@ -1,17 +1,21 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <stdio.h>
-#include <stdlib.h>
+#define _XOPEN_SOURCE
+#define _XOPEN_SOURCE_EXTENDED
 
 #include <errno.h>
-#include <unistd.h>
-
+#include <netdb.h>
+#include <netdb.h>
 #include <pstr.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/types.h>
 
 #include "buffer.h"
 #include "json.h"
-#include "sdl.h"
+#include "consumer.h"
 #include "types.h"
 #include "snapshot.h"
 
@@ -236,11 +240,10 @@ int main(int argc, const char* argv[] ) {
 	}
 
 
-	SDLinit();
+	ConsumerInit();
 
 	while(1) {
 		options_old = options;
-		checkSDLevent();
 
 		ret = checkInput(net, &buffer, 100000);
 
@@ -254,7 +257,7 @@ int main(int argc, const char* argv[] ) {
 		}
 
 		snapshot_update_from_members(&state, &options);
-		SDLplot();
+		ConsumerFrame();
 
 	}
 

@@ -21,16 +21,9 @@ int parseJson(buffer_t* b) {
 		fprintf(stderr, "Error %s in line %d, column %d\n", error.text, error.line, error.column);
 		//exit(1);
 	} else {
-		//fprintf(stderr, "Found valid json\n");
 		json_t* world = json_object_get(root, "world");
 		if(world) {
-			//fprintf(stderr, "Turns out it is a world object\n");
 			jsonWorld(world);
-		}
-		json_t* update = json_object_get(root, "update");
-		if(update) {
-			//fprintf(stderr, "Turns out it is an update object\n");
-			jsonUpdate(update);
 		}
 	}
 	json_decref(root);
@@ -44,7 +37,7 @@ void jsonWorld(json_t* world) {
 	}
 	json_t* j_asteroids = json_object_get(world, "asteroids");
 	if(j_asteroids) {
-		jsonAsteroids(j_asteroids, OVERWRITE);
+		jsonAsteroids(j_asteroids);
 	}
 	json_t* j_bbox = json_object_get(world, "bounding-box");
 	if(j_bbox) {
@@ -52,51 +45,15 @@ void jsonWorld(json_t* world) {
 	}
 	json_t* j_planets = json_object_get(world, "planets");
 	if(j_planets) {
-		jsonPlanets(j_planets, OVERWRITE);
+		jsonPlanets(j_planets);
 	}
 	json_t* j_ships = json_object_get(world, "ships");
 	if(j_ships) {
-		jsonShips(j_ships, OVERWRITE);
+		jsonShips(j_ships);
 	}
 	json_t* j_bases = json_object_get(world, "bases");
 	if(j_bases) {
-		jsonBases(j_bases, OVERWRITE);
-	}
-}
-
-void jsonUpdate(json_t* update) {
-	json_t* j_players = json_object_get(update, "players");
-	if(j_players) {
-		jsonPlayers(j_players);
-	}
-	json_t* j_asteroids = json_object_get(update, "asteroids");
-	if(j_asteroids) {
-		jsonAsteroids(j_asteroids, UPDATE);
-	}
-	json_t* j_bbox = json_object_get(update, "bounding-box");
-	if(j_bbox) {
-		jsonBbox(j_bbox);
-	}
-	json_t* j_planets = json_object_get(update, "planets");
-	if(j_planets) {
-		jsonPlanets(j_planets, UPDATE);
-	}
-	json_t* j_ships = json_object_get(update, "ships");
-	if(j_ships) {
-		jsonShips(j_ships, UPDATE);
-	}
-	json_t* j_bases = json_object_get(update, "bases");
-	if(j_bases) {
-		jsonBases(j_bases, UPDATE);
-	}
-	json_t* j_shots = json_object_get(update, "shots");
-	if(j_shots) {
-		jsonShots(j_shots);
-	}
-	// Explosions nach ships und bases, damit diese korrekt zerstört werden
-	json_t* j_explosions = json_object_get(update, "explosions");
-	if(j_explosions) {
-		jsonExplosions(j_explosions);
+		jsonBases(j_bases);
 	}
 }
 
@@ -114,13 +71,11 @@ void jsonExplosions(json_t* e) {
 	}
 }
 
-void jsonShips(json_t* s, int updatemode) {
+void jsonShips(json_t* s) {
 	int i;
 
-	if(updatemode == OVERWRITE) {
-		for(i = 0; i < state.ships.n; i++) {
-			state.ships.ships[i].active = 0;
-		}
+	for(i = 0; i < state.ships.n; i++) {
+		state.ships.ships[i].active = 0;
 	}
 
 	if(s && json_is_array(s)) {
@@ -134,13 +89,11 @@ void jsonShips(json_t* s, int updatemode) {
 	}
 }
 
-void jsonBases(json_t* b, int updatemode) {
+void jsonBases(json_t* b) {
 	int i;
 
-	if(updatemode == OVERWRITE) {
-		for(i = 0; i < state.bases.n; i++) {
-			state.bases.bases[i].active = 0;
-		}
+	for(i = 0; i < state.bases.n; i++) {
+		state.bases.bases[i].active = 0;
 	}
 
 	if(b && json_is_array(b)) {
@@ -168,13 +121,11 @@ void jsonShots(json_t* s) {
 	}
 }
 
-void jsonPlanets(json_t* p, int updatemode) {
+void jsonPlanets(json_t* p) {
 	int i;
 
-	if(updatemode == OVERWRITE) {
-		for(i = 0; i < state.planets.n; i++) {
-			state.planets.planets[i].active = 0;
-		}
+	for(i = 0; i < state.planets.n; i++) {
+		state.planets.planets[i].active = 0;
 	}
 
 	if(p && json_is_array(p)) {
@@ -222,7 +173,7 @@ void jsonExplosion(json_t* explosion) {
 	y = json_real_value(j_y);
 
 	//fprintf(stderr, "Bäm! x=%f, y=%f\n",x,y);
-	createExplosion(x, y);
+	createExplosion(x, y, id);
 }
 
 void jsonShip(json_t* ship) {
@@ -553,7 +504,7 @@ void updateBase(json_int_t id, float x, float y, int owner, int size, const char
 
 }
 
-void createExplosion(float x, float y) {
+void createExplosion(float x, float y, json_int_t source) {
 	int i;
 	char foundEmpty = 0;
 	explosion_t *explosions;
@@ -562,6 +513,7 @@ void createExplosion(float x, float y) {
 	size_t n_max = state.explosions.n_max;
 	for(i = 0; i < n; i++) {
 		if(explosions[i].strength <= 0) {
+			explosions[i].source = source;
 			explosions[i].x = x;
 			explosions[i].y = y;
 			explosions[i].strength = 256;
@@ -630,21 +582,20 @@ void jsonPlayer(json_t* player) {
 			fprintf(stderr, "No more player names :-(\n");
 			exit(1);
 		}
-		strncpy(players[n].name, name, 10);
+		strncpy(players[n].name, name, strlen(name));
+		players[n].name[strlen(name)] = '\0';
 		state.players.n++;
 	}
 }
 
-void jsonAsteroids(json_t* a, int updatemode) {
+void jsonAsteroids(json_t* a) {
 	int i;
 
 	asteroid_t *asteroids;
 	asteroids = state.asteroids.asteroids;
 	size_t n = state.asteroids.n;
-	if(updatemode == OVERWRITE) {
-		for(i = 0; i < n; i++) {
-			asteroids[i].active = 0;
-		}
+	for(i = 0; i < n; i++) {
+		asteroids[i].active = 0;
 	}
 
 	if(a && json_is_array(a)) {
