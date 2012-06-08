@@ -97,3 +97,18 @@ function render_planets() {
 	gl.disableVertexAttribArray(0);
 	gl.disable(gl.BLEND);
 }
+
+function render_planet_labels() {
+		cleanup_texts();
+		for(var i=0; i<planets.length; i++) {
+			owner = planets[i].owner;
+			if(owner != 0) {
+				name = players[owner];
+				if(!name) {
+					place_text_element(planets[i].x, planets[i].y, "unknown");
+				} else {
+					place_text_element(planets[i].x, planets[i].y, name);
+				}
+			}
+		}
+}

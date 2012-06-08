@@ -6,6 +6,7 @@ function mousedown_handler(event) {
   mouse_pressed = true;
   lastMouseX = event.clientX;
   lastMouseY = event.clientY;
+
 }
 
 function mouseup_handler(event) {
@@ -25,10 +26,11 @@ function mousemove_handler(event) {
 	var scale = Math.sqrt(mat4.determinant(view_matrix));
 	deltaX/=scale; deltaY/=scale;
 
-	mat4.translate(view_matrix, [2*deltaX/canvas.width, -deltaY/canvas.height, 0.]);
+	mat4.translate(view_matrix, [2*deltaX/canvas.width, deltaY/canvas.height, 0.]);
 
   lastMouseX = newX;
   lastMouseY = newY;
+	render_planet_labels();
 }
 
 function mousewheel_handler(event) {
@@ -51,4 +53,6 @@ function mousewheel_handler(event) {
 		mat4.multiply(zoom_matrix, view_matrix);
 		view_matrix = zoom_matrix;
 	}
+
+	render_planet_labels();
 }

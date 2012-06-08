@@ -1,6 +1,7 @@
 
 var ajaxobject;
 var old_pos;
+var players = [];
 
 /* Has the bounding box been set already? */
 var bounding_box_was_set = false;
@@ -131,6 +132,14 @@ function parse_world(world) {
 		bounding_box_was_set = true;
 
 		resize_nebula(xmin,xmax,ymin,ymax);
+		render_planet_labels();
+	}
+
+	if(world.players) {
+		for(i = 0; i < world.players.length; i++) {
+			this_id = world.players[i].id;
+			players[this_id] = world.players[i].name;
+		}
 	}
 }
 

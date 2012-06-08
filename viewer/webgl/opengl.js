@@ -60,6 +60,7 @@ function resize_handler() {
 
 	// Projektonsmatrix anpassen
 	mat4.perspective(45, canvas.width/canvas.height, 1, 100, projection_matrix);
+	mat4.scale(projection_matrix, [1.,-1.,1.]);
 }
 
 
