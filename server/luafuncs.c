@@ -1461,7 +1461,12 @@ int lua_build_ship(lua_State* L) {
 			lua_error(L);
 		}
 
-		n = lua_objlen(L, table_position);   // size of the table, hence the number of slots used to build a ship
+	// size of the table, hence the number of slots used to build a ship
+#if (LUA_VERSION_NUM < 502)
+		n = lua_objlen(L, table_position);
+# else
+		n = lua_rawlen(L, table_position);
+#endif
 
 		for (int i = 0; i < n; i++) {
 			lua_pushinteger(L, i + 1);
