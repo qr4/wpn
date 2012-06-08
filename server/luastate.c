@@ -206,8 +206,9 @@ void call_entity_callback(entity_t* e, event_t event, entity_id_t context) {
 
 		/* Lua errors send the ship adrift */
 		DEBUG("Entity %lu killed due to lua error:\n%s\n", e->unique_id.id, errortext);
-		if(errortext) 
+		if(errortext) {
 			talk_log_lua_msg(e->player_id, errortext, strlen(errortext));
+		}
 		kill_computer(e);
 	}
 

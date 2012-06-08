@@ -1134,6 +1134,7 @@ static int data_transfer_writer (lua_State *L, const void* b, size_t size, void*
 int lua_send_data(lua_State* L) {
 	entity_id_t self, partner;
 	entity_t* eself, *epartner, *eplanet;
+	char* error_string;
 	int n = lua_gettop(L);
 	luaL_Buffer b;
 	const char* temp;
@@ -1202,7 +1203,10 @@ int lua_send_data(lua_State* L) {
 	if(lua_pcall(epartner->lua, 1,1,0)) {
 		/* An error occured in the other state.
 		 * Let's be fair and just ignore it. */
-		DEBUG("Error sending data to docking partner: %s\n", lua_tostring(epartner->lua, -1));
+		asprintf(&error_string, "Error while sending data to docking partner: %s\n", lua_tostring(epartner->lua,-1));
+
+		DEBUG("%s",error_string);
+		talk_log_lua_msg(eself->player_id, error_string, strlen(error_string));
 		lua_pop(epartner->lua,1);
 		lua_pushnil(L);
 	} else {
