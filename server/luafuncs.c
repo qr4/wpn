@@ -1135,6 +1135,7 @@ int lua_send_data(lua_State* L) {
 	entity_id_t self, partner;
 	entity_t* eself, *epartner, *eplanet;
 	char* error_string;
+	size_t l;
 	int n = lua_gettop(L);
 	luaL_Buffer b;
 	const char* temp;
@@ -1187,14 +1188,14 @@ int lua_send_data(lua_State* L) {
 		}
 		luaL_pushresult(&b);
 
-		/* We can now savely pop our argument */
+		/* We can now safely pop our argument */
 		lua_pop(L,1);
 	} else if(lua_isstring(L,1)) {
 
 		/* Possibility b: send a source code string */
-		temp = lua_tostring(L,1);
+		temp = lua_tolstring(L,1,&l);
 		if(temp[0] != 27) {
-			lua_pushstring(epartner->lua, temp);
+			lua_pushlstring(epartner->lua, temp,l);
 		} else {
 			lua_pushstring(epartner->lua, "print(\"You tried to upload raw lua"
 				" bytecode. This is forbidden\")");
@@ -1207,13 +1208,16 @@ int lua_send_data(lua_State* L) {
 	lua_active_entity = partner;
 	if(lua_pcall(epartner->lua, 1,1,0)) {
 		/* An error occured in the other state.
-		 * Let's be fair and just ignore it. */
+		 * Let's be fair and just ignore it,
+		 * but print the error message. */
 		asprintf(&error_string, "Error while sending data to docking partner: %s\n", lua_tostring(epartner->lua,-1));
 
 		DEBUG("%s",error_string);
 		talk_log_lua_msg(eself->player_id, error_string, strlen(error_string));
+
 		lua_pop(epartner->lua,1);
 		lua_pushnil(L);
+		free(error_string);
 	} else {
 
 		/* The code on the other side may return a number to us */
