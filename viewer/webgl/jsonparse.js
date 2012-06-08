@@ -34,7 +34,7 @@ function init_json_listener() {
 function new_json_data(event) {
 	old_pos += parse_json(ajaxobject.responseText.substr(old_pos));
 
-	if(old_pos > 1024*1024*16) {
+	if(old_pos > 1024*1024*2) {
 		var cachebuster = Math.floor(Math.random()*10000001);
 		ajaxobject.abort();
 		ajaxobject.responseText = "";

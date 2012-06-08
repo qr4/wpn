@@ -31,6 +31,7 @@ function glInit() {
 	mat4.identity(view_matrix);
 	mat4.translate(view_matrix, [0.,0.,-2.]);
 	projection_matrix = mat4.create();
+	mat4.scale(projection_matrix, [1.,-1.,1.]);
 
 	// VBO für postprocessing einrichten
 	fullscreen_vbo = gl.createBuffer();
