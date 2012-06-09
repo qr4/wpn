@@ -9,6 +9,8 @@ h1 {
 
 h3 {
 	color: #cccccc;
+	margin-top: 5px;
+	margin-bottom: 5px;
 }
 
 table {
@@ -25,4 +27,9 @@ th {
 td {
 	color: #cccccc;
 	padding: 2px 4px 2px 4px;
+}
+
+.emph {
+	color: #dd0000;
+	font-weight: bold;
 }

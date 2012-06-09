@@ -14,6 +14,9 @@ struct score_t {
 	int ships;
 	int score;
 	int rank;
+	int baseslots;
+	int shipslots;
+	int firepower;
 };
 
 void init_storage(storage_t *storage, size_t nmemb, size_t size);
