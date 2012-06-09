@@ -745,6 +745,18 @@ static void cleanup_options() {
 	free_hostinfo(all_options.xz_out);
 }
 
+void print_usage(char *argv[]) {
+	fprintf(stderr, "Compression Proxy\n\n");
+	fprintf(stderr, "Usage: %s -h|--host host:port [-r|--raw host:port] [-x|--xz host:port]\n\n", argv[0]);
+	fprintf(stderr, "-h,--host     Connect to host:port for input\n");
+	fprintf(stderr, "-r,--raw      Open socket on host:port for raw multicast (Optional)\n");
+	fprintf(stderr, "-x,--xz       Open socket on host:port for compressed xz multicast (Optional)\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "You must specify a reachable input host and at least one output (-r or -x)\n");
+	fprintf(stderr, "\n");
+
+}
+
 void parse_config(int argc, char *argv[]) {
     const struct option options[] = {
 		{"listen" , required_argument , NULL , 'l'},
@@ -753,6 +765,11 @@ void parse_config(int argc, char *argv[]) {
 		{"xz"     , required_argument , NULL , 'x'},
 		{0        , 0                 , 0    , 0}
     };
+
+	if (argc < 3) {
+		print_usage();
+		return;
+	}
 
 	cleanup_options();
 	atexit(cleanup_options);
