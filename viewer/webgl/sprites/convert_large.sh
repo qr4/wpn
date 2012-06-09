@@ -38,7 +38,10 @@ for SVGFILE in $SVGFILES; do
 	#exportiere Schiffe/Basen in ein großes png
 	inkscape --export-png="$PNGFILE" --export-width="2048" --export-id="$SVGNAME" --export-id-only "$SVGFILE"
 	#Berechne die relativen Positionen der slots in pixeln
-	#und schreibe das Ergebnis in die Datei 'slots'
+	#und schreibe das Ergebnis in die Datei 'slots.js'
+	echo "var block_positions_str=new Array();" >> slots.js
+	echo "var ship_tex_sizes_str= new Array();" >> slots.js
+	echo "var ship_tex_pos_str= new Array();" >> slots.js
 	./get_textures.py $RESOLUTION
 done
 mv slots.js ..

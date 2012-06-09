@@ -9,9 +9,9 @@ objects=f.readlines()
 f.close()
 f=open('slots.js','aw')
 #Arrays definieren
-f.write('var block_positions_str=new Array();\n');
-f.write('var ship_tex_sizes_str= new Array();\n');
-f.write('var ship_tex_pos_str= new Array();\n');
+#f.write('var block_positions_str=new Array();\n');
+#f.write('var ship_tex_sizes_str= new Array();\n');
+#f.write('var ship_tex_pos_str= new Array();\n');
 objects=map(lambda x: x.strip().split(','),objects)#In Spalten aufteilen
 i=0;
 slot_x=list()
