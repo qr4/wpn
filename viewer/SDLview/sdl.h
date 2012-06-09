@@ -26,7 +26,7 @@ extern SDL_Surface* slot_L_image;
 extern SDL_Surface* slot_R_image;
 extern SDL_Surface* slot_T_image;
 
-
+void toggle_fullscreen();
 void SDLplot();
 double player_to_h(int playerid);
 Uint8 red_from_H(double h);

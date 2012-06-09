@@ -38,6 +38,8 @@ static layer_t layers[] = {
 };
 static size_t n_layers = sizeof(layers) / sizeof(layer_t);
 
+int max_x, max_y;
+
 json_int_t follow_ship = 0;
 
 #define FONT_FILE "terminus.ttf"
@@ -52,6 +54,11 @@ void ConsumerInit() {
 		fprintf(stderr, "SDL_Init() failed: %s\n", SDL_GetError());
 		exit(1);
 	}
+
+	SDL_VideoInfo* videoInfo = SDL_GetVideoInfo(); // der arsch ändert den inhalt von videoInfo beim screen_init()
+	max_x = videoInfo->current_w;
+	max_y = videoInfo->current_h;
+	printf("auflösung %dx%d\n", max_x, max_y);
 
 	atexit(SDL_Quit);
 
@@ -104,6 +111,38 @@ void screen_init() {
 	}
 }
 
+void toggle_fullscreen() {
+
+	int x, y;
+	Uint32 flags;
+
+	if (screen->flags & SDL_FULLSCREEN) {
+		// fullscreen -> nicht fullscreen
+		x = 640;	// hurray für hardgecodete groessen!
+		y = 480;
+		flags = screen->flags & ~SDL_FULLSCREEN;
+	} else {
+		// nicht fullscreen -> fullscreen
+		x = max_x;
+		y = max_y;
+		flags = screen->flags | SDL_FULLSCREEN;
+	}
+
+	screen = SDL_SetVideoMode(x, y, screen->format->BitsPerPixel, flags);
+
+	float zoomx = x / (state.boundingbox.xmax - state.boundingbox.xmin);
+	float zoomy = y / (state.boundingbox.ymax - state.boundingbox.ymin);
+
+	if(zoomx < zoomy) {
+		options.zoom = zoomx;
+	} else {
+		options.zoom = zoomy;
+	}
+
+	options.offset_x = x / 2 - options.zoom * (state.boundingbox.xmin + state.boundingbox.xmax) / 2;
+	options.offset_y = y / 2 - options.zoom * (state.boundingbox.ymin + state.boundingbox.ymax) / 2;
+}
+
 SDL_Surface *load_img(const char *filename) {
 	SDL_RWops *file  = SDL_RWFromFile(filename, "rb");
 	SDL_Surface *t   = IMG_LoadTyped_RW(file, 1, "PNG");
@@ -132,6 +171,9 @@ void checkSDLevent() {
 		switch(event.type) {
 			case SDL_KEYDOWN:
 				switch (event.key.keysym.sym) {
+					case SDLK_f:
+						toggle_fullscreen();
+						break;
 					case SDLK_PLUS:
 					case SDLK_KP_PLUS:
 						if((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) {
@@ -260,7 +302,7 @@ void checkSDLevent() {
 					options.offset_y += event.motion.yrel;
 				}
 				break;
-            case SDL_VIDEORESIZE:
+			case SDL_VIDEORESIZE:
 				state.boundingbox.xmax = options.display_x = event.resize.w;
 				state.boundingbox.ymax = options.display_y = event.resize.h;
 				screen_init();
