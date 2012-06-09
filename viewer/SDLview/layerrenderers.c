@@ -282,7 +282,7 @@ void draw_planets(SDL_Surface *buffer) {
 				if(p->owner > 0) {
 					for(size_t j = 0; j < n_players; j++) {
 						if(players[j].id == p->owner) {
-							if(strlen(players[j].name) > 10) {
+							if(strlen(players[j].name) > 10) { // Artificially limit to 10 chars or less.
 								asprintf(&text, "%.6s...", players[j].name);
 							} else {
 								asprintf(&text, "%s", players[j].name);

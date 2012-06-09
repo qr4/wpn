@@ -353,7 +353,8 @@ static const char is_busy_help[] =
 "\n"
 "The given entity needs to be within scanner range for this to work.\n"
 "\n"
-"Return value: A boolean value. (or nil if out of range)\n"
+"Return value: One of DOCKING, UNDOCKING, TRANSFER, BUILD, TIMER, MINING, MANUFACTURE,\n"
+"COLONIZE, UPGRADE, IDLE. (or nil if out of range)\n"
 "\n"
 "";
 

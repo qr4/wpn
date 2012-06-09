@@ -977,7 +977,8 @@ int lua_get_docking_partner(lua_State* L) {
 
 	/* Check whether we're docked */
 	if(e->ship_data->docked_to.id == INVALID_ID.id) {
-		return 0;
+		lua_pushnil(L);
+		return 1;
 	} else {
 		DEBUG("Docked: %lu <-> %lu\n", e->unique_id.id, e->ship_data->docked_to.id);
 

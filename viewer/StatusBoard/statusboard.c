@@ -55,8 +55,9 @@ int firepower_cmp(const void* a, const void* b) {
 	return  (sa->firepower < sb->firepower) - (sa->firepower > sb->firepower);
 }
 
-void print_html(const int n, score_t* scorecard, int totalfirepower) {
+void print_html(const int n, score_t* scorecard, score_t total) {
 	FILE* file = fopen("/srv/www/htdocs/wpn/.score", "w");
+	fprintf(file, "<!DOCTYPE html>\n");
 	fprintf(file, "<HTML>\n<HEAD>\n");
 	fprintf(file, "<LINK rel=\"stylesheet\" href=\"style.css\">\n");
 	fprintf(file, "<META HTTP-EQUIV=\"refresh\" CONTENT=\"5\">\n");
@@ -80,63 +81,84 @@ void print_html(const int n, score_t* scorecard, int totalfirepower) {
 	fprintf(file, "<DIV style=\"float: right; width: 50%%;\">\n");
 
 	fprintf(file, "<H3>Ships (by number)</H3>\n");
+	fprintf(file, "<!-- %d -->\n", total.ships);
 	fprintf(file, "<TABLE>\n");
-	fprintf(file, "<TR><TH>Name</TH><TH>Ships</TH></TR>\n");
+	fprintf(file, "<TR><TH>Name</TH><TH>Ships</TH><TH></TH></TR>\n");
 	i = 0;
 	qsort(scorecard, n, sizeof(score_t), ship_cmp);
 	while((i < 3) && (i < n)) {
-		fprintf(file, "<TR><TD>%s</TD><TD>%d</TD></TR>\n", scorecard[i].player.name, scorecard[i].ships);
+		if(scorecard[i].ships*2 > total.ships) {
+			fprintf(file, "<TR><TD class=\"emph\">%s</TD><TD class=\"emph\">%d</TD><TD class=\"emph\">dominating</TD></TR>\n", scorecard[i].player.name, scorecard[i].ships);
+		} else {
+			fprintf(file, "<TR><TD>%s</TD><TD>%d</TD><TD></TD></TR>\n", scorecard[i].player.name, scorecard[i].ships);
+		}
 		i++;
 	}
 	fprintf(file, "</TABLE>\n");
 	fprintf(file, "<BR>\n");
 
 	fprintf(file, "<H3>Ships (by slots)</H3>\n");
+	fprintf(file, "<!-- %d -->\n", total.shipslots);
 	fprintf(file, "<TABLE>\n");
-	fprintf(file, "<TR><TH>Name</TH><TH>Shipslots</TH></TR>\n");
+	fprintf(file, "<TR><TH>Name</TH><TH>Shipslots</TH><TH></TH></TR>\n");
 	i = 0;
 	qsort(scorecard, n, sizeof(score_t), shipslots_cmp);
 	while((i < 3) && (i < n)) {
-		fprintf(file, "<TR><TD>%s</TD><TD>%d</TD></TR>\n", scorecard[i].player.name, scorecard[i].shipslots);
+		if(scorecard[i].shipslots*2 > total.shipslots) {
+			fprintf(file, "<TR><TD class=\"emph\">%s</TD><TD class=\"emph\">%d</TD><TD class=\"emph\">dominating</TD></TR>\n", scorecard[i].player.name, scorecard[i].shipslots);
+		} else {
+			fprintf(file, "<TR><TD>%s</TD><TD>%d</TD><TD></TD></TR>\n", scorecard[i].player.name, scorecard[i].shipslots);
+		}
 		i++;
 	}
 	fprintf(file, "</TABLE>\n");
 	fprintf(file, "<BR>\n");
 
 	fprintf(file, "<H3>Planets (by number)</H3>\n");
+	fprintf(file, "<!-- %d -->\n", total.planets);
 	fprintf(file, "<TABLE>\n");
-	fprintf(file, "<TR><TH>Name</TH><TH>Planets</TH></TR>\n");
+	fprintf(file, "<TR><TH>Name</TH><TH>Planets</TH><TH></TH></TR>\n");
 	i = 0;
 	qsort(scorecard, n, sizeof(score_t), planet_cmp);
 	while((i < 3) && (i < n)) {
-		fprintf(file, "<TR><TD>%s</TD><TD>%d</TD></TR>\n", scorecard[i].player.name, scorecard[i].planets);
+		if(scorecard[i].planets*2 > total.planets) {
+			fprintf(file, "<TR><TD class=\"emph\">%s</TD><TD class=\"emph\">%d</TD><TD class=\"emph\">dominating</TD></TR>\n", scorecard[i].player.name, scorecard[i].planets);
+		} else {
+			fprintf(file, "<TR><TD>%s</TD><TD>%d</TD><TD></TD></TR>\n", scorecard[i].player.name, scorecard[i].planets);
+		}
 		i++;
 	}
 	fprintf(file, "</TABLE>\n");
 	fprintf(file, "<BR>\n");
 
 	fprintf(file, "<H3>Bases (by slots)</H3>\n");
+	fprintf(file, "<!-- %d -->\n", total.baseslots);
 	fprintf(file, "<TABLE>\n");
-	fprintf(file, "<TR><TH>Name</TH><TH>Baseslots</TH></TR>\n");
+	fprintf(file, "<TR><TH>Name</TH><TH>Baseslots</TH><TH></TH></TR>\n");
 	i = 0;
 	qsort(scorecard, n, sizeof(score_t), baseslots_cmp);
 	while((i < 3) && (i < n)) {
-		fprintf(file, "<TR><TD>%s</TD><TD>%d</TD></TR>\n", scorecard[i].player.name, scorecard[i].baseslots);
+		if(scorecard[i].baseslots*2 > total.baseslots) {
+			fprintf(file, "<TR><TD class=\"emph\">%s</TD><TD class=\"emph\">%d</TD><TD class=\"emph\">dominating</TD></TR>\n", scorecard[i].player.name, scorecard[i].baseslots);
+		} else {
+			fprintf(file, "<TR><TD>%s</TD><TD>%d</TD><TD></TD></TR>\n", scorecard[i].player.name, scorecard[i].baseslots);
+		}
 		i++;
 	}
 	fprintf(file, "</TABLE>\n");
 	fprintf(file, "<BR>\n");
 
 	fprintf(file, "<H3>Firepower</H3>\n");
+	fprintf(file, "<!-- %d -->\n", total.firepower);
 	fprintf(file, "<TABLE>\n");
-	fprintf(file, "<TR><TH>Name</TH><TH>Firepower</TH></TR>\n");
+	fprintf(file, "<TR><TH>Name</TH><TH>Firepower</TH><TH></TH></TR>\n");
 	i = 0;
 	qsort(scorecard, n, sizeof(score_t), firepower_cmp);
 	while((i < 3) && (i < n)) {
-		if(scorecard[i].firepower*2 > totalfirepower) {
-			fprintf(file, "<TR><TD  class=\"emph\">%s</TD><TD class=\"emph\">%d dominating</TD></TR>\n", scorecard[i].player.name, scorecard[i].firepower);
+		if(scorecard[i].firepower*2 > total.firepower) {
+			fprintf(file, "<TR><TD class=\"emph\">%s</TD><TD class=\"emph\">%d</TD><TD class=\"emph\">dominating</TD></TR>\n", scorecard[i].player.name, scorecard[i].firepower);
 		} else {
-			fprintf(file, "<TR><TD>%s</TD><TD>%d</TD></TR>\n", scorecard[i].player.name, scorecard[i].firepower);
+			fprintf(file, "<TR><TD>%s</TD><TD>%d</TD><TD></TD></TR>\n", scorecard[i].player.name, scorecard[i].firepower);
 		}
 		i++;
 	}
@@ -152,6 +174,7 @@ void print_html(const int n, score_t* scorecard, int totalfirepower) {
 void ConsumerFrame() {
 	static int n_players = 0;
 	static score_t * players = NULL;
+	score_t total;
 
 	if(state.players.n > n_players) {
 		players = realloc(players, state.players.n*sizeof(score_t));
@@ -162,8 +185,7 @@ void ConsumerFrame() {
 		n_players = state.players.n;
 	}
 	memset(players, 0, n_players*sizeof(score_t));
-
-	int totalfirepower = 0;
+	memset(&total, 0, sizeof(score_t));
 
 	for(int i = 0; i < state.players.n; i++) {
 		players[i].player = state.players.players[i];
@@ -171,12 +193,14 @@ void ConsumerFrame() {
 		for(int j = 0; j < state.bases.n; j++) {
 			if((state.bases.bases[j].active > 0) && (state.bases.bases[j].owner ==  state.players.players[i].id)) {
 				players[i].bases++;
+				total.bases++;
 				players[i].baseslots += state.bases.bases[j].size;
+				total.baseslots += state.bases.bases[j].size;
 				players[i].score += state.bases.bases[j].size;
 				for(int k = 0; k < state.bases.bases[j].size; k++) {
 					if(state.bases.bases[j].contents[k] == 'L') {
 						players[i].firepower++;
-						totalfirepower++;
+						total.firepower++;
 					}
 				}
 			}
@@ -184,18 +208,21 @@ void ConsumerFrame() {
 		for(int j = 0; j < state.planets.n; j++) {
 			if((state.planets.planets[j].active > 0) && (state.planets.planets[j].owner ==  state.players.players[i].id)) {
 				players[i].planets++;
+				total.planets++;
 				players[i].score += 100;
 			}
 		}
 		for(int j = 0; j < state.ships.n; j++) {
 			if((state.ships.ships[j].active > 0) && (state.ships.ships[j].owner ==  state.players.players[i].id)) {
 				players[i].ships++;
+				total.ships++;
 				players[i].shipslots += state.ships.ships[j].size;
+				total.shipslots += state.ships.ships[j].size;
 				players[i].score += state.ships.ships[j].size;
 				for(int k = 0; k < state.ships.ships[j].size; k++) {
 					if(state.ships.ships[j].contents[k] == 'L') {
 						players[i].firepower++;
-						totalfirepower++;
+						total.firepower++;
 					}
 				}
 			}
@@ -215,5 +242,5 @@ void ConsumerFrame() {
 		}
 	}
 
-	print_html(state.players.n, players, totalfirepower);
+	print_html(state.players.n, players, total);
 }
