@@ -9,7 +9,7 @@ map_interval = 500
 
 -- Minimum time of one "tick", in microseconds
 -- (this is 1000000/framerate)
-frametime = 100000
+frametime = 200000
 
 -- Name of the initial lua code file that will be executed before any player-
 -- specific code, in a new ship computer.
@@ -26,7 +26,7 @@ maximum_cluster_size = 500;
 
 minimum_planet_size = 30;
 maximum_planet_size = 50;
-planets = 300;
+planets = 100;
 
 asteroids = 250;
 minimum_asteroids = 5;
