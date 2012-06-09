@@ -9,9 +9,9 @@ objects=f.readlines()
 f.close()
 f=open('slots.js','aw')
 #Arrays definieren
-f.write('var block_positions_str=new Array();\n');
-f.write('var ship_tex_sizes_str= new Array();\n');
-f.write('var ship_tex_pos_str= new Array();\n');
+#f.write('var block_positions_str=new Array();\n');
+#f.write('var ship_tex_sizes_str= new Array();\n');
+#f.write('var ship_tex_pos_str= new Array();\n');
 objects=map(lambda x: x.strip().split(','),objects)#In Spalten aufteilen
 i=0;
 slot_x=list()
@@ -37,8 +37,8 @@ while (i<len(objects)):
 		f.write(s)
 		slot_x.append(s_x)
 		slot_y.append(s_y)
+		f.write('ship_tex_sizes_str[\'%s\']=%3.1f;\n'%(objects[i][0],ship_w))
+		f.write('ship_tex_pos_str[\'%s\']=[%3.1f,%3.1f];\n'%(objects[i][0],ceil(ship_x),ceil(ship_y)))
 		i+=num_slots
-		f.write('ship_tex_sizes_str[\'%s\']=%3d;\n'%(objects[i][0],ship_w))
-		f.write('ship_tex_pos_str[\'%s\']=[%3d,%3d];\n'%(objects[i][0],ceil(ship_x),ceil(ship_y)))
 	i+=1
 f.close()
