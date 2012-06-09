@@ -24,6 +24,9 @@ SVGFILES="ships.svg bases.svg"
 if [ -e "slots.js" ]; then
 	rm slots.js
 fi
+echo "var block_positions_str=new Array();" >> slots.js
+echo "var ship_tex_sizes_str= new Array();" >> slots.js
+echo "var ship_tex_pos_str= new Array();" >> slots.js
 for SVGFILE in $SVGFILES; do
 	echo "Exporting from $SVGFILE"
 	PNGFILE=`echo $SVGFILE | sed 's/svg/png/'`
@@ -39,9 +42,6 @@ for SVGFILE in $SVGFILES; do
 	inkscape --export-png="$PNGFILE" --export-width="2048" --export-id="$SVGNAME" --export-id-only "$SVGFILE"
 	#Berechne die relativen Positionen der slots in pixeln
 	#und schreibe das Ergebnis in die Datei 'slots.js'
-	echo "var block_positions_str=new Array();" >> slots.js
-	echo "var ship_tex_sizes_str= new Array();" >> slots.js
-	echo "var ship_tex_pos_str= new Array();" >> slots.js
 	./get_textures.py $RESOLUTION
 done
 mv slots.js ..

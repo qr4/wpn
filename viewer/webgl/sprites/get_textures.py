@@ -37,8 +37,8 @@ while (i<len(objects)):
 		f.write(s)
 		slot_x.append(s_x)
 		slot_y.append(s_y)
+		f.write('ship_tex_sizes_str[\'%s\']=%3.1f;\n'%(objects[i][0],ship_w))
+		f.write('ship_tex_pos_str[\'%s\']=[%3.1f,%3.1f];\n'%(objects[i][0],ceil(ship_x),ceil(ship_y)))
 		i+=num_slots
-		f.write('ship_tex_sizes_str[\'%s\']=%3d;\n'%(objects[i][0],ship_w))
-		f.write('ship_tex_pos_str[\'%s\']=[%3d,%3d];\n'%(objects[i][0],ceil(ship_x),ceil(ship_y)))
 	i+=1
 f.close()
