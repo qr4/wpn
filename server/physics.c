@@ -1,3 +1,4 @@
+#include <execinfo.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -98,6 +99,27 @@ waypoint_t* create_waypoint(double x, double y, double vx, double vy, double t, 
 		fprintf(stderr, "No memory left for another waypoint. Most likely you are leaking them and need to debug your program\n");
 		exit(1);
 	}
+
+	if(isnan(x) || isnan(y) || isnan(vx) || isnan(vy) || isnan(t)) {
+		void *stacktrace[10];
+		size_t size;
+		char **strings;
+		size_t i;
+
+		fprintf(stderr, "A NaN occured: x = %f, y = %f, vx = %f, vy = %f, t = %f\n", x, y, vx, vy, t);
+
+		size = backtrace(stacktrace, 10);
+		strings = backtrace_symbols(stacktrace, size);
+
+		fprintf(stderr, "Obtained %zd stack frames.\n", size);
+
+		for (i = 0; i < size; i++) {
+			fprintf(stderr, "%s\n", strings[i]);
+		}
+
+		free (strings);
+	}
+
 	ret->point.x = x;
 	ret->point.y = y;
 	ret->speed.x = vx;
