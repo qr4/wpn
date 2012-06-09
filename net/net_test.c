@@ -1,6 +1,7 @@
 //
 // code by twist<at>nerd2nerd.org
 //
+#include <stdio.h>
 #include <unistd.h>
 #include <logging.h>
 #include "net.h"

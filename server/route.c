@@ -25,10 +25,10 @@ waypoint_t* go_around(const vector_t A, const vector_t B, const entity_t* C, dou
 	X.v = A.v + (v2d) {r, r} * (B.v - A.v);
 	double d = vector_dist(X, C->pos);
 	if(d < 1e-10) {
-		ERROR("A = (%f, %f), B = (%f, %f), C = (%f, %f), d = %f\n", A.x, A.y, B.x, B.y, C->pos.x, C->pos.y, d);
+		ERROR("A = (%f, %f), B = (%f, %f), C = (%f, %f), X ? (%f, %f), r = %f, d = %f\n", A.x, A.y, B.x, B.y, C->pos.x, C->pos.y, X.x, X.y, r, d);
 	}
 	vector_t W;
-	W.v = C->pos.v + (X.v - C->pos.v) * (v2d) {1.01, 1.01} * (v2d) {C->radius,  C->radius} / (v2d) {d, d};
+	W.v = C->pos.v + (X.v - C->pos.v) * (v2d) {1.01, 1.01} * (v2d) {C->radius,  C->radius} / (v2d) {d+0.1, d+0.1};
 	waypoint_t* wp = create_waypoint(W.x, W.y, 0, 0, 0, WP_TURN_VIA);
 	wp->obs = C->pos;
 	wp->swingbydist = 1.01 * C->radius;
@@ -229,11 +229,11 @@ waypoint_t* plotCourse(const vector_t start, const vector_t stop) {
 	entity_t* e_stop = find_closest_by_position(stop, 0, MAXIMUM_CLUSTER_SIZE, CLUSTER);
 
 	if(e_start && e_start->radius < vector_dist(e_start->pos, start)) {
-		DEBUG("Found a cluster at (%f, %f) with radius %f close to the departure point but that is %f away\n", e_start->pos.x, e_start->pos.y, e_start->radius, vector_dist(&(e_start->pos), start));
+		DEBUG("Found a cluster at (%f, %f) with radius %f close to the departure point but that is %f away\n", e_start->pos.x, e_start->pos.y, e_start->radius, vector_dist(e_start->pos, start));
 		e_start = NULL;
 	}
 	if(e_stop && e_stop->radius < vector_dist(e_stop->pos, stop)) {
-		DEBUG("Found a cluster at (%f, %f) with radius %f close to the arrival point but that is %f away\n", e_stop->pos.x, e_stop->pos.y, e_stop->radius, vector_dist(&(e_stop->pos), stop));
+		DEBUG("Found a cluster at (%f, %f) with radius %f close to the arrival point but that is %f away\n", e_stop->pos.x, e_stop->pos.y, e_stop->radius, vector_dist(e_stop->pos, stop));
 		e_stop = NULL;
 	}
 
@@ -241,7 +241,7 @@ waypoint_t* plotCourse(const vector_t start, const vector_t stop) {
 
 	if(e_start == NULL && e_stop == NULL) {
 		// inter cluster flight
-		DEBUG("Inter cluster route from (%f, %f) to (%f, %f)\n", start->x, start->y, stop->x, stop->y);
+		DEBUG("Inter cluster route from (%f, %f) to (%f, %f)\n", start.x, start.y, stop.x, stop.y);
 		waypoint_t* r = route(start, stop);
 		if(r && r->type == WP_ERROR) {
 			free_waypoint(wp_start);
@@ -251,7 +251,7 @@ waypoint_t* plotCourse(const vector_t start, const vector_t stop) {
 		wp_start->next = r;
 	} else if(e_start != NULL && e_stop != NULL && e_start->unique_id.id == e_stop->unique_id.id) {
 		// flight within a cluster
-		DEBUG("Pure intra cluster route from (%f, %f) to (%f, %f), cluster at (%f, %f) with radius %f\n", start->x, start->y, stop->x, stop->y, e_start->pos.x, e_start->pos.y, e_start->radius);
+		DEBUG("Pure intra cluster route from (%f, %f) to (%f, %f), cluster at (%f, %f) with radius %f\n", start.x, start.y, stop.x, stop.y, e_start->pos.x, e_start->pos.y, e_start->radius);
 		waypoint_t* r = intra_cluster_route(start, stop, e_start);
 		if(r && r->type == WP_ERROR) {
 			free_waypoint(wp_start);
@@ -284,7 +284,7 @@ waypoint_t* plotCourse(const vector_t start, const vector_t stop) {
 					ERROR("start in cluster. dist > 0. jp1->point.y is NaN\n");
 				}
 			}
-			DEBUG("Starting with intra cluster route from (%f, %f) to (%f, %f), cluster at (%f, %f) with radius %f\n", start->x, start->y, jp1->point.x, jp1->point.y, e_start->pos.x, e_start->pos.y, e_start->radius);
+			DEBUG("Starting with intra cluster route from (%f, %f) to (%f, %f), cluster at (%f, %f) with radius %f\n", start.x, start.y, jp1->point.x, jp1->point.y, e_start->pos.x, e_start->pos.y, e_start->radius);
 			waypoint_t* r = intra_cluster_route(start, jp1->point, e_start);
 			if(r && r->type == WP_ERROR) {
 				free_waypoint(wp_start);
@@ -323,7 +323,7 @@ waypoint_t* plotCourse(const vector_t start, const vector_t stop) {
 					ERROR("stop in cluster. dist > 0. jp2->point.y is NaN\n");
 				}
 			}
-			DEBUG("Stoping with intra cluster route from (%f, %f) to (%f, %f), cluster at (%f, %f) with radius %f, dist = %f\n", jp2->point.x, jp2->point.y, stop->x, stop->y, e_stop->pos.x, e_stop->pos.y, e_stop->radius, dist);
+			DEBUG("Stoping with intra cluster route from (%f, %f) to (%f, %f), cluster at (%f, %f) with radius %f, dist = %f\n", jp2->point.x, jp2->point.y, stop.x, stop.y, e_stop->pos.x, e_stop->pos.y, e_stop->radius, dist);
 			waypoint_t* r = intra_cluster_route(jp2->point, stop, e_stop);
 			if(r && r->type == WP_ERROR) {
 				free_waypoint(wp_start);
@@ -375,6 +375,11 @@ int moveto_planner(entity_t* e, double x, double y) {
 		// Already there
 		return 0;
 	}
+	double a = get_acceleration(e);
+	if(a <= 0) {
+		// No thruster
+		return 0;
+	}
 	vector_t start;
 	start.x = e->pos.x;
 	start.y = e->pos.y;
@@ -414,8 +419,13 @@ int stop_planner(entity_t* e) {
 		double speed = hypot(vel.x, vel.y);
 		double stopping_distance = speed/(2*a);
 		vector_t stop;
-		stop.x = start.x + stopping_distance * vel.x / speed;
-		stop.y = start.y + stopping_distance * vel.y / speed;
+		if(speed > 0) {
+			stop.x = start.x + stopping_distance * vel.x / speed;
+			stop.y = start.y + stopping_distance * vel.y / speed;
+		} else {
+			stop.x = start.x;
+			stop.y = start.y;
+		}
 
 		waypoint_t* wp_start = create_waypoint(start.x, start.y, 0, 0, 0, WP_START);
 		waypoint_t* wp_stop = create_waypoint(stop.x, stop.y, 0, 0, 0, WP_STOP);
@@ -453,7 +463,7 @@ int autopilot_planner(entity_t* e, double x, double y) {
 		ERROR("We don't do autoroute planing for non-ship entities\n");
 		return 0;
 	}
-	if(get_acceleration(e) == 0) {
+	if(get_acceleration(e) <= 0) {
 		DEBUG("Flying without engines? Talk to Mr. Scott first.\n");
 		return 0;
 	}
@@ -475,10 +485,10 @@ int autopilot_planner(entity_t* e, double x, double y) {
 	entity_t* se = find_closest_by_position(stop, 0, 2*MAXIMUM_PLANET_SIZE, ASTEROID|PLANET);
 	if(se) {
 		double dist = hypot(x - se->pos.x, y - se->pos.y);
-		if(dist < (se->radius+1)) {
+		if(dist < (se->radius+10)) {
 			DEBUG("This move brings you within %f of an object\n", hypot(x - se->pos.x, y - se->pos.y));
 			double flight_dist = hypot(start.x - stop.x, start.y - stop.y);
-			double r = (flight_dist - (se->radius+2)) / flight_dist;
+			double r = (flight_dist - (se->radius+25)) / flight_dist;
 			stop.x = start.x + r * (stop.x - start.x);
 			stop.y = start.y + r * (stop.y - start.y);
 			DEBUG("Stopping early at (%f, %f), dist = %f\n", stop.x, stop.y, hypot(stop.x - se->pos.x, stop.y - se->pos.y));
