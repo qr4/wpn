@@ -267,10 +267,22 @@ waypoint_t* plotCourse(const vector_t start, const vector_t stop) {
 			if(dist == 0) { // Start at the center of a cluster
 				double dir = 2 * M_PI * drand48();
 				jp1->point.x = e_start->pos.x + sin(dir) * e_start->radius;
+				if(isnan(jp1->point.x)) {
+					ERROR("start in cluster. dist = 0. jp1->point.x is NaN\n");
+				}
 				jp1->point.y = e_start->pos.y + cos(dir) * e_start->radius;
+				if(isnan(jp1->point.y)) {
+					ERROR("start in cluster. dist = 0. jp1->point.y is NaN\n");
+				}
 			} else {
 				jp1->point.x = e_start->pos.x + (start.x - e_start->pos.x) * e_start->radius * 1.01 / dist;
+				if(isnan(jp1->point.x)) {
+					ERROR("start in cluster. dist > 0. jp1->point.x is NaN\n");
+				}
 				jp1->point.y = e_start->pos.y + (start.y - e_start->pos.y) * e_start->radius * 1.01 / dist;
+				if(isnan(jp1->point.y)) {
+					ERROR("start in cluster. dist > 0. jp1->point.y is NaN\n");
+				}
 			}
 			DEBUG("Starting with intra cluster route from (%f, %f) to (%f, %f), cluster at (%f, %f) with radius %f\n", start->x, start->y, jp1->point.x, jp1->point.y, e_start->pos.x, e_start->pos.y, e_start->radius);
 			waypoint_t* r = intra_cluster_route(start, jp1->point, e_start);
@@ -294,10 +306,22 @@ waypoint_t* plotCourse(const vector_t start, const vector_t stop) {
 			if(dist == 0) {
 				double dir = 2 * M_PI * drand48();
 				jp2->point.x = e_stop->pos.x + sin(dir) * e_stop->radius;
+				if(isnan(jp2->point.x)) {
+					ERROR("stop in cluster. dist = 0. jp2->point.x is NaN\n");
+				}
 				jp2->point.y = e_stop->pos.y + cos(dir) * e_stop->radius;
+				if(isnan(jp2->point.y)) {
+					ERROR("stop in cluster. dist = 0. jp2->point.y is NaN\n");
+				}
 			} else {
 				jp2->point.x = e_stop->pos.x + (stop.x - e_stop->pos.x) * e_stop->radius * 1.01 / dist;
+				if(isnan(jp2->point.x)) {
+					ERROR("stop in cluster. dist > 0. jp2->point.x is NaN\n");
+				}
 				jp2->point.y = e_stop->pos.y + (stop.y - e_stop->pos.y) * e_stop->radius * 1.01 / dist;
+				if(isnan(jp2->point.y)) {
+					ERROR("stop in cluster. dist > 0. jp2->point.y is NaN\n");
+				}
 			}
 			DEBUG("Stoping with intra cluster route from (%f, %f) to (%f, %f), cluster at (%f, %f) with radius %f, dist = %f\n", jp2->point.x, jp2->point.y, stop->x, stop->y, e_stop->pos.x, e_stop->pos.y, e_stop->radius, dist);
 			waypoint_t* r = intra_cluster_route(jp2->point, stop, e_stop);
