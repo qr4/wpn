@@ -57,6 +57,7 @@ int firepower_cmp(const void* a, const void* b) {
 
 void print_html(const int n, score_t* scorecard, int totalfirepower) {
 	FILE* file = fopen("/srv/www/htdocs/wpn/.score", "w");
+	fprintf(file, "<!DOCTYPE html>\n");
 	fprintf(file, "<HTML>\n<HEAD>\n");
 	fprintf(file, "<LINK rel=\"stylesheet\" href=\"style.css\">\n");
 	fprintf(file, "<META HTTP-EQUIV=\"refresh\" CONTENT=\"5\">\n");
