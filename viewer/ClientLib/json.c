@@ -55,6 +55,14 @@ void jsonWorld(json_t* world) {
 	if(j_bases) {
 		jsonBases(j_bases);
 	}
+	json_t* j_explosions = json_object_get(world, "explosions");
+	if(j_explosions) {
+		jsonExplosions(j_explosions);
+	}
+	json_t* j_shots = json_object_get(world, "shots");
+	if(j_shots) {
+		jsonShots(j_shots);
+	}
 }
 
 void jsonExplosions(json_t* e) {

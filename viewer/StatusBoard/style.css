@@ -22,6 +22,7 @@ table {
 th {
 	color: #cccccc;
 	font-weight: bold;
+	text-align: left;
 }
 
 td {
