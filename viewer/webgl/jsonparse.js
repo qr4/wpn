@@ -121,6 +121,7 @@ function parse_world(world) {
 		var ymax=world["bounding-box"].ymax;
 
 		var scale=Math.min(1./(xmax-xmin), 1./(ymax-ymin));
+		scale *= 2;
 
 		if(!bounding_box_was_set) {
 			mat4.identity(view_matrix);
