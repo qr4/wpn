@@ -120,7 +120,8 @@ int main(int argc, char *argv[]) {
 	gettimeofday(&t_prev, NULL);
 
 	/* Main simulation loop */
-	for (timestep=0;;timestep++) {
+	/* Note: we start at map_interval+1 not 0 to force immediate output of a world description */
+	for (timestep = config_get_int("map_interval")+1; ; timestep++) {
 		/* Iterate through all sentient entities (ships and bases) and determine if
 		 * any timer-based callbacks should be triggered (like completed actions or
 		 * expired explicit timers) */
