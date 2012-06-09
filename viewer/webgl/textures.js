@@ -1,4 +1,7 @@
 /*organisiertes Laden von Textures für Schiffe & Basen*/
+//Große Textures für Schiffe/Basen
+var tex_ships;
+var tex_bases;
 //Textures für Schiffe
 tex_ship_sprites=[];
 //Anzahl an Schiffsgrößen, ist auch der Abstand an Textures
@@ -13,6 +16,8 @@ str_sprite_dir="sprites/";
 ship_block_positions=[];
 //Texturgrößen (wichtig für die Skalierung)
 ship_tex_sizes=[];
+//Texturpositionen (für Verwendung großer Texturen)
+ship_tex_pos=[];
 
 /*Schiff-Textures*/
 function load_ship_textures() {
@@ -27,6 +32,8 @@ function load_ship_textures() {
 		tex_ship_sprites.push(new_texture);
 		ship_block_positions.push(block_positions_str[name]);
 		ship_tex_sizes.push(ship_tex_sizes_str[name]);
+		ship_tex_pos.push(ship_tex_pos_str[name]);
 	}
+	tex_ships=load_texture(str_sprite_dir+"ships.png");
+	tex_bases=load_texture(str_sprite_dir+"bases.png");
 }
-
