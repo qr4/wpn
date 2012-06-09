@@ -26,6 +26,7 @@ waypoint_t* go_around(const vector_t A, const vector_t B, const entity_t* C, dou
 	double d = vector_dist(X, C->pos);
 	if(d < 1e-10) {
 		ERROR("A = (%f, %f), B = (%f, %f), C = (%f, %f), X ? (%f, %f), r = %f, d = %f\n", A.x, A.y, B.x, B.y, C->pos.x, C->pos.y, X.x, X.y, r, d);
+		d = 0.1;
 	}
 	vector_t W;
 	W.v = C->pos.v + (X.v - C->pos.v) * (v2d) {1.01, 1.01} * (v2d) {C->radius,  C->radius} / (v2d) {d+0.1, d+0.1};
