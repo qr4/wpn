@@ -453,7 +453,7 @@ static void init_cluster_with_asteroids(entity_t *cluster) {
 // sets a planet in the middle of a cluster and sets the cluster radius to a safe value
 static void init_cluster_with_planet(entity_t *cluster) {
 	cluster->cluster_data->planet = alloc_entity(planet_storage);
-	init_entity(get_entity_by_id(cluster->cluster_data->planet), vector(0), PLANET, 0);
+	//init_entity(get_entity_by_id(cluster->cluster_data->planet), vector(0), PLANET, 0);
 	entity_t* e = get_entity_by_id(cluster->cluster_data->planet);
 	init_entity(get_entity_by_id(cluster->cluster_data->planet), cluster->pos, PLANET, 0);
 	e->planet_data->cluster = cluster;
