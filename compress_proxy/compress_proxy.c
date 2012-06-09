@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <error.h>
 #include <string.h>
+#include <getopt.h>
 
 #include <ev.h>
 #include <unistd.h>
@@ -70,8 +71,6 @@ struct client_data {
 	TAILQ_ENTRY(client_data) list_ctl;           // the "next" pointer for the list (see sys/queue.h)
 };
 
-static struct sockaddr_in sin;
-static socklen_t slen;
 
 /*
  * helper function
@@ -288,7 +287,7 @@ static buffer *xz_run(lzma_stream *stream, lzma_action action) {
 		ret = buffer_append(ret, out_len - stream->avail_out, (char *) out_buf);
 	} while (stream->avail_out == 0);
 
-	if (action == XZ_FINISH) {
+	if (action == LZMA_FINISH) {
 		lzma_end(stream);
 	}
 
@@ -345,7 +344,7 @@ static buffer *compress_xz(buffer *input, xz_action action) {
 }
 
 
-static buffer *decompress_xz(buffer *input) {
+static buffer *decompress_xz(buffer *input, xz_action action) {
 	static lzma_stream stream = LZMA_STREAM_INIT;
 	static bool need_init = true;
 	lzma_ret ret_xz;
@@ -361,6 +360,10 @@ static buffer *decompress_xz(buffer *input) {
 		}
 	}
 
+	if (action == XZ_FINISH) {
+		need_init = true;
+	}
+
 	if (input == NULL || input->n == 0) {
 		stream.next_in = NULL;
 		stream.avail_in = 0;
@@ -369,7 +372,7 @@ static buffer *decompress_xz(buffer *input) {
 		stream.avail_in = input->n;
 	}
 
-	return xz_run(&stream, LZMA_RUN);
+	return xz_run(&stream, (action == XZ_FINISH) ? LZMA_FINISH : LZMA_RUN);
 }
 
 static void compress_and_broadcast(buffer *buf, xz_action action) {
@@ -452,7 +455,7 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 
 	if (is_compressed_input) {
 		buffer *t = input;
-		input = decompress_xz(t);
+		input = decompress_xz(t, XZ_COMPRESS);
 		UNREF(t);
 	}
 
@@ -467,7 +470,7 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 			case '}':
 				depth--;
 				if (depth == 0) {
-					printf("End of the world detected!\n");
+					//printf("End of the world detected!\n");
 					latest_world_end = i;
 					action = XZ_FLUSH;
 				}
@@ -528,6 +531,13 @@ error:
 	first_read = true;
 }
 
+typedef struct {
+	struct sockaddr_storage sin;
+	socklen_t slen;
+	int fd;
+	struct client_data_list *list;
+} bind_info;
+
 /*
  * called when a new client connects to the proxy.
  * initializes all necessary data for the client (watcher, output queue, etc..)
@@ -536,16 +546,16 @@ error:
 static void accept_cb(EV_P_ ev_io *w, int revents) {
 	client_data *cd;
 	int fd;
+	bind_info *binfo = w->data;
 
 	printf("incoming connection\n");
 
-	if ((fd = accept(w->fd, (struct sockaddr *) &sin, &slen)) == -1) perror("accept");
+	if ((fd = accept(binfo->fd, (struct sockaddr *) &binfo->sin, &binfo->slen)) == -1) perror("accept");
 	set_nonblocking(fd);
 
 	cd = malloc(sizeof(client_data));
 	cd->w = malloc(sizeof(ev_io));
-	cd->list = &clients_raw_waiting;
-	//cd->list = &clients_compressed_waiting;
+	cd->list = binfo->list;
 	cd->queued = 0;
 	ev_io_init(cd->w, client_cb, fd, EV_WRITE);
 	STAILQ_INIT(&(cd->queue));
@@ -561,23 +571,53 @@ static void accept_cb(EV_P_ ev_io *w, int revents) {
 /*
  * nothing special, return a functioning server socket
  */
-static int do_bind(int port) {
-	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+static bind_info *do_bind(const char *hostname, const char *port) {
+	int sockfd;
+	struct addrinfo hints, *servinfo, *p;
+	bind_info *ret = NULL;
+	int rv;
 	int t = 1;
 
-	if (sockfd < 0) perror("Error opening socket.");
-	if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &t, sizeof(int))) perror ("setsockopt");
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
 
-	slen = sizeof(sin);
-	memset(&sin, 0, slen);
-	sin.sin_family = AF_INET;
-	sin.sin_addr.s_addr = htonl(0);
-	sin.sin_port = htons(port);
+	fprintf(stderr, "bind on %s:%s\n", hostname, port);
+	rv = getaddrinfo(hostname, port, &hints, &servinfo);
 
-    if(bind(sockfd, (struct sockaddr *) &sin, slen) != 0) perror("bind");
-	if(listen(sockfd, 128) != 0) perror("listen");
+	if (rv != 0) {
+		printf("getaddrinfo: %s\n", gai_strerror(rv));
+		return NULL;
+	}
 
-	return sockfd;
+	// loop through all the results and bind to the first we can
+	for (p = servinfo; p != NULL; p = p->ai_next) {
+		if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) { goto error; }
+		if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &t, sizeof(int))) { goto error; }
+		if (bind(sockfd, p->ai_addr, p->ai_addrlen) != 0) { goto error; }
+		if (listen(sockfd, 128) != 0) { goto error; }
+
+		ret = calloc(1, sizeof(bind_info));
+		ret->slen = p->ai_addrlen;
+		memcpy(&ret->sin, p->ai_addr, ret->slen);
+		ret->fd = sockfd;
+		ret->list = NULL;
+
+		break;
+error:
+		close(sockfd);
+		perror("connect_to_server client: setsockopt");
+	}
+
+	freeaddrinfo(servinfo); // all done with this structure
+
+	if (p == NULL) {
+		free(ret);
+		printf("connect_to_server client: failed to bind in %s:%s\n", hostname, port);
+		return NULL;
+	}
+
+	return ret;
 }
 
 /*
@@ -641,16 +681,173 @@ static int connect2server(const char* server, const char* port) {
 	return sockfd;
 }
 
-int main (void) {
-	//int sockfd = do_bind(8081); // open the server socket
-	//int server_fd = connect2server("localhost", "8080"); // connect to the server
-	int sockfd = do_bind(8082); // open the server socket
-	int server_fd = connect2server("localhost", "8081"); // connect to the server
 
-	if (server_fd == -1) {
-		perror("connect");
+/*
+ * optionparsing
+ */
+typedef struct {
+	char *hostname;
+	char *port;
+} hostinfo;
+
+static struct {
+	hostinfo *input;
+	hostinfo *raw_out;
+	hostinfo *xz_out;
+	bool listen_mode;
+	bool enable_raw;
+	bool enable_xz;
+} all_options;
+
+static void free_hostinfo(hostinfo *hi) {
+	if (hi == NULL) return;
+	free(hi->hostname);
+	free(hi->port);
+	free(hi);
+}
+
+static hostinfo *parse_hostinfo(const char* hostname) {
+	hostinfo *ret = calloc(1, sizeof(all_options));
+	ret->hostname = strdup(hostname);
+	char *port = rindex(ret->hostname, ':');
+	if (port != NULL) {
+		ret->port = port;
+		ret->port[0] = '\0';
+		ret->port = strdup(++ret->port);
+	}
+
+	if ( ret->port == NULL || atoi(ret->port) == 0) {
+		fprintf(stderr, "Invalid Host: %s\n", hostname);
+		free_hostinfo(ret);
+		ret = NULL;
 		exit(1);
 	}
+
+	return ret;
+}
+
+static void print_hostinfo(const hostinfo *hi, const char *type) {
+	if (hi == NULL) return;
+	printf("%s host:  %s:%s\n", type, hi->hostname, hi->port);
+}
+
+static void cleanup_options() {
+	free_hostinfo(all_options.input);
+	free_hostinfo(all_options.raw_out);
+	free_hostinfo(all_options.xz_out);
+}
+
+void parse_config(int argc, char *argv[]) {
+    const struct option options[] = {
+		{"listen" , required_argument , NULL , 'l'},
+		{"host"   , required_argument , NULL , 'h'},
+		{"raw"    , required_argument , NULL , 'r'},
+		{"xz"     , required_argument , NULL , 'x'},
+		{0        , 0                 , 0    , 0}
+    };
+
+	cleanup_options();
+	atexit(cleanup_options);
+
+    int c;
+
+    while ((c = getopt_long(argc, argv, "l:h:r:x:", options, NULL)) != -1) {
+		//printf("Got %c with \"%s\"\n", c, optarg);
+        switch (c) {
+            case 'l' : // Change to listen mode
+				if (optarg) {
+					free_hostinfo(all_options.input);
+					all_options.input = parse_hostinfo(optarg);
+				}
+				all_options.listen_mode = true;
+                break;
+            case 'h' : // Set remote host
+				if (optarg) {
+					free_hostinfo(all_options.input);
+					all_options.input = parse_hostinfo(optarg);
+				}
+				all_options.listen_mode = false;
+                break;
+			case 'r' : // Enable raw output and set address:port to bind to
+				if (optarg) {
+					free_hostinfo(all_options.raw_out);
+					all_options.raw_out = parse_hostinfo(optarg);
+				}
+				all_options.enable_raw = true;
+                break;
+            case 'x' :
+				if (optarg) {
+					free_hostinfo(all_options.xz_out);
+					all_options.xz_out = parse_hostinfo(optarg);
+				}
+				all_options.enable_xz = true;
+				break;
+            case ':' :
+                break;
+            default :
+                // Unknown option or missing param
+                break;
+        }
+    }
+	print_hostinfo(all_options.input, "input");
+	print_hostinfo(all_options.raw_out, "raw_out");
+	print_hostinfo(all_options.xz_out, "xz_out");
+
+	printf("listen_mode: %s\n", all_options.listen_mode ? "true" : "false");
+	printf("enable_raw:  %s\n", all_options.enable_raw ? "true" : "false");
+	printf("enable_xz:   %s\n", all_options.enable_xz ? "true" : "false");
+
+	for (; optind < argc; optind++) {
+		printf("Unused paramenter %s\n", argv[optind]);
+	}
+
+	if (all_options.input == NULL) {
+		fprintf(stderr, "No active input!\n");
+	}
+
+	if ((all_options.raw_out == NULL && all_options.xz_out == NULL)
+			|| (!all_options.enable_raw && !all_options.enable_xz)) {
+		fprintf(stderr, "No active output!\n");
+		exit(1);
+	}
+}
+
+void cleanup_xz() {
+	buffer *buf;
+	buf = compress_xz(NULL, XZ_FINISH);
+	UNREF(buf);
+	buf = decompress_xz(NULL, XZ_FINISH);
+	UNREF(buf);
+
+}
+
+int main (int argc, char *argv[]) {
+	parse_config(argc, argv);
+
+	int server_fd;
+	bind_info *binfo_xz = NULL;
+	bind_info *binfo_raw = NULL;
+
+	server_fd = connect2server(all_options.input->hostname, all_options.input->port);
+	if (server_fd == -1) {
+		perror("connect");
+		goto connection_cleanup;
+	}
+
+	if (all_options.enable_raw) {
+		binfo_raw = do_bind(all_options.raw_out->hostname, all_options.raw_out->port);
+		if (binfo_raw == NULL) { goto connection_cleanup; };
+		binfo_raw->list = &clients_raw_waiting;
+	}
+
+	if (all_options.enable_xz) {
+		binfo_xz = do_bind(all_options.xz_out->hostname, all_options.xz_out->port);
+		if (binfo_xz == NULL) { goto connection_cleanup; };
+		binfo_xz->list = &clients_compressed_waiting;
+	}
+
+
+	atexit(cleanup_xz);
 
 	signal(SIGPIPE, sigpipe_ignore); // ignore SIGPIPE
 
@@ -663,17 +860,21 @@ int main (void) {
 	ev_io_init(&stdin_watcher, stdin_cb, fileno(stdin), EV_READ);
 	ev_io_start(EV_DEFAULT_ &stdin_watcher);
 
-	ev_io bind_watcher;
-	ev_io_init(&bind_watcher, accept_cb, sockfd, EV_READ);
-	ev_io_start(EV_DEFAULT_ &bind_watcher);
+	ev_io raw_watcher;
+	raw_watcher.data = binfo_raw;
+	ev_io_init(&raw_watcher, accept_cb, binfo_raw->fd, EV_READ);
+	ev_io_start(EV_DEFAULT_ &raw_watcher);
+
+	ev_io xz_watcher;
+	xz_watcher.data = binfo_xz;
+	ev_io_init(&xz_watcher, accept_cb, binfo_xz->fd, EV_READ);
+	ev_io_start(EV_DEFAULT_ &xz_watcher);
 
 	// run the event loop
 	ev_run (EV_DEFAULT_ 0);
 
 	// close all connections and flush the encoder
 	{
-		buffer *buf = compress_xz(NULL, XZ_FINISH);
-		UNREF(buf);
 		client_data    *cd, *cd_tmp;
 		TAILQ_FOREACH_SAFE(cd, &clients_compressed, list_ctl, cd_tmp) {
 			close_connection(EV_DEFAULT_ cd->w);
@@ -692,11 +893,18 @@ int main (void) {
 	// close down everything
 	ev_io_stop(EV_DEFAULT_ &server_watcher);
 	ev_io_stop(EV_DEFAULT_ &stdin_watcher);
-	ev_io_stop(EV_DEFAULT_ &bind_watcher);
+	ev_io_stop(EV_DEFAULT_ &raw_watcher);
+	ev_io_stop(EV_DEFAULT_ &xz_watcher);
 	ev_loop_destroy(EV_DEFAULT);
 
+connection_cleanup:
+	if (binfo_xz != NULL) { close(binfo_xz->fd); }
+	free(binfo_xz);
+
+	if (binfo_raw != NULL) {close(binfo_raw->fd); }
+	free(binfo_raw);
+
 	close(server_fd);
-	close(sockfd);
 
 	// cya
 	return 0;
