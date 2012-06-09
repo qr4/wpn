@@ -15,6 +15,7 @@ _slot_strings = {[0] = "EMPTY", [1]="WEAPON", [2]="DRIVE", [3]="ORE"}
 
 -- Type Constants for possible return values of is_busy
 IDLE = false
+RELOADING = 4
 DOCKING = 6
 UNDOCKING = 7
 TRANSFER = 9
