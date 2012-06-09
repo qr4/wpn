@@ -1,9 +1,5 @@
 #!/bin/bash
-#Die Default-Auflösung sind 300DPI.
-#Das entspricht 30x30 pixel für einen Raumschiff-Slot.
-#10px (die Inkscape-Einheit, die das Format unten
-#ausspuckt) entsprechen 1/9inch, d.h. bei 300DPI
-#entsprechen 30px im .svg 100 Pixeln im .png
+#Die Default-Auflösung sind 100DPI.
 if [ -n "$1" ]; then
 	if [ "$1" -gt 0 ]; then
 		echo "Resolution $1 DPI selected"
@@ -20,7 +16,7 @@ fi
 #s_ar_6
 #Typ(s Schiff b Basis)_Serie_Anzahl an Slots
 #svg-Dateien mit den Schiffen/Basen drin
-SVGFILES="ships.svg bases.svg"
+SVGFILES="ships.svg bases.svg asteroids.svg"
 if [ -e "slots.js" ]; then
 	rm slots.js
 fi
@@ -35,8 +31,10 @@ for SVGFILE in $SVGFILES; do
 	inkscape -S $SVGFILE | grep '.*_.*_.*' | sort > tmp_objects
 	if [ $SVGFILE == "ships.svg" ]; then
 		SVGNAME="s_all"
-	else
+	elif [ $SVGFILE == "bases.svg" ]; then
 		SVGNAME="b_all"
+	else
+		SVGNAME="a_all"
 	fi
 	#exportiere Schiffe/Basen in ein großes png
 	inkscape --export-png="$PNGFILE" --export-width="2048" --export-id="$SVGNAME" --export-id-only "$SVGFILE"
