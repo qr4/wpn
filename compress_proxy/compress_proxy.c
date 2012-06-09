@@ -483,6 +483,7 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 		}
 	}
 
+
 	/*
 	 * process the compressed queue
 	 */
@@ -508,13 +509,20 @@ static void server_read_cb(EV_P_ ev_io *w, int revents) {
 
 	/*
 	 * process the raw queue
+	 * meh, code duplication, yes, i'll fix, maybe, whatever
 	 */
-	if (!TAILQ_EMPTY(&clients_raw_waiting)) {
+	written = 0;
+	if (!TAILQ_EMPTY(&clients_raw_waiting) && latest_world_end != -1) {
+		buf = buffer_new(latest_world_end, input->data);
+		broadcast(EV_DEFAULT_ &clients_raw, buf);
+		UNREF(buf);
+
 		concat_queues(&clients_raw, &clients_raw_waiting);
+		written = latest_world_end;
 	}
 
-	if (!TAILQ_EMPTY(&clients_raw)) {
-		buf = buffer_new(input->n, input->data);
+	if (r > written) {
+		buf = buffer_new(input->n - written, &input->data[written]);
 		broadcast(EV_DEFAULT_ &clients_raw, buf);
 		UNREF(buf);
 	}
@@ -901,10 +909,10 @@ connection_cleanup:
 	if (binfo_xz != NULL) { close(binfo_xz->fd); }
 	free(binfo_xz);
 
-	if (binfo_raw != NULL) {close(binfo_raw->fd); }
+	if (binfo_raw != NULL) { close(binfo_raw->fd); }
 	free(binfo_raw);
 
-	close(server_fd);
+	if (server_fd >= 0) { close(server_fd); }
 
 	// cya
 	return 0;
