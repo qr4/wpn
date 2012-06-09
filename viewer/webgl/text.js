@@ -23,10 +23,11 @@ function place_text_element(x,y,content) {
 	text = document.createElement('div');
 	document.body.appendChild(text);
 	text.style.position = "absolute";
-	text.style.top = ((2.-y)*canvas.height/4.) + " px";
-	text.style.left = ((x+2.)*canvas.width/4.) + " px";
+	text.style.top = ((2.-y)*canvas.height/4.);
+	text.style.left = ((x+2.)*canvas.width/4.);
 	text.style.color = "#ffffff";
-	text.style.font_face = "Sans Serif";
+	text.style["font-family"] = "Sans-serif";
+	text.style["font-size"] = "12px";
 	text.innerHTML=content;
 
 	text_elements.push(text);

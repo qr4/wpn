@@ -7,6 +7,10 @@ h1 {
 	color: #000099;
 }
 
+h3 {
+	color: #cccccc;
+}
+
 table {
 	background-color: #000000;
 	filter: alpha(opacity=90)-moz-opacity:0.90;

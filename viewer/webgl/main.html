@@ -6,6 +6,7 @@
 		<script type="text/javascript" src="opengl.js"></script>
 		<script type="text/javascript" src="mouse.js"></script>
 		<script type="text/javascript" src="nebula.js"></script>
+		<script type="text/javascript" src="starfield.js"></script>
 		<script type="text/javascript" src="ships.js"></script>
 		<script type="text/javascript" src="planets.js"></script>
 		<script type="text/javascript" src="jsonparse.js"></script>
@@ -48,13 +49,42 @@
 			}
 		</script>
 
+		<!-- Vertexshader, der einfach eine darstellungstransformation macht, inkl. texturkoordinaten -->
+		<script type="x-shader/x-vertex" id="starfield_vs">
+			attribute vec3 pos;
+			attribute vec2 texcoord;
+
+			uniform mat4 modelmatrix;
+			uniform mat4 viewmatrix;
+			uniform mat4 projectionmatrix;
+			uniform float depth;
+
+			varying vec2 tc;
+			varying vec2 screenpos;
+			varying vec3 worldpos;
+
+			void main() {
+				vec4 v = vec4(pos, 1.);
+				v = modelmatrix * v;
+				v.z += depth;
+				gl_Position = (projectionmatrix * viewmatrix * v);
+
+				worldpos = v.xyz/10000.;
+				screenpos = gl_Position.xy;
+				tc = texcoord+depth*7.31271;;
+			}
+		</script>
+
+
 		<!-- Fragmentshader, der einfach stumpf eine textur mappt. -->
 		<script type="x-shader/x-fragment" id="texture_shader">
 			uniform sampler2D tex;
+			uniform float depth;
 			varying vec2 tc;
+			varying vec3 worldpos;
 
 			void main() {
-				gl_FragColor = texture2D(tex,tc);
+				gl_FragColor = texture2D(tex,tc*vec2(6.,4.))*.7;
 			}
 		</script>
 
@@ -132,14 +162,14 @@
 			}
 
 			float turbulence(vec3 v){
-				return sn(v*9.)/9.;
-				//return 0.6+(sn(v*3.)/3.+sn(v*9.)/9.+sn(v*27.)/27.);
+				//return sn(v*9.)/9.;
+				return 0.7+(sn(v*3.)/3.+sn(v*9.)/9.+sn(v*27.)/27.);
 			}
 			void main() {
 				vec3 w = worldpos;
-				w.z=time/100.;
-				highp float c = max(0.,turbulence(w/50000.));
-				gl_FragColor = vec4(0.1*c*c*c,0.1*c*c,0.3*c,0.4*c*c);
+				w.z=time/1000.;
+				highp float c = max(0.,1.2*turbulence(w/50000.));
+				gl_FragColor = 0.8*vec4(0.01*c*c*c,0.1*c*c,0.3*c,0.4*c*c);
 			}
 		</script>
 
@@ -366,6 +396,7 @@
 			// Planeten-Datenstrukturen erstellen.
 			init_planets();
 			init_nebula();
+			init_starfield();
 
 			//Texture-Objekt für blocks
 			var g_block_texture=load_texture("sprites/blocks_x.png");
@@ -386,7 +417,11 @@
 				gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 				render_nebula();
+				render_starfield(-1.);
 				render_planets();
+				render_starfield(-3.);
+				render_starfield(0.);
+				render_starfield(1.);
 				render_ships();
 
 				// Und beim nächsten frame wollen wir wieder diese
