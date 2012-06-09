@@ -7,12 +7,12 @@
 		<script type="text/javascript" src="mouse.js"></script>
 		<script type="text/javascript" src="nebula.js"></script>
 		<script type="text/javascript" src="starfield.js"></script>
-		<script type="text/javascript" src="ships.js"></script>
 		<script type="text/javascript" src="planets.js"></script>
 		<script type="text/javascript" src="jsonparse.js"></script>
 		<script type="text/javascript" src="slots.js"></script>
 		<script type="text/javascript" src="textures.js"></script>
 		<script type="text/javascript" src="text.js"></script>
+		<script type="text/javascript" src="ships.js"></script>
 		<style type="text/css">
 			body {
 				background-color: #000000;
@@ -351,18 +351,16 @@
 		</script>
 		<!-- Raumschiff-Vertex-shader -->
 		<script type="x-shader/x-vertex" id="ship_vs">
-			uniform mat4 modelmatrix;
 			uniform mat4 viewmatrix;
 			uniform mat4 projectionmatrix;
 
-			attribute vec3 vertexCoord;
+			attribute vec2 vertexCoord;
 			attribute vec2 texCoord;
 			varying vec2 tc;
 
 			void main() {
-				vec4 p = vec4(vertexCoord.xy, 0., 1.);
-				//vec4 p = vec4(0.,0., 0., 0.);
-				gl_Position = projectionmatrix * viewmatrix * modelmatrix * p;
+				vec4 p = vec4(vertexCoord, 0., 1.);
+				gl_Position = projectionmatrix * viewmatrix * p;
 				tc=texCoord;
 			}
 		</script>
@@ -371,7 +369,7 @@
 			uniform sampler2D spriteMap;
 			varying vec2 tc;
 			void main() {
-				gl_FragColor=texture2D(spriteMap,tc);
+				gl_FragColor=texture2D(spriteMap,tc);//+vec4(tc.x,tc.y,0.,1.);
 			}
 		</script>
 
@@ -418,10 +416,10 @@
 
 				render_nebula();
 				render_starfield(-1.);
-				render_planets();
 				render_starfield(-3.);
 				render_starfield(0.);
 				render_starfield(1.);
+				render_planets();
 				render_ships();
 
 				// Und beim nächsten frame wollen wir wieder diese
