@@ -27,6 +27,13 @@ int ship_cmp(const void* a, const void* b) {
 	return  (sa->ships < sb->ships) - (sa->ships > sb->ships);
 }
 
+int shipslots_cmp(const void* a, const void* b) {
+	const score_t * sa = (const score_t *) a;
+	const score_t * sb = (const score_t *) b;
+
+	return  (sa->shipslots < sb->shipslots) - (sa->shipslots > sb->shipslots);
+}
+
 int planet_cmp(const void* a, const void* b) {
 	const score_t * sa = (const score_t *) a;
 	const score_t * sb = (const score_t *) b;
@@ -34,11 +41,11 @@ int planet_cmp(const void* a, const void* b) {
 	return  (sa->planets < sb->planets) - (sa->planets > sb->planets);
 }
 
-int base_cmp(const void* a, const void* b) {
+int baseslots_cmp(const void* a, const void* b) {
 	const score_t * sa = (const score_t *) a;
 	const score_t * sb = (const score_t *) b;
 
-	return  (sa->bases < sb->bases) - (sa->bases > sb->bases);
+	return  (sa->baseslots < sb->baseslots) - (sa->baseslots > sb->baseslots);
 }
 
 void print_html(const int n, score_t* scorecard) {
@@ -65,7 +72,7 @@ void print_html(const int n, score_t* scorecard) {
 	fprintf(file, "</DIV>\n");
 	fprintf(file, "<DIV style=\"float: right; width: 50%%;\">\n");
 
-	fprintf(file, "<H3>Ships (by slots)</H3>\n");
+	fprintf(file, "<H3>Ships (by number)</H3>\n");
 	fprintf(file, "<TABLE>\n");
 	fprintf(file, "<TR><TH>Name</TH><TH>Ships</TH></TR>\n");
 	i = 0;
@@ -77,7 +84,19 @@ void print_html(const int n, score_t* scorecard) {
 	fprintf(file, "</TABLE>\n");
 	fprintf(file, "<BR>\n");
 
-	fprintf(file, "<H3>Planets (by size)</H3>\n");
+	fprintf(file, "<H3>Ships (by slots)</H3>\n");
+	fprintf(file, "<TABLE>\n");
+	fprintf(file, "<TR><TH>Name</TH><TH>Shipslots</TH></TR>\n");
+	i = 0;
+	qsort(scorecard, n, sizeof(score_t), shipslots_cmp);
+	while((i < 3) && (i < n)) {
+		fprintf(file, "<TR><TD>%s</TD><TD>%d</TD></TR>\n", scorecard[i].player.name, scorecard[i].shipslots);
+		i++;
+	}
+	fprintf(file, "</TABLE>\n");
+	fprintf(file, "<BR>\n");
+
+	fprintf(file, "<H3>Planets (by number)</H3>\n");
 	fprintf(file, "<TABLE>\n");
 	fprintf(file, "<TR><TH>Name</TH><TH>Planets</TH></TR>\n");
 	i = 0;
@@ -93,9 +112,9 @@ void print_html(const int n, score_t* scorecard) {
 	fprintf(file, "<TABLE>\n");
 	fprintf(file, "<TR><TH>Name</TH><TH>Bases</TH></TR>\n");
 	i = 0;
-	qsort(scorecard, n, sizeof(score_t), base_cmp);
+	qsort(scorecard, n, sizeof(score_t), baseslots_cmp);
 	while((i < 3) && (i < n)) {
-		fprintf(file, "<TR><TD>%s</TD><TD>%d</TD></TR>\n", scorecard[i].player.name, scorecard[i].bases);
+		fprintf(file, "<TR><TD>%s</TD><TD>%d</TD></TR>\n", scorecard[i].player.name, scorecard[i].baseslots);
 		i++;
 	}
 	fprintf(file, "</TABLE>\n");
@@ -127,6 +146,7 @@ void ConsumerFrame() {
 		for(int j = 0; j < state.bases.n; j++) {
 			if((state.bases.bases[j].active > 0) && (state.bases.bases[j].owner ==  state.players.players[i].id)) {
 				players[i].bases++;
+				players[i].baseslots += state.bases.bases[j].size;
 				players[i].score += state.bases.bases[j].size;
 			}
 		}
@@ -139,6 +159,7 @@ void ConsumerFrame() {
 		for(int j = 0; j < state.ships.n; j++) {
 			if((state.ships.ships[j].active > 0) && (state.ships.ships[j].owner ==  state.players.players[i].id)) {
 				players[i].ships++;
+				players[i].shipslots += state.ships.ships[j].size;
 				players[i].score += state.ships.ships[j].size;
 			}
 		}
@@ -148,6 +169,12 @@ void ConsumerFrame() {
 		if((state.explosions.explosions[j].strength > 0)) {
 			printf("%d exploded\n", state.explosions.explosions[j].source);
 			state.explosions.explosions[j].strength = 0;
+		}
+	}
+
+	for(int j = 0; j < state.shots.n; j++) {
+		if((state.shots.shots[j].strength > 0)) {
+			printf("shot from %f %f to %f %f\n", state.shots.shots[j].src_x, state.shots.shots[j].src_y, state.shots.shots[j].trg_x, state.shots.shots[j].trg_y);
 		}
 	}
 
