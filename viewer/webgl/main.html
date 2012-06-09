@@ -13,6 +13,7 @@
 		<script type="text/javascript" src="textures.js"></script>
 		<script type="text/javascript" src="text.js"></script>
 		<script type="text/javascript" src="ships.js"></script>
+		<script type="text/javascript" src="bases.js"></script>
 		<style type="text/css">
 			body {
 				background-color: #000000;
@@ -390,6 +391,7 @@
 			load_ship_textures();
 			init_json_listener();
 			init_ships();
+			init_bases();
 
 			// Planeten-Datenstrukturen erstellen.
 			init_planets();
@@ -420,6 +422,7 @@
 				render_starfield(0.);
 				render_starfield(1.);
 				render_planets();
+				render_bases();
 				render_ships();
 
 				// Und beim nächsten frame wollen wir wieder diese
@@ -427,5 +430,6 @@
 				window.requestAnimFrame(render_frame);
 			}
 		</script>
+
 	</body>
 </html>
