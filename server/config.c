@@ -148,7 +148,7 @@ double config_get_double(char* param_name) {
 	double d;
 	lua_getglobal(config_state, param_name);
 
-	/* If this parameter is no int, return 0 */
+	/* If this parameter is no double, return 0 */
 	if(!lua_isnumber(config_state,-1)) {
 		lua_pop(config_state, 1);
 		DEBUG("Config parameter %s is not a double, returning 0\n", param_name);
@@ -167,7 +167,7 @@ const char* config_get_string(char* param_name) {
 	const char* s;
 	lua_getglobal(config_state, param_name);
 
-	/* If this parameter is no int, return 0 */
+	/* If this parameter is no string, return 0 */
 	if(!lua_isstring(config_state,-1)) {
 		lua_pop(config_state, 1);
 		DEBUG("Config parameter %s is not a string, returning \"\"\n", param_name);
