@@ -76,9 +76,9 @@ static const lua_function_entry lua_wrappers[] = {
 void register_lua_functions(entity_t *s) {
 	size_t i;
 	for (i = 0; i < sizeof(lua_wrappers) / sizeof(lua_function_entry); i++) {
-		DEBUG("Registering \"%s\" at 0x%lx for 0x%lx\n", 
-				lua_wrappers[i].lua_function_name, 
-				(unsigned long) lua_wrappers[i].c_function, 
+		DEBUG("Registering \"%s\" at 0x%lx for 0x%lx\n",
+				lua_wrappers[i].lua_function_name,
+				(unsigned long) lua_wrappers[i].c_function,
 				(unsigned long) s);
 		lua_register(s->lua, lua_wrappers[i].lua_function_name, lua_wrappers[i].c_function);
 	}
@@ -110,8 +110,8 @@ static entity_id_t get_self(lua_State *L) {
  * Stringcompares the lua function name */
 int lua_function_entry_cmp(const void *left, const void *right) {
 	return strncmp(
-			((lua_function_entry *) left)->lua_function_name, 
-			((lua_function_entry *) right)->lua_function_name, 
+			((lua_function_entry *) left)->lua_function_name,
+			((lua_function_entry *) right)->lua_function_name,
 			MAX_LUA_NAME_LEN);
 }
 
@@ -128,15 +128,15 @@ int lua_help(lua_State *L) {
 	unsigned int player_id;
 	int n;
 
-	/* 
+	/*
 	 * on first call of the function copy lua_wrappers[] and sort
 	 * by lua name, so we can search in it with bsearch()
 	 */
 	if (is_initialized == false) {
 		is_initialized = true;
 		memcpy(sorted_lua_wrappers, lua_wrappers, sizeof(lua_wrappers));
-		qsort(sorted_lua_wrappers, 
-				sizeof(lua_wrappers) / sizeof(lua_function_entry), 
+		qsort(sorted_lua_wrappers,
+				sizeof(lua_wrappers) / sizeof(lua_function_entry),
 				sizeof(lua_function_entry),
 				lua_function_entry_cmp);
 	}
@@ -149,21 +149,21 @@ int lua_help(lua_State *L) {
 	if (n != 1 || (n == 1 && !lua_isstring(L, -1))) {
 		// print all available lua functions available from c-api
 		for (size_t i = 0; i < sizeof(lua_wrappers) / sizeof(lua_function_entry); i++) {
-			talk_set_user_code_reply_msg(player_id, 
-					sorted_lua_wrappers[i].lua_function_name, 
-					strlen(sorted_lua_wrappers[i].lua_function_name)); 
+			talk_set_user_code_reply_msg(player_id,
+					sorted_lua_wrappers[i].lua_function_name,
+					strlen(sorted_lua_wrappers[i].lua_function_name));
 			talk_set_user_code_reply_msg(player_id, "()\n", strlen("()\n"));
 		}
 	} else {
 		// print helpmessage for a command
 		lua_function_entry key, *res;
 		strncpy(key.lua_function_name, lua_tostring(L, -1), MAX_LUA_NAME_LEN);
-		res = ((lua_function_entry *) bsearch(&key, 
+		res = ((lua_function_entry *) bsearch(&key,
 					sorted_lua_wrappers,
-					sizeof(lua_wrappers) / sizeof(lua_function_entry), 
+					sizeof(lua_wrappers) / sizeof(lua_function_entry),
 					sizeof(lua_function_entry),
 					lua_function_entry_cmp));
-		
+
 		if (res == NULL || res->help_message == NULL) {
 			// no help message available
 			const char *error_msg = "Sorry, no help for \"";
@@ -657,8 +657,8 @@ int lua_mine(lua_State *L) {
 	return 1;
 }
 
-/* 
- * Returns all object within a search area. 
+/*
+ * Returns all object within a search area.
  * Moving objects are masked out it out of scanner-range
  */
 int lua_get_entities(lua_State *L) {
@@ -691,7 +691,7 @@ int lua_get_entities(lua_State *L) {
 			lua_pop(L, 4);
 			break;
 		default :
-			lua_pushstring(L, 
+			lua_pushstring(L,
 					"Invalid number of arguments for get_entities()!\n"
 					"valid calls are:\n"
 					"get_entities(radius, filter)\n"
@@ -701,7 +701,7 @@ int lua_get_entities(lua_State *L) {
 	}
 
 	found = get_entities(search_center, search_radius, filter, &n_found);
-	
+
 	lua_newtable(L);
 	n = 0;
 
@@ -713,14 +713,14 @@ int lua_get_entities(lua_State *L) {
 			lua_settable(L, -3);                            // add to table
 		}
 	}
-	
+
 	free(found);
 
 	return 1;
 }
 
 /*
- * Returns the nearest object within the radius if filter matches. 
+ * Returns the nearest object within the radius if filter matches.
  * Returns NULL if no object is found.
  */
 int lua_find_closest(lua_State *L) {
@@ -1183,7 +1183,7 @@ int lua_send_data(lua_State* L) {
 	if(lua_isfunction(L, 1)) {
 		/* Create a stringbuffer in the other entities' lua state, and serialize our data into it */
 		luaL_buffinit(epartner->lua, &b);
-		if(lua_dump(L, data_transfer_writer, &b)) {
+		if(lua_dump(L, data_transfer_writer, &b, false)) {
 			DEBUG("Error while dumping lua data\n");
 			return 0;
 		}
@@ -1497,7 +1497,7 @@ int lua_build_ship(lua_State* L) {
 			lua_pushstring(L, "Invalid type for arguments of build: Integer slot indices required");
 			lua_error(L);
 		}
-		
+
 		a = lua_tonumber(L,i+1);
 
 		/* Lua counts from one, lets do that too */
@@ -1812,7 +1812,7 @@ int lua_upgrade_base(lua_State* L) {
 
 /* Push the map extents to the lua state */
 int lua_get_world_size(lua_State* L) {
-	
+
 	lua_pushnumber(L, map.left_bound);
 	lua_pushnumber(L, map.right_bound);
 	lua_pushnumber(L, map.upper_bound);

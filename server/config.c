@@ -39,7 +39,7 @@ int config(int argc, char *argv[]) {
 			case 'l' : // Add Luacode to the config
 				printf("Adding \"%s\" to config after config file is loaded.\n", optarg);
 				lua_lines = realloc(lua_lines, sizeof(char *) * ++lines);
-				lua_lines[lines - 1] = strdupa(optarg);
+				lua_lines[lines - 1] = strdup(optarg);
 				break;
 			case 'c' : // Set new config-filename
 				printf("Setting new config file: %s\n", optarg);
@@ -52,7 +52,7 @@ int config(int argc, char *argv[]) {
 				init_filename = strdup(optarg);
 				break;
 			case 'h' :
-				fprintf(stderr, 
+				fprintf(stderr,
 						"Syntax: %s [-c configfile] [-i initcode] [-h] [-l \"lua code\"...]\n"
 						"Where:\n  -c specifies the path of the configfile to use\n"
 						"  -i specifies the path of the player-independent spaceship-bios code\n"
@@ -125,7 +125,7 @@ int init_config_from_file(char* filename) {
 
 /* Get an integer value from the config */
 int config_get_int(char* param_name) {
-	
+
 	int i;
 	lua_getglobal(config_state, param_name);
 

@@ -2,12 +2,12 @@
 #define LUA_HELP_MESSAGES_H
 /* This file contains help messages for all available luafunctions (hopefully) */
 
-static const char killself_help[] = 
+static const char killself_help[] =
 "\n"
 "killself()\n"
 "\n"
 "Raises a lua error, which cascades through your call stack, overloads your\n"
-"ship computer and sends your ship adrift. Needless to say, this is only\n" 
+"ship computer and sends your ship adrift. Needless to say, this is only\n"
 "seldomly a useful function to call by yourself.\n"
 "\n"
 "Might be useful for other purposes though. (See send_data())\n"
@@ -16,7 +16,7 @@ static const char killself_help[] =
 "\n"
 "";
 
-static const char moveto_help[] = 
+static const char moveto_help[] =
 "\n"
 "moveto(x,y)\n"
 "\n"
@@ -34,7 +34,7 @@ static const char moveto_help[] =
 "\n"
 "";
 
-static const char set_autopilot_to_help[] = 
+static const char set_autopilot_to_help[] =
 "\n"
 "set_autopilot_to(x,y)\n"
 "\n"
@@ -55,7 +55,7 @@ static const char set_autopilot_to_help[] =
 "\n"
 "";
 
-static const char set_timer_help[] = 
+static const char set_timer_help[] =
 "\n"
 "set_timer(ticks)\n"
 "\n"
@@ -69,7 +69,7 @@ static const char set_timer_help[] =
 "\n"
 "";
 
-static const char dock_help[] = 
+static const char dock_help[] =
 "\n"
 "dock(entity)\n"
 "\n"
@@ -90,7 +90,7 @@ static const char dock_help[] =
 "\n"
 "";
 
-static const char undock_help[] = 
+static const char undock_help[] =
 "\n"
 "undock()\n"
 "\n"
@@ -106,7 +106,7 @@ static const char undock_help[] =
 "\n"
 "";
 
-static const char transfer_slot_help[] = 
+static const char transfer_slot_help[] =
 "\n"
 "transfer_slot(local_slot, remote_slot)\n"
 "\n"
@@ -119,7 +119,7 @@ static const char transfer_slot_help[] =
 "\n"
 "";
 
-static const char send_data_help[] = 
+static const char send_data_help[] =
 "\n"
 "Transfer lua_data to your docking partner. stuff can be either a string, or a\n"
 "lua function (which is automatically dumped as lua bytecode, and also sent as a\n"
@@ -131,7 +131,7 @@ static const char send_data_help[] =
 "by the user, a default one is running in a lua state:\n"
 "\n"
 "function on_incoming_data(d)\n"
-"  local f = loadstring(d);\n"
+"  local f = load(d);\n"
 "  f();\n"
 "end\n"
 "\n"
@@ -147,7 +147,7 @@ static const char send_data_help[] =
 "\n"
 "";
 
-static const char build_ship_help[] = 
+static const char build_ship_help[] =
 "\n"
 "build_ship(slot, slot, ...) or build_ship({slot, slot, ...})\n"
 "\n"
@@ -184,7 +184,7 @@ static const char upgrade_base_help[] =
 "\n"
 "";
 
-static const char fire_help[] = 
+static const char fire_help[] =
 "\n"
 "fire(entity)\n"
 "\n"
@@ -208,7 +208,7 @@ static const char fire_help[] =
 "\n"
 "";
 
-static const char mine_help[] = 
+static const char mine_help[] =
 "\n"
 "mine()\n"
 "\n"
@@ -224,7 +224,7 @@ static const char mine_help[] =
 "\n"
 "";
 
-static const char manufacture_help[] = 
+static const char manufacture_help[] =
 "\n"
 "manufacture(slot, type)\n"
 "\n"
@@ -256,7 +256,7 @@ static const char colonize_help[] =
 "\n"
 "";
 
-static const char get_player_help[] = 
+static const char get_player_help[] =
 "\n"
 "get_player(entity) or get_player()\n"
 "\n"
@@ -268,7 +268,7 @@ static const char get_player_help[] =
 "\n"
 "";
 
-static const char get_entities_help[] = 
+static const char get_entities_help[] =
 "\n"
 "get_entities(range, filter) or get_entities(x, y, range, filter)\n"
 "\n"
@@ -280,7 +280,7 @@ static const char get_entities_help[] =
 "\n"
 "";
 
-static const char find_closest_help[] = 
+static const char find_closest_help[] =
 "\n"
 "find_closest(range, filter)\n"
 "\n"
@@ -292,7 +292,7 @@ static const char find_closest_help[] =
 "\n"
 "";
 
-static const char get_position_help[] = 
+static const char get_position_help[] =
 "\n"
 "get_position(entity) or get_position()\n"
 "\n"
@@ -304,7 +304,7 @@ static const char get_position_help[] =
 "\n"
 "";
 
-static const char get_distance_help[] = 
+static const char get_distance_help[] =
 "\n"
 "get_distance(entity)\n"
 "\n"
@@ -316,7 +316,7 @@ static const char get_distance_help[] =
 "\n"
 "";
 
-static const char get_collision_distance_help[] = 
+static const char get_collision_distance_help[] =
 "\n"
 "get_collision_distance(entity)\n"
 "\n"
@@ -340,7 +340,7 @@ static const char get_docking_partner_help[] =
 "\n"
 "";
 
-static const char is_busy_help[] = 
+static const char is_busy_help[] =
 "\n"
 "is_busy(entity) or is_busy()\n"
 "\n"
@@ -358,7 +358,7 @@ static const char is_busy_help[] =
 "\n"
 "";
 
-static const char is_flying_help[] = 
+static const char is_flying_help[] =
 "\n"
 "Determine whether the given entity, or yourself, currently has an autopilot\n"
 "following a flight plan, or whether it is just sitting there.\n"
@@ -369,7 +369,7 @@ static const char is_flying_help[] =
 "\n"
 "";
 
-static const char get_slots_help[] = 
+static const char get_slots_help[] =
 "\n"
 "get_slots(entity) or get_slots()\n"
 "\n"
@@ -382,7 +382,7 @@ static const char get_slots_help[] =
 "\n"
 "";
 
-static const char get_world_size_help[] = 
+static const char get_world_size_help[] =
 "\n"
 "get_world_size()\n"
 "\n"
@@ -391,7 +391,7 @@ static const char get_world_size_help[] =
 "\n"
 "";
 
-static const char get_type_help[] = 
+static const char get_type_help[] =
 "\n"
 "get_type(entity)\n"
 "\n"
@@ -400,7 +400,7 @@ static const char get_type_help[] =
 "\n"
 "";
 
-static const char entity_to_string_help[] = 
+static const char entity_to_string_help[] =
 "\n"
 "entity_to_string(entity)\n"
 "\n"
@@ -411,7 +411,7 @@ static const char entity_to_string_help[] =
 "\n"
 "";
 
-static const char help_help[] = 
+static const char help_help[] =
 "\n"
 "help() or help(\"command\")\n"
 "\n"
@@ -422,7 +422,7 @@ static const char help_help[] =
 "\n"
 "";
 
-static const char print_help[] = 
+static const char print_help[] =
 "\n"
 "print(string)\n"
 "\n"

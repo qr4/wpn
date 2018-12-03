@@ -29,7 +29,7 @@ UPGRADE = 15
 -- The default behaviour when recieving data from a docked partner is to
 -- execute it right away. (This allows initial programming of a new ship)
 function on_incoming_data(d)
-	local f = loadstring(d);
+	local f = load(d);
 	f();
 end
 

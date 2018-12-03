@@ -45,15 +45,17 @@ char* callback_names[NUM_EVENTS] = {
 /* List of libraries to be imported into a newly created lua state */
 /* Stolen from lua's linit.c */
 static const luaL_Reg lualibs[] = {
-	{"", luaopen_base},
-	//{LUA_LOADLIBNAME, luaopen_package},
-	{LUA_TABLIBNAME, luaopen_table},
-	//{LUA_IOLIBNAME, luaopen_io},
-	//{LUA_OSLIBNAME, luaopen_os},
-	{LUA_STRLIBNAME, luaopen_string},
-	{LUA_MATHLIBNAME, luaopen_math},
-	//{LUA_DBLIBNAME, luaopen_debug},
-	{NULL, NULL}
+  {"_G", luaopen_base},
+ // {LUA_LOADLIBNAME, luaopen_package},
+  {LUA_COLIBNAME, luaopen_coroutine},
+  {LUA_TABLIBNAME, luaopen_table},
+//  {LUA_IOLIBNAME, luaopen_io},
+//  {LUA_OSLIBNAME, luaopen_os},
+  {LUA_STRLIBNAME, luaopen_string},
+  {LUA_MATHLIBNAME, luaopen_math},
+//  {LUA_UTF8LIBNAME, luaopen_utf8},
+//  {LUA_DBLIBNAME, luaopen_debug},
+  {NULL, NULL}
 };
 
 
@@ -91,11 +93,17 @@ void init_ship_computer(entity_t* s) {
 	}
 
 	/* Load libraries we need (code ripped from lua's linit.c) */
+        for (; lib->func; lib++) {
+          luaL_requiref(s->lua, lib->name, lib->func, 1);
+          lua_pop(s->lua, 1);  /* remove lib */
+        }
+        /*
 	for(; lib->func; lib++) {
 		lua_pushcfunction(s->lua, lib->func);
 		lua_pushstring(s->lua, lib->name);
 		lua_call(s->lua, 1, 0);
 	}
+	*/
 
 	/* Set the ship's unique random seed */
 	asprintf(&random_seed_command, "math.randomseed(%lu)", time(NULL) * s->unique_id.id);
