@@ -1,14 +1,13 @@
 Disclaimer
 ---------
-All credit for this game goes to the original creators (https://bitbucket.org/dividuum/rocket-scissor-spacegoo). 
+All credit for this game goes to the original creators (https://code.nerd2nerd.org/n2n/WeltraumProgrammierNacht). 
 This is mainly a fork of said repo which makes the game 
 easier runable on a modern machine (updated dependencies, vagrant, english language, minor fixes).
 
 The source code is published under the MIT license.
 
-All images and assets are published underthe <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.
+All images and assets are published under the <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a><a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons Lizenzvertrag" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png"/></a><br/>
 
-<a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons Lizenzvertrag" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a><br />
 ---------
 Original readme:
 ---------
